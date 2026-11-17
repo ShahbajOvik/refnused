@@ -29,6 +29,13 @@ import { recordAudit, type RequestMeta } from "@/lib/audit";
 
 import { verifyCode, type CodeCheck } from "./verification";
 
+/** Copy of a row without one key (for nesting rows under their parent). */
+function without<T extends object, K extends keyof T>(row: T, key: K): Omit<T, K> {
+  const copy = { ...row };
+  delete copy[key];
+  return copy;
+}
+
 /*
  * UK GDPR rights in the account: consent for marketing, a copy of your
  * data (Articles 15 and 20) and erasure (Article 17).
@@ -327,16 +334,16 @@ export async function exportCustomerData(db: AppDb, customerId: string) {
     ],
     tradeIns: quoteRows.map(({ id, ...q }) => ({
       ...q,
-      inspections: inspectionRows.filter((i) => i.quoteId === id).map(({ quoteId: _q, ...i }) => i),
+      inspections: inspectionRows.filter((i) => i.quoteId === id).map((i) => without(i, "quoteId")),
       payouts: payoutRows.filter((p) => p.quoteReference === q.reference),
     })),
     orders: orderRows.map(({ id, ...o }) => ({
       ...o,
-      items: itemRows.filter((i) => i.orderId === id).map(({ orderId: _o, ...i }) => i),
-      payments: paymentRows.filter((p) => p.orderId === id).map(({ orderId: _o, ...p }) => p),
+      items: itemRows.filter((i) => i.orderId === id).map((i) => without(i, "orderId")),
+      payments: paymentRows.filter((p) => p.orderId === id).map((p) => without(p, "orderId")),
       returnsAndWarranty: requestRows
         .filter((r) => r.orderId === id)
-        .map(({ orderId: _o, ...r }) => r),
+        .map((r) => without(r, "orderId")),
     })),
     priceAlerts: priceAlertRows,
     stockAlerts: stockAlertRows,

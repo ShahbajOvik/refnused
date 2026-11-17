@@ -297,7 +297,16 @@ describe("payout details", () => {
       .select()
       .from(payouts)
       .where(and(eq(payouts.customerId, alex), eq(payouts.status, "pending")));
-    expect(decryptBankDetails(pending!, cipher)).toEqual({
+    expect(
+      decryptBankDetails(
+        {
+          accountHolderNameEncrypted: pending!.accountHolderNameEncrypted!,
+          sortCodeEncrypted: pending!.sortCodeEncrypted!,
+          accountNumberEncrypted: pending!.accountNumberEncrypted!,
+        },
+        cipher,
+      ),
+    ).toEqual({
       accountHolderName: "Alex Demo",
       sortCode: "200099",
       accountNumber: "55556789",
