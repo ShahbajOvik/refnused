@@ -26,6 +26,7 @@ export const modelSearchQuerySchema = z
 
 export type ModelSearchResult = {
   slug: string;
+  brandSlug: string;
   name: string;
   brand: string;
   releaseYear: number;
@@ -52,6 +53,7 @@ export async function searchModels(
   const rows = await db
     .select({
       slug: deviceModels.slug,
+      brandSlug: brands.slug,
       name: deviceModels.name,
       brand: brands.name,
       releaseYear: deviceModels.releaseYear,

@@ -8,8 +8,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const { QuickQuoteSearch } = await import("./quick-quote-search");
 
 const results = [
-  { slug: "iphone-15", name: "iPhone 15", brand: "Apple", maxPricePence: 31000 },
-  { slug: "iphone-13", name: "iPhone 13", brand: "Apple", maxPricePence: null },
+  {
+    slug: "iphone-15",
+    brandSlug: "apple",
+    name: "iPhone 15",
+    brand: "Apple",
+    maxPricePence: 31000,
+  },
+  { slug: "iphone-13", brandSlug: "apple", name: "iPhone 13", brand: "Apple", maxPricePence: null },
 ];
 
 beforeEach(() => {
@@ -50,7 +56,7 @@ describe("QuickQuoteSearch", () => {
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/-1$/));
     expect(screen.getAllByRole("option")[1]).toHaveAttribute("aria-selected", "true");
     await userEvent.keyboard("{Enter}");
-    expect(push).toHaveBeenCalledWith("/sell/iphone-13");
+    expect(push).toHaveBeenCalledWith("/sell/apple/iphone-13");
   });
 
   it("closes with Escape", async () => {

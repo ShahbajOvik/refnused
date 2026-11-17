@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 type Result = {
   slug: string;
+  brandSlug: string;
   name: string;
   brand: string;
   maxPricePence: number | null;
@@ -62,7 +63,7 @@ export function QuickQuoteSearch() {
 
   const choose = (result: Result) => {
     setOpen(false);
-    router.push(`/sell/${result.slug}`);
+    router.push(`/sell/${result.brandSlug}/${result.slug}`);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -77,6 +78,8 @@ export function QuickQuoteSearch() {
       event.preventDefault();
       choose(visible[active]);
     } else if (event.key === "Escape") {
+      // Close the list first; only a second Escape clears the (search) input.
+      if (expanded) event.preventDefault();
       setOpen(false);
       setActive(-1);
     }
@@ -121,7 +124,8 @@ export function QuickQuoteSearch() {
             aria-expanded={expanded}
             aria-controls={listId}
             aria-activedescendant={expanded && active >= 0 ? `${listId}-${active}` : undefined}
-            value={query}
+            // Uncontrolled, so anything typed before hydration isn't wiped.
+            defaultValue=""
             onChange={(e) => {
               setQuery(e.target.value);
               setOpen(true);
