@@ -43,6 +43,13 @@
       "when": 1794921480728,
       "tag": "0005_checkout",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794922376778,
+      "tag": "0006_order_access_token",
+      "breakpoints": true
     }
   ]
 }

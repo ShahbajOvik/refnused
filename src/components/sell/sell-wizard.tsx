@@ -136,6 +136,12 @@ export function SellWizard({
   const uid = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const errorSummary = useRef<HTMLDivElement>(null);
+  // Bumped on each failed submit; focusing in an effect guarantees the
+  // summary has rendered (a rAF could run before React commits it).
+  const [errorAttempt, setErrorAttempt] = useState(0);
+  useEffect(() => {
+    if (errorAttempt > 0) errorSummary.current?.focus();
+  }, [errorAttempt]);
 
   const deviceQuestions = questions.filter((q) => q.section === "device");
   const conditionQuestions = questions.filter((q) => q.section === "condition");
@@ -238,7 +244,7 @@ export function SellWizard({
     setFieldErrors(result.fieldErrors ?? {});
     if (result.newOfferPence !== undefined)
       setOffer({ ...offer, offerPence: result.newOfferPence });
-    requestAnimationFrame(() => errorSummary.current?.focus());
+    setErrorAttempt((n) => n + 1);
   };
 
   const fe = (path: string) => fieldErrors[path]?.[0];

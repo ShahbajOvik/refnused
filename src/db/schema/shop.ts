@@ -140,6 +140,8 @@ export const orders = pgTable(
     stripeCheckoutSessionId: text().unique("orders_stripe_checkout_session_id_unique"),
     /** SHA-256 of the secret token in the customer's order link. */
     accessTokenHash: text().unique("orders_access_token_hash_unique"),
+    /** The same token, encrypted (src/lib/crypto), so confirmation emails can link to the order. */
+    accessTokenEncrypted: text(),
     /** End of the 15-minute checkout hold on the units. */
     expiresAt: timestamp({ withTimezone: true }),
     /** When the payment succeeded (set from the Stripe webhook only). */

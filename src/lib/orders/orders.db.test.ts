@@ -24,7 +24,12 @@ import {
   startCheckout,
   type CheckoutInput,
 } from "./checkout-service";
-import { createOrderRequest, getOrderByAccessToken, orderRequestSchema } from "./order-service";
+import {
+  createOrderRequest,
+  getOrderByAccessToken,
+  getOrderForMessages,
+  orderRequestSchema,
+} from "./order-service";
 import { MIN_CARD_CHARGE_PENCE } from "./totals";
 import { handleStripeEvent } from "./webhook-service";
 
@@ -87,6 +92,13 @@ async function makeQuote(email: string) {
   if (!result.ok) throw new Error(`quote failed: ${result.reason}`);
   return result;
 }
+
+const cipher = testCipher();
+const start = (
+  gateway: PaymentGateway,
+  input: CheckoutInput & { productIds: string[] },
+  options: Omit<Parameters<typeof startCheckout>[3], "cipher"> = {},
+) => startCheckout(db, gateway, input, { cipher, ...options });
 
 const uniqueEmail = () => `buyer.${randomBytes(4).toString("hex")}@example.co.uk`;
 
@@ -193,8 +205,7 @@ describe("startCheckout and the 15-minute hold", () => {
   it("creates a pending order, holds the unit and creates one payment intent", async () => {
     const { gateway, calls } = fakeGateway();
     const now = new Date();
-    const result = await startCheckout(
-      db,
+    const result = await start(
       gateway,
       { ...checkout(), productIds: [ids["galaxy-a55-128gb-awesome-navy-w4f7yh"]!] },
       { now },
@@ -217,11 +228,10 @@ describe("startCheckout and the 15-minute hold", () => {
     const { gateway, calls } = fakeGateway();
     const unit = [ids["pixel-9-128gb-obsidian-p2h8vd"]!];
     const now = new Date();
-    const first = await startCheckout(db, gateway, { ...checkout(), productIds: unit }, { now });
+    const first = await start(gateway, { ...checkout(), productIds: unit }, { now });
     if (!first.ok) throw new Error(first.reason);
 
-    const second = await startCheckout(
-      db,
+    const second = await start(
       gateway,
       { ...checkout(), productIds: unit },
       { now: new Date(now.getTime() + 5 * 60_000) },
@@ -230,12 +240,7 @@ describe("startCheckout and the 15-minute hold", () => {
 
     // After 15 minutes the first payment intent is cancelled and the unit moves on.
     const later = new Date(now.getTime() + 16 * 60_000);
-    const third = await startCheckout(
-      db,
-      gateway,
-      { ...checkout(), productIds: unit },
-      { now: later },
-    );
+    const third = await start(gateway, { ...checkout(), productIds: unit }, { now: later });
     expect(third.ok).toBe(true);
     expect(calls.cancelled).toEqual([first.paymentIntentId]);
     const [old] = await db.select().from(orders).where(eq(orders.id, first.orderId));
@@ -245,10 +250,9 @@ describe("startCheckout and the 15-minute hold", () => {
   it("lets the same browser start again, replacing its own attempt", async () => {
     const { gateway } = fakeGateway();
     const unit = [ids["iphone-13-128gb-midnight-r5n3wk"]!];
-    const first = await startCheckout(db, gateway, { ...checkout(), productIds: unit });
+    const first = await start(gateway, { ...checkout(), productIds: unit });
     if (!first.ok) throw new Error(first.reason);
-    const again = await startCheckout(
-      db,
+    const again = await start(
       gateway,
       { ...checkout(), productIds: unit },
       { previousAccessToken: first.accessToken },
@@ -260,11 +264,10 @@ describe("startCheckout and the 15-minute hold", () => {
     const { gateway, notCancelable } = fakeGateway();
     const unit = [ids["pixel-8a-128gb-bay-s6x2bg"]!];
     const now = new Date();
-    const first = await startCheckout(db, gateway, { ...checkout(), productIds: unit }, { now });
+    const first = await start(gateway, { ...checkout(), productIds: unit }, { now });
     if (!first.ok) throw new Error(first.reason);
     notCancelable.add(first.paymentIntentId);
-    const second = await startCheckout(
-      db,
+    const second = await start(
       gateway,
       { ...checkout(), productIds: unit },
       { now: new Date(now.getTime() + 20 * 60_000) },
@@ -278,7 +281,7 @@ describe("startCheckout and the 15-minute hold", () => {
       throw new Error("Stripe is down");
     };
     const unit = ids["iphone-15-128gb-black-k3x9q2"]!;
-    const result = await startCheckout(db, gateway, { ...checkout(), productIds: [unit] });
+    const result = await start(gateway, { ...checkout(), productIds: [unit] });
     expect(result).toEqual({ ok: false, reason: "payment_unavailable" });
     const [row] = await db.select().from(products).where(eq(products.id, unit));
     expect(row!.checkoutHoldOrderId).toBeNull();
@@ -297,7 +300,7 @@ describe("Stripe webhooks", () => {
       .update(products)
       .set({ status: "listed", soldAt: null, checkoutHoldOrderId: null, checkoutHoldUntil: null })
       .where(eq(products.id, ids[slug]!));
-    const result = await startCheckout(db, fx.gateway, {
+    const result = await start(fx.gateway, {
       ...checkout(overrides),
       productIds: [ids[slug]!],
     });
@@ -342,6 +345,14 @@ describe("Stripe webhooks", () => {
       .from(auditLog)
       .where(and(eq(auditLog.action, "order.paid"), eq(auditLog.entityId, order.orderId)));
     expect(audits).toHaveLength(1);
+
+    // The confirmation email can link to the order with the customer's token.
+    const forMessages = await getOrderForMessages(db, order.orderId, cipher);
+    expect(forMessages?.accessToken).toBe(order.accessToken);
+    expect(forMessages?.message).toMatchObject({
+      totalPence: 46900,
+      fulfilment: { method: "delivery" },
+    });
   });
 
   it("doesn't mark paid when the amount or currency is wrong", async () => {
@@ -372,16 +383,10 @@ describe("Stripe webhooks", () => {
       .update(products)
       .set({ status: "listed", checkoutHoldOrderId: null, checkoutHoldUntil: null })
       .where(eq(products.id, ids[slug]!));
-    const late = await startCheckout(
-      db,
-      fx.gateway,
-      { ...checkout(), productIds: [ids[slug]!] },
-      { now },
-    );
+    const late = await start(fx.gateway, { ...checkout(), productIds: [ids[slug]!] }, { now });
     if (!late.ok) throw new Error(late.reason);
     // Someone else takes it after the hold expires and pays.
-    const winner = await startCheckout(
-      db,
+    const winner = await start(
       fx.gateway,
       { ...checkout(), productIds: [ids[slug]!] },
       { now: new Date(now.getTime() + 20 * 60_000) },
@@ -535,7 +540,7 @@ describe("returns and warranty claims", () => {
       .update(products)
       .set({ status: "listed", checkoutHoldOrderId: null, checkoutHoldUntil: null })
       .where(eq(products.id, ids[slug]!));
-    const order = await startCheckout(db, gateway, { ...checkout(), productIds: [ids[slug]!] });
+    const order = await start(gateway, { ...checkout(), productIds: [ids[slug]!] });
     if (!order.ok) throw new Error(order.reason);
 
     const view = await getOrderByAccessToken(db, order.accessToken);

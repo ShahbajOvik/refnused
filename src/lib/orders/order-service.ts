@@ -20,7 +20,10 @@ import type { AppDb } from "@/db/types";
 import { DELIVERY_OPTIONS } from "@/config/shop";
 import { recordAudit, type RequestMeta } from "@/lib/audit";
 
-import { hashAccessToken } from "./checkout-service";
+import type { FieldCipher } from "@/lib/crypto/field-encryption";
+
+import { ACCESS_TOKEN_CONTEXT, hashAccessToken } from "./checkout-service";
+import type { OrderMessageInput } from "./messages";
 import {
   requestEligibility,
   RETURN_REASONS,
@@ -306,4 +309,83 @@ export async function createOrderRequest(
     }
   }
   throw new Error("Could not generate a unique request reference");
+}
+
+// Confirmation messages --------------------------------------------------------
+
+export type OrderForMessages = {
+  email: string;
+  phone: string | null;
+  /** The customer's order link token, decrypted for the email. */
+  accessToken: string | null;
+  message: Omit<OrderMessageInput, "orderUrl">;
+};
+
+/** Everything the confirmation email and SMS need, after the webhook marks an order paid. */
+export async function getOrderForMessages(
+  db: AppDb,
+  orderId: string,
+  cipher: FieldCipher,
+): Promise<OrderForMessages | null> {
+  const [order] = await db
+    .select({
+      orderNumber: orders.orderNumber,
+      email: orders.email,
+      contactName: orders.contactName,
+      contactPhone: orders.contactPhone,
+      fulfilmentMethod: orders.fulfilmentMethod,
+      deliveryOptionKey: orders.deliveryOptionKey,
+      shippingAddress: orders.shippingAddress,
+      subtotalPence: orders.subtotalPence,
+      deliveryPence: orders.deliveryPence,
+      tradeInCreditPence: orders.tradeInCreditPence,
+      totalPence: orders.totalPence,
+      accessTokenEncrypted: orders.accessTokenEncrypted,
+      storeName: stores.name,
+      storeStreet: stores.street,
+      storeTown: stores.town,
+      storePostcode: stores.postcode,
+    })
+    .from(orders)
+    .leftJoin(stores, eq(orders.collectionStoreId, stores.id))
+    .where(eq(orders.id, orderId));
+  if (!order) return null;
+  const items = await db
+    .select({ description: orderItems.description, unitPricePence: orderItems.unitPricePence })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId))
+    .orderBy(asc(orderItems.createdAt), asc(orderItems.id));
+  const a = order.shippingAddress;
+  return {
+    email: order.email,
+    phone: order.contactPhone,
+    accessToken: order.accessTokenEncrypted
+      ? cipher.decrypt(order.accessTokenEncrypted, ACCESS_TOKEN_CONTEXT)
+      : null,
+    message: {
+      name: order.contactName ?? "there",
+      orderNumber: order.orderNumber,
+      items,
+      subtotalPence: order.subtotalPence,
+      deliveryPence: order.deliveryPence,
+      tradeInCreditPence: order.tradeInCreditPence,
+      totalPence: order.totalPence,
+      fulfilment:
+        order.fulfilmentMethod === "delivery"
+          ? {
+              method: "delivery",
+              label:
+                DELIVERY_OPTIONS.find((o) => o.key === order.deliveryOptionKey)?.label ??
+                "Delivery",
+              address: a
+                ? [a.line1, a.line2, a.town, a.postcode].filter(Boolean).join(", ")
+                : "your address",
+            }
+          : {
+              method: "click_and_collect",
+              storeName: order.storeName ?? "our store",
+              storeAddress: `${order.storeStreet}, ${order.storeTown} ${order.storePostcode}`,
+            },
+    },
+  };
 }

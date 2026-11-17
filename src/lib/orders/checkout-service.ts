@@ -19,6 +19,7 @@ import {
 import type { AppDb } from "@/db/types";
 import { DELIVERY_OPTIONS } from "@/config/shop";
 import { recordAudit, type RequestMeta } from "@/lib/audit";
+import type { FieldCipher } from "@/lib/crypto/field-encryption";
 import { findOrCreateCustomer } from "@/lib/customers";
 import type { PaymentGateway } from "@/lib/payments/gateway";
 import { ukPhoneSchema, ukPostcodeSchema } from "@/lib/validation/uk";
@@ -97,6 +98,9 @@ export const previewSchema = z.object({
   ]),
   tradeInReference: tradeInRefSchema.optional(),
 });
+
+/** Encryption context (AAD) for orders.access_token_encrypted. */
+export const ACCESS_TOKEN_CONTEXT = "orders.access_token";
 
 export function hashAccessToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -425,7 +429,12 @@ export async function startCheckout(
   db: AppDb,
   gateway: PaymentGateway,
   input: CheckoutInput & { productIds: string[] },
-  options: { now?: Date; previousAccessToken?: string | null; meta?: RequestMeta } = {},
+  options: {
+    cipher: FieldCipher;
+    now?: Date;
+    previousAccessToken?: string | null;
+    meta?: RequestMeta;
+  },
 ): Promise<StartCheckoutResult> {
   const now = options.now ?? new Date();
   const result = await previewCheckout(
@@ -538,6 +547,7 @@ export async function startCheckout(
             tradeInCreditPence: preview.tradeIn?.ok ? totals.tradeInCreditPence : 0,
             totalPence: totals.totalPence,
             accessTokenHash: hashAccessToken(accessToken),
+            accessTokenEncrypted: options.cipher.encrypt(accessToken, ACCESS_TOKEN_CONTEXT),
             expiresAt,
           })
           .onConflictDoNothing({ target: orders.orderNumber })

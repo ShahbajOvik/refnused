@@ -16,6 +16,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { AddToBasket } from "@/components/checkout/add-to-basket";
 import { HERO_MODEL_URL } from "@/components/home/hero/config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -199,17 +200,17 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
                 <MapPinIcon className="size-4 text-primary" aria-hidden />
                 In stock at {p.storeName}, {p.storeTown}
               </p>
+              <AddToBasket productId={p.id} />
               <div className="flex flex-wrap items-center gap-3">
+                <CompareToggle slug={p.slug} name={title} className="min-h-11 px-4 text-sm" />
                 <a
                   href={telHref(p.store.phone)}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 font-medium text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                  className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
                   <PhoneIcon className="size-4" aria-hidden />
-                  Call {p.storeName} to reserve it
+                  Questions? Call {p.storeName}
                 </a>
-                <CompareToggle slug={p.slug} name={title} className="min-h-11 px-4 text-sm" />
               </div>
-              <p className="text-sm text-muted-foreground">Online checkout is coming soon.</p>
             </div>
           ) : (
             <SoldNotice product={p} />

@@ -1,6 +1,7 @@
-import { ShoppingBagIcon, UserIcon } from "lucide-react";
+import { UserIcon } from "lucide-react";
 import Link from "next/link";
 
+import { BasketLink } from "@/components/checkout/basket-link";
 import { Logo } from "@/components/layout/logo";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NavLink } from "@/components/layout/nav-link";
@@ -34,11 +35,7 @@ export function SiteHeader() {
               <UserIcon className="size-5" aria-hidden />
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/basket" aria-label="Basket">
-              <ShoppingBagIcon className="size-5" aria-hidden />
-            </Link>
-          </Button>
+          <BasketLink />
           <MobileNav />
         </div>
       </div>
