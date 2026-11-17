@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { SkipLink } from "@/components/layout/skip-link";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
+import { LazyToaster } from "@/components/ui/lazy-toaster";
 import { siteConfig } from "@/config/site";
 import { publicEnv } from "@/lib/env";
 
@@ -19,6 +19,8 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  // Rarely used (code samples), so don't compete with the hero for bandwidth.
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -52,10 +54,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="flex min-h-dvh flex-col">
+        <noscript>
+          {/* Scroll-reveal animations start hidden; show everything without JS. */}
+          <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
+        </noscript>
         <ThemeProvider>
           <SkipLink />
           {children}
-          <Toaster position="bottom-center" />
+          <LazyToaster position="bottom-center" />
         </ThemeProvider>
       </body>
     </html>
