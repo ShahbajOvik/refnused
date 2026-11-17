@@ -5,7 +5,11 @@ import { withImeiCheckDigit } from "@/lib/validation/uk";
 import { stores as storeConfig } from "@/config/site";
 import * as schema from "@/db/schema";
 
+import { productSlug } from "@/lib/shop/slug";
+
 import {
+  SAMPLE_COLOUR_HEX,
+  SAMPLE_PHOTO_VIEWS,
   sampleTradeInPence,
   seedBrands,
   seedModels,
@@ -93,7 +97,12 @@ export async function seed(db: SeedDb) {
       .values(
         seedModels.flatMap((m) =>
           m.storageGb.flatMap((storageGb) =>
-            m.colours.map((colour) => ({ modelId: modelId.get(m.slug)!, storageGb, colour })),
+            m.colours.map((colour) => ({
+              modelId: modelId.get(m.slug)!,
+              storageGb,
+              colour,
+              colourHex: SAMPLE_COLOUR_HEX[colour] ?? null,
+            })),
           ),
         ),
       )
@@ -103,7 +112,11 @@ export async function seed(db: SeedDb) {
           schema.modelVariants.storageGb,
           schema.modelVariants.colour,
         ],
-        set: { isActive: true, updatedAt: sql`now()` },
+        set: {
+          isActive: true,
+          colourHex: sql`coalesce(${schema.modelVariants.colourHex}, excluded.colour_hex)`,
+          updatedAt: sql`now()`,
+        },
       })
       .returning({
         id: schema.modelVariants.id,
@@ -144,16 +157,31 @@ export async function seed(db: SeedDb) {
           `Seed product ${p.model} ${p.storageGb}GB ${p.colour} has no variant or store`,
         );
       const imei = withImeiCheckDigit(p.imeiBody);
+      const model = seedModels.find((m) => m.slug === p.model)!;
+      const status = p.status ?? "listed";
+      const listedAt = new Date(Date.now() - (index + 1) * 3_600_000);
       return {
+        slug: productSlug({
+          modelSlug: p.model,
+          storageGb: p.storageGb,
+          colour: p.colour,
+          suffix: p.slugSuffix,
+        }),
+        photos: SAMPLE_PHOTO_VIEWS.map(({ view, alt }) => ({
+          key: `sample/phone-${view}.webp`,
+          alt: `${alt} ${model.name} (sample photo)`,
+        })),
+        warrantyMonths: p.warrantyMonths ?? 12,
+        soldAt: status === "sold" ? new Date(Date.now() - 86_400_000) : null,
         variantId: vId,
         imei,
         grade: p.grade,
         batteryHealthPercent: p.batteryHealthPercent,
         pricePence: p.pricePence,
         storeId: sId,
-        status: "listed" as const,
+        status,
         dataWipeCertificateKey: `certificates/sample-${imei}.pdf`,
-        listedAt: new Date(Date.now() - index * 3_600_000),
+        listedAt,
       };
     });
     const insertedProducts = await tx

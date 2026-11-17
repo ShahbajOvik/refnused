@@ -143,71 +143,128 @@ export type SeedProduct = {
   storeSlug: string;
   /** 14 digits; the check digit is added. Fake TAC "35000000" marks sample units. */
   imeiBody: string;
+  /** Fixed slug suffix so sample URLs are stable between seeds. */
+  slugSuffix: string;
+  status?: "listed" | "reserved" | "sold";
+  warrantyMonths?: number;
 };
+
+/** Sample unit photos in public/media/sample (rendered by npm run media:samples). */
+export const SAMPLE_PHOTO_VIEWS = [
+  { view: "front", alt: "Front of this" },
+  { view: "back", alt: "Back of this" },
+  { view: "angle", alt: "Angled view of this" },
+  { view: "side", alt: "Side of this" },
+] as const;
+
+const MT = "metrotech-north-shields";
+const FT = "fairtech-south-shields";
 
 /** SAMPLE refurbished stock so the shop and home page have something to show. */
 export const seedProducts: SeedProduct[] = [
+  // prettier-ignore
+  ...([
+    ["iphone-15", 128, "Black", "A", 96, 46900, MT, "k3x9q2"],
+    ["galaxy-s24", 256, "Cobalt Violet", "A", 93, 39900, FT, "m7c4ta"],
+    ["pixel-9", 128, "Obsidian", "B", 91, 32900, MT, "p2h8vd"],
+    ["iphone-13", 128, "Midnight", "B", 87, 25900, FT, "r5n3wk"],
+    ["iphone-16", 128, "Ultramarine", "A", 99, 59900, MT, "t9b6xe"],
+    ["galaxy-a55", 128, "Awesome Navy", "C", 88, 15900, FT, "w4f7yh"],
+    ["iphone-15", 128, "Blue", "B", 91, 42900, FT, "a6d2kq"],
+    ["iphone-15", 256, "Black", "A", 94, 51900, FT, "b8e5mr"],
+    ["iphone-15", 128, "Pink", "C", 84, 37900, MT, "c3g9ns"],
+    ["iphone-17-pro", 256, "Cosmic Orange", "A", 100, 99900, MT, "d5h4pt"],
+    ["iphone-17-pro", 512, "Deep Blue", "A", 99, 112900, FT, "e7j8qv"],
+    ["iphone-16", 256, "Black", "B", 95, 57900, FT, "f2k3rw"],
+    ["iphone-13", 256, "Starlight", "A", 89, 29900, MT, "g4m6sx"],
+    ["iphone-13", 128, "(PRODUCT)RED", "C", 82, 21900, MT, "h6n2ty"],
+    ["galaxy-s25-ultra", 256, "Titanium Black", "A", 98, 84900, MT, "j8p5uz"],
+    ["galaxy-s25-ultra", 512, "Titanium Silverblue", "B", 96, 82900, FT, "k2q7va"],
+    ["galaxy-s24", 128, "Onyx Black", "B", 90, 33900, MT, "m4r9wb"],
+    ["galaxy-a55", 256, "Awesome Lilac", "A", 94, 22900, MT, "n6s3xc"],
+    ["pixel-10-pro", 128, "Obsidian", "A", 99, 69900, FT, "p8t5yd"],
+    ["pixel-10-pro", 256, "Moonstone", "B", 97, 67900, MT, "q2v7ze"],
+    ["pixel-9", 256, "Porcelain", "A", 93, 38900, FT, "r4w9af"],
+    ["pixel-8a", 128, "Bay", "B", 88, 21900, FT, "s6x2bg"],
+    ["pixel-8a", 128, "Obsidian", "C", 81, 17900, MT, "t8y4ch"],
+    ["iphone-16", 128, "Pink", "A", 98, 61900, FT, "v2z6dj"],
+    ["galaxy-s24", 256, "Marble Grey", "C", 85, 29900, FT, "w4a8ek"],
+    ["iphone-15", 512, "Green", "B", 92, 55900, MT, "x6b3fm"],
+  ] as const).map(([model, storageGb, colour, grade, battery, pricePence, storeSlug, slugSuffix], i) => ({
+    model,
+    storageGb,
+    colour,
+    grade,
+    batteryHealthPercent: battery,
+    pricePence,
+    storeSlug,
+    slugSuffix,
+    imeiBody: `350000000000${String(i + 1).padStart(2, "0")}`,
+  })),
+  // Sold and reserved units keep their pages (notify-me + similar phones).
   {
     model: "iphone-15",
     storageGb: 128,
-    colour: "Black",
+    colour: "Yellow",
     grade: "A",
-    batteryHealthPercent: 96,
-    pricePence: 46900,
-    storeSlug: "metrotech-north-shields",
-    imeiBody: "35000000000001",
-  },
-  {
-    model: "galaxy-s24",
-    storageGb: 256,
-    colour: "Cobalt Violet",
-    grade: "A",
-    batteryHealthPercent: 93,
-    pricePence: 39900,
-    storeSlug: "fairtech-south-shields",
-    imeiBody: "35000000000002",
+    batteryHealthPercent: 97,
+    pricePence: 47900,
+    storeSlug: MT,
+    imeiBody: "35000000000090",
+    slugSuffix: "y8c5gn",
+    status: "sold",
   },
   {
     model: "pixel-9",
     storageGb: 128,
-    colour: "Obsidian",
+    colour: "Peony",
     grade: "B",
-    batteryHealthPercent: 91,
-    pricePence: 32900,
-    storeSlug: "metrotech-north-shields",
-    imeiBody: "35000000000003",
-  },
-  {
-    model: "iphone-13",
-    storageGb: 128,
-    colour: "Midnight",
-    grade: "B",
-    batteryHealthPercent: 87,
-    pricePence: 25900,
-    storeSlug: "fairtech-south-shields",
-    imeiBody: "35000000000004",
-  },
-  {
-    model: "iphone-16",
-    storageGb: 128,
-    colour: "Ultramarine",
-    grade: "A",
-    batteryHealthPercent: 99,
-    pricePence: 59900,
-    storeSlug: "metrotech-north-shields",
-    imeiBody: "35000000000005",
-  },
-  {
-    model: "galaxy-a55",
-    storageGb: 128,
-    colour: "Awesome Navy",
-    grade: "C",
-    batteryHealthPercent: 88,
-    pricePence: 15900,
-    storeSlug: "fairtech-south-shields",
-    imeiBody: "35000000000006",
+    batteryHealthPercent: 90,
+    pricePence: 31900,
+    storeSlug: FT,
+    imeiBody: "35000000000091",
+    slugSuffix: "z2d7hp",
+    status: "reserved",
   },
 ];
+
+/** SAMPLE swatch colours for the colour filter. */
+export const SAMPLE_COLOUR_HEX: Record<string, string> = {
+  "Cosmic Orange": "#f77e2d",
+  "Deep Blue": "#2f3c55",
+  Silver: "#e3e4e5",
+  Black: "#2b2b2d",
+  White: "#f4f4f2",
+  Pink: "#f2c6d4",
+  Teal: "#8ccfc6",
+  Ultramarine: "#7a86e8",
+  Blue: "#cdd9e2",
+  Green: "#d0dccb",
+  Yellow: "#f2e7a8",
+  Midnight: "#232a31",
+  Starlight: "#f0e9de",
+  "(PRODUCT)RED": "#bf0013",
+  "Titanium Silverblue": "#a8b4c4",
+  "Titanium Black": "#3a3b3d",
+  "Titanium Gray": "#8e8d8b",
+  "Titanium Whitesilver": "#e6e6e4",
+  "Onyx Black": "#2a2b2e",
+  "Marble Grey": "#c9c7c3",
+  "Cobalt Violet": "#6c5b9b",
+  "Amber Yellow": "#f0d27a",
+  "Awesome Navy": "#2c3550",
+  "Awesome Iceblue": "#c4d8e6",
+  "Awesome Lilac": "#d6c8e6",
+  "Awesome Lemon": "#efe8a5",
+  Obsidian: "#25262a",
+  Porcelain: "#ece6dc",
+  Moonstone: "#7f8a96",
+  Jade: "#b9d8c2",
+  Wintergreen: "#c6dccb",
+  Peony: "#f2b8c6",
+  Bay: "#8fb3d9",
+  Aloe: "#bfd9c1",
+};
 
 type SeedOption = {
   key: string;

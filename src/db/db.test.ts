@@ -14,7 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stores as storeConfig } from "@/config/site";
 import * as schema from "@/db/schema";
 import { seed } from "@/db/seed";
-import { sampleTradeInPence, seedModels } from "@/db/seed/catalogue";
+import { sampleTradeInPence, seedModels, seedProducts } from "@/db/seed/catalogue";
 import { decryptBankDetails, encryptBankDetails } from "@/lib/crypto/bank-details";
 import { createFieldCipher, parseKeyring } from "@/lib/crypto/field-encryption";
 
@@ -53,7 +53,7 @@ describe("seed", () => {
       models: 10,
       variants: expectedVariants,
       tradeInPricesInserted: expectedVariants * 4,
-      productsInserted: 6,
+      productsInserted: seedProducts.length,
       quoteQuestionsInserted: 6,
     });
   });
@@ -116,6 +116,7 @@ describe("constraints", () => {
   it("will not list a product without a data-wipe certificate", async () => {
     const { store, variant } = await fixtures();
     const base = {
+      slug: "iphone-15-128gb-black-test01",
       variantId: variant.id,
       grade: "A" as const,
       batteryHealthPercent: 91,
@@ -138,6 +139,7 @@ describe("constraints", () => {
   it("rejects invalid IMEIs and battery health", async () => {
     const { store, variant } = await fixtures();
     const base = {
+      slug: "iphone-15-128gb-black-test02",
       variantId: variant.id,
       grade: "B" as const,
       pricePence: 30000,
@@ -159,6 +161,22 @@ describe("constraints", () => {
         )
       ).constraint,
     ).toBe("products_battery_check");
+  });
+
+  it("rejects product slugs that aren't URL-safe", async () => {
+    const { store, variant } = await fixtures();
+    const error = await pgError(
+      db.insert(schema.products).values({
+        slug: "iPhone 15/../x",
+        variantId: variant.id,
+        grade: "B",
+        batteryHealthPercent: 90,
+        pricePence: 30000,
+        storeId: store.id,
+        imei: "490154203237518",
+      }),
+    );
+    expect(error.constraint).toBe("products_slug_check");
   });
 
   it("requires order totals to add up", async () => {

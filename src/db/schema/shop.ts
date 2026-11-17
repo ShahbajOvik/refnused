@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -52,6 +53,11 @@ export const products = pgTable(
   "products",
   {
     id: uuid().primaryKey().defaultRandom(),
+    /**
+     * URL slug for /shop/[brand]/[slug], e.g. "iphone-15-128gb-black-k3x9q2"
+     * (src/lib/shop/slug.ts). Never changes, so shared links keep working.
+     */
+    slug: text().notNull().unique("products_slug_unique"),
     variantId: uuid()
       .notNull()
       .references(() => modelVariants.id, { onDelete: "restrict" }),
@@ -78,6 +84,8 @@ export const products = pgTable(
     index("products_variant_idx").on(t.variantId),
     index("products_store_idx").on(t.storeId),
     index("products_status_grade_idx").on(t.status, t.grade),
+    index("products_status_listed_idx").on(t.status, t.listedAt),
+    check("products_slug_check", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
     check("products_imei_check", sql`${t.imei} ~ '${sql.raw(IMEI_PATTERN)}'`),
     check("products_battery_check", sql`${t.batteryHealthPercent} between 0 and 100`),
     check("products_price_check", sql`${t.pricePence} > 0`),
@@ -232,5 +240,43 @@ export const reviews = pgTable(
     index("reviews_store_idx").on(t.storeId),
     index("reviews_status_idx").on(t.status),
     check("reviews_rating_check", sql`${t.rating} between 1 and 5`),
+  ],
+);
+
+/**
+ * "Tell me when a similar phone is in stock", from a sold unit's page.
+ * Guests can sign up with just an email; each alert has its own
+ * unsubscribe link (only the token's hash is stored).
+ */
+export const stockAlerts = pgTable(
+  "stock_alerts",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    /** Stored lower-case. */
+    email: text().notNull(),
+    customerId: uuid().references(() => customers.id, { onDelete: "set null" }),
+    modelId: uuid()
+      .notNull()
+      .references(() => deviceModels.id, { onDelete: "cascade" }),
+    /** Null: any storage. */
+    storageGb: integer(),
+    /** The sold unit the customer signed up from. */
+    sourceProductId: uuid().references(() => products.id, { onDelete: "set null" }),
+    /** sha256 of the unsubscribe token. */
+    unsubscribeTokenHash: text().notNull().unique("stock_alerts_unsubscribe_token_hash_unique"),
+    isActive: boolean().notNull().default(true),
+    consentedAt: timestamp({ withTimezone: true }).notNull(),
+    lastNotifiedAt: timestamp({ withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("stock_alerts_active_unique")
+      .on(sql`lower(${t.email})`, t.modelId, sql`coalesce(${t.storageGb}, 0)`)
+      .where(sql`${t.isActive}`),
+    index("stock_alerts_active_model_idx")
+      .on(t.modelId)
+      .where(sql`${t.isActive}`),
+    check("stock_alerts_email_check", sql`${t.email} = lower(${t.email})`),
+    check("stock_alerts_storage_check", sql`${t.storageGb} is null or ${t.storageGb} > 0`),
   ],
 );

@@ -29,6 +29,13 @@
       "when": 1794910896323,
       "tag": "0003_sell_flow",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794915940514,
+      "tag": "0004_shop",
+      "breakpoints": true
     }
   ]
 }
