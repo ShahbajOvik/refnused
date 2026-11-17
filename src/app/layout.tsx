@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { SkipLink } from "@/components/layout/skip-link";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
@@ -54,17 +53,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-dvh flex-col">
         <ThemeProvider>
-          <a
-            href="#main-content"
-            className="sr-only z-50 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-          >
-            Skip to main content
-          </a>
-          <SiteHeader />
-          <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
-            {children}
-          </main>
-          <SiteFooter />
+          <SkipLink />
+          {children}
           <Toaster position="bottom-center" />
         </ThemeProvider>
       </body>

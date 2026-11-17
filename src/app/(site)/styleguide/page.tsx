@@ -1,7 +1,7 @@
 import { ArrowRightIcon, PlusIcon, ShoppingBagIcon, TrashIcon } from "lucide-react";
 import type { Metadata } from "next";
 
-import { ToastDemo } from "@/app/styleguide/demos";
+import { ToastDemo } from "@/app/(site)/styleguide/demos";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Badge, GradeBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
