@@ -1,10 +1,9 @@
 "use client";
 
-import { MenuIcon, PhoneIcon, ShoppingBagIcon, UserIcon } from "lucide-react";
+import { PhoneIcon, ShoppingBagIcon, UserIcon } from "lucide-react";
 
 import { NavLink } from "@/components/layout/nav-link";
 import { LogoMark } from "@/components/layout/logo";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -13,7 +12,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { mainNav, stores } from "@/config/site";
 import { telHref } from "@/lib/format";
@@ -21,15 +19,31 @@ import { telHref } from "@/lib/format";
 const itemClass =
   "flex min-h-12 items-center gap-3 rounded-lg px-3 text-base font-medium hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none data-active:bg-accent data-active:text-primary";
 
-export function MobileNav() {
+/**
+ * The mobile menu panel. Loaded on demand by <MobileNav> so the dialog code
+ * isn't in every page's initial JavaScript.
+ */
+export default function MobileNavSheet({
+  open,
+  onOpenChange,
+  returnFocusTo,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  returnFocusTo: React.RefObject<HTMLButtonElement | null>;
+}) {
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
-          <MenuIcon className="size-6" aria-hidden />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-full max-w-sm overflow-y-auto p-0">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        id="mobile-nav"
+        side="right"
+        className="w-full max-w-sm overflow-y-auto p-0"
+        onCloseAutoFocus={(event) => {
+          // The trigger lives outside the sheet, so return focus to it ourselves.
+          event.preventDefault();
+          returnFocusTo.current?.focus();
+        }}
+      >
         <SheetHeader className="border-b px-4 py-3">
           <SheetTitle className="flex items-center gap-2">
             <LogoMark className="size-7" />
