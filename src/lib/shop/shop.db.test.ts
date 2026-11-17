@@ -36,7 +36,7 @@ const filters = (raw: Record<string, string>): ShopFilters => parseShopFilters(r
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
   await seed(db);
-}, 60_000);
+});
 afterAll(() => close?.());
 
 describe("searchProducts", () => {

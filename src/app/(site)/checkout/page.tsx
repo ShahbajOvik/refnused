@@ -11,10 +11,18 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DELIVERY_OPTIONS } from "@/config/shop";
 import { db } from "@/db";
-import { stores } from "@/db/schema";
+import { customers, stores } from "@/db/schema";
+import { customerAuth } from "@/auth/customer";
+import { listAddresses } from "@/lib/account/addresses";
 import { publicEnv } from "@/lib/env";
 import { previewCheckout } from "@/lib/orders/checkout-service";
 import { readBasket, readCheckoutToken } from "@/lib/orders/cookies";
+
+/** +447700900123 → 07700 900123, for the phone field. */
+function formatUkPhone(e164: string | null) {
+  if (!e164) return null;
+  return e164.startsWith("+44") ? `0${e164.slice(3, 7)} ${e164.slice(7)}` : e164;
+}
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -44,7 +52,19 @@ export default function CheckoutPage() {
 async function Checkout() {
   // Prices and holds are checked against the current time on every request.
   await connection();
-  const [productIds, accessToken] = await Promise.all([readBasket(), readCheckoutToken()]);
+  const [productIds, accessToken, session] = await Promise.all([
+    readBasket(),
+    readCheckoutToken(),
+    customerAuth(),
+  ]);
+  const customerId = session?.user?.id;
+  const [customer] = customerId
+    ? await db
+        .select({ email: customers.email, name: customers.name, phone: customers.phone })
+        .from(customers)
+        .where(eq(customers.id, customerId))
+    : [];
+  const savedAddresses = customerId ? await listAddresses(db, customerId) : [];
   const [result, storeRows] = await Promise.all([
     previewCheckout(db, {
       productIds,
@@ -92,6 +112,12 @@ async function Checkout() {
       deliveryOptions={DELIVERY_OPTIONS}
       turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
       stripePublishableKey={publicEnv.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      prefill={
+        customer
+          ? { email: customer.email, name: customer.name, phone: formatUkPhone(customer.phone) }
+          : undefined
+      }
+      savedAddresses={savedAddresses}
     />
   );
 }

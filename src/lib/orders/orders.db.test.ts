@@ -148,7 +148,7 @@ beforeAll(async () => {
   ]) {
     ids[slug] = await productId(slug);
   }
-}, 60_000);
+});
 afterAll(() => close?.());
 
 describe("previewCheckout", () => {

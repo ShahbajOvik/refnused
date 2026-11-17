@@ -43,7 +43,7 @@ beforeAll(async () => {
   await seed(db);
   const model = await getSellModel(db, "apple", "iphone-15");
   iphone15_128Black = model!.variants.find((v) => v.storageGb === 128 && v.colour === "Black")!.id;
-}, 60_000);
+});
 afterAll(() => close?.());
 
 const perfect = {

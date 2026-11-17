@@ -38,7 +38,7 @@ let close: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
-}, 60_000);
+});
 afterAll(() => close?.());
 beforeEach(() => {
   verifyRegistrationResponse.mockReset();

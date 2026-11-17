@@ -26,6 +26,17 @@ const PaymentPanel = dynamic(() => import("./payment-panel"), {
   loading: () => <p role="status">Loading secure payment form…</p>,
 });
 
+export type SavedAddressOption = {
+  id: string;
+  label: string | null;
+  line1: string;
+  line2: string | null;
+  town: string;
+  county: string | null;
+  postcode: string;
+  isDefault: boolean;
+};
+
 export type CheckoutStore = {
   slug: string;
   name: string;
@@ -57,13 +68,31 @@ export function CheckoutForm({
   deliveryOptions,
   turnstileSiteKey,
   stripePublishableKey,
+  prefill,
+  savedAddresses = [],
 }: {
   initialPreview: PreviewView;
   stores: CheckoutStore[];
   deliveryOptions: DeliveryOption[];
   turnstileSiteKey?: string;
   stripePublishableKey?: string;
+  /** Signed-in customers: their details. */
+  prefill?: { email: string; name: string | null; phone: string | null };
+  /** Signed-in customers: saved addresses (default first). */
+  savedAddresses?: SavedAddressOption[];
 }) {
+  const defaultAddress = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
+
+  /** Fills the address fields from a saved address. */
+  function fillSavedAddress(addressId: string) {
+    const address = savedAddresses.find((a) => a.id === addressId);
+    const form = formRef.current;
+    if (!address || !form) return;
+    for (const field of ["line1", "line2", "town", "county", "postcode"] as const) {
+      const input = form.elements.namedItem(field) as HTMLInputElement | null;
+      if (input) input.value = address[field] ?? "";
+    }
+  }
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -268,10 +297,21 @@ export function CheckoutForm({
                   error={fe("email")}
                   className="sm:col-span-2"
                 >
-                  <Input name="email" type="email" autoComplete="email" required />
+                  <Input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    defaultValue={prefill?.email}
+                  />
                 </Field>
                 <Field id={fieldId("name")} label="Full name" error={fe("name")}>
-                  <Input name="name" autoComplete="name" required />
+                  <Input
+                    name="name"
+                    autoComplete="name"
+                    required
+                    defaultValue={prefill?.name ?? undefined}
+                  />
                 </Field>
                 <Field
                   id={fieldId("phone")}
@@ -279,7 +319,14 @@ export function CheckoutForm({
                   hint="For delivery and collection updates"
                   error={fe("phone")}
                 >
-                  <Input name="phone" type="tel" autoComplete="tel" inputMode="tel" required />
+                  <Input
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    required
+                    defaultValue={prefill?.phone ?? undefined}
+                  />
                 </Field>
               </div>
             </section>
@@ -319,30 +366,68 @@ export function CheckoutForm({
 
               {fulfilment.method === "delivery" ? (
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {savedAddresses.length ? (
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                      <label htmlFor={`${id}-saved`} className="text-sm font-medium">
+                        Saved addresses
+                      </label>
+                      <select
+                        id={`${id}-saved`}
+                        defaultValue={defaultAddress?.id}
+                        onChange={(e) => fillSavedAddress(e.target.value)}
+                        className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      >
+                        {savedAddresses.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label ? `${a.label}: ` : ""}
+                            {a.line1}, {a.town} {a.postcode}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
                   <Field
                     id={fieldId("fulfilment.address.line1")}
                     label="Address line 1"
                     error={fe("fulfilment.address.line1")}
                     className="sm:col-span-2"
                   >
-                    <Input name="line1" autoComplete="address-line1" required />
+                    <Input
+                      name="line1"
+                      autoComplete="address-line1"
+                      required
+                      defaultValue={defaultAddress?.line1}
+                    />
                   </Field>
                   <Field
                     id={fieldId("fulfilment.address.line2")}
                     label="Address line 2 (optional)"
                     className="sm:col-span-2"
                   >
-                    <Input name="line2" autoComplete="address-line2" />
+                    <Input
+                      name="line2"
+                      autoComplete="address-line2"
+                      defaultValue={defaultAddress?.line2 ?? undefined}
+                    />
                   </Field>
                   <Field
                     id={fieldId("fulfilment.address.town")}
                     label="Town or city"
                     error={fe("fulfilment.address.town")}
                   >
-                    <Input name="town" autoComplete="address-level2" required />
+                    <Input
+                      name="town"
+                      autoComplete="address-level2"
+                      required
+                      defaultValue={defaultAddress?.town}
+                    />
                   </Field>
                   <Field id={fieldId("fulfilment.address.county")} label="County (optional)">
-                    <Input name="county" autoComplete="address-level1" />
+                    <Input
+                      name="county"
+                      autoComplete="address-level1"
+                      defaultValue={defaultAddress?.county ?? undefined}
+                    />
                   </Field>
                   <Field
                     id={fieldId("fulfilment.address.postcode")}
@@ -351,6 +436,7 @@ export function CheckoutForm({
                   >
                     <Input
                       name="postcode"
+                      defaultValue={defaultAddress?.postcode}
                       autoComplete="postal-code"
                       className="uppercase"
                       required

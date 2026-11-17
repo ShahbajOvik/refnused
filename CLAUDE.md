@@ -107,6 +107,13 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 - Order links use a secret token: store only its hash (and the encrypted copy for emails). Order pages are `noindex` with `no-referrer`.
 - The basket cookie holds unit ids only. Don't put prices or totals in it.
 
+### Account and personal data
+
+- Every account page calls `requireCustomer()`, and every account action re-checks the session (`currentCustomer()`) and only touches the customer's own rows.
+- Changing payout details or deleting an account needs an emailed code (`src/lib/account/verification.ts`). Show bank details masked only; never return decrypted values.
+- Record marketing consent changes in `audit_log` (`customer.marketing_consent`).
+- When adding personal data, include it in `exportCustomerData` and handle it in `deleteCustomerAccount` (`src/lib/account/privacy.ts`): delete it, or anonymise it if the law requires keeping it.
+
 ### Auth
 
 - Customers and staff use separate Auth.js instances (`src/auth/customer.ts` at `/api/auth`, `src/auth/staff.ts` at `/api/staff-auth`) with separate tables and cookies. Never mix them.

@@ -6,11 +6,15 @@ import { Suspense } from "react";
 
 import { cn } from "@/lib/utils";
 
-type NavLinkProps = React.ComponentProps<typeof Link> & { href: string };
+type NavLinkProps = React.ComponentProps<typeof Link> & {
+  href: string;
+  /** Only active on this exact path (not its sub-pages). */
+  exact?: boolean;
+};
 
-function ActiveNavLink({ href, className, ...props }: NavLinkProps) {
+function ActiveNavLink({ href, className, exact, ...props }: NavLinkProps) {
   const pathname = usePathname();
-  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = pathname === href || (!exact && pathname.startsWith(`${href}/`));
 
   return (
     <Link
@@ -29,8 +33,10 @@ function ActiveNavLink({ href, className, ...props }: NavLinkProps) {
  * renders first (in the static shell) and gains its active state after.
  */
 export function NavLink(props: NavLinkProps) {
+  const linkProps: Omit<NavLinkProps, "exact"> = { ...props };
+  delete (linkProps as NavLinkProps).exact;
   return (
-    <Suspense fallback={<Link {...props} />}>
+    <Suspense fallback={<Link {...linkProps} />}>
       <ActiveNavLink {...props} />
     </Suspense>
   );

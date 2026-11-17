@@ -21,7 +21,7 @@ let close: () => Promise<void>;
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
   await seed(db);
-}, 60_000);
+});
 afterAll(() => close?.());
 
 describe("searchModels", () => {

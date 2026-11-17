@@ -25,7 +25,7 @@ beforeAll(async () => {
   client = new PGlite();
   db = drizzle({ client, schema, casing: "snake_case" });
   await migrate(db, { migrationsFolder: "./drizzle" });
-}, 60_000);
+});
 
 afterAll(async () => {
   await client?.close();

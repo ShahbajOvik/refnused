@@ -32,7 +32,7 @@ const cipher = testCipher();
 
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
-}, 60_000);
+});
 afterAll(() => close?.());
 
 const uniqueEmail = (name: string) => `${name}-${randomBytes(3).toString("hex")}@example.co.uk`;

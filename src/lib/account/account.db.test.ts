@@ -69,7 +69,7 @@ beforeAll(async () => {
   await seedDemoAccounts(db, cipher);
   alex = await customerId(DEMO.quotes);
   dee = await customerId(DEMO.deletable);
-}, 60_000);
+});
 afterAll(() => close?.());
 
 describe("quotes and the revised-offer decision", () => {

@@ -16,6 +16,9 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
+    // DB tests each start an in-memory Postgres and run every migration;
+    // in parallel on a busy machine that can take a while.
+    hookTimeout: 180_000,
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

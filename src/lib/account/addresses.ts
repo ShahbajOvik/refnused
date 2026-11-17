@@ -107,3 +107,22 @@ export async function deleteAddress(db: AppDb, customerId: string, id: string) {
     return Boolean(removed);
   });
 }
+
+export async function setDefaultAddress(db: AppDb, customerId: string, id: string) {
+  return db.transaction(async (transaction) => {
+    const tx = transaction as unknown as AppDb;
+    const [target] = await tx
+      .select({ id: customerAddresses.id })
+      .from(customerAddresses)
+      .where(and(eq(customerAddresses.id, id), eq(customerAddresses.customerId, customerId)));
+    if (!target) return false;
+    await tx
+      .update(customerAddresses)
+      .set({ isDefault: false })
+      .where(
+        and(eq(customerAddresses.customerId, customerId), eq(customerAddresses.isDefault, true)),
+      );
+    await tx.update(customerAddresses).set({ isDefault: true }).where(eq(customerAddresses.id, id));
+    return true;
+  });
+}

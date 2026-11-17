@@ -148,6 +148,28 @@ Without Stripe keys (development and tests) a stand-in gateway is used and no pa
 shown; orders are still only paid by a signed webhook. E2E tests run against Stripe test mode when
 `E2E_STRIPE_SECRET_KEY` and `E2E_STRIPE_PUBLISHABLE_KEY` are set.
 
+## Account
+
+`/account` (signed-in customers): overview, trade-ins, orders, addresses, payout details, alerts,
+and privacy.
+
+- **Trade-ins**: a status timeline (accepted → received → checked → revised offer → paid). A
+  revised offer can be accepted or the phone sent back, from the account.
+- **Orders**: delivery or collection progress with carrier tracking links; returns (14 days) and
+  warranty claims.
+- **Payout details**: shown masked; changing them needs a 6-digit code emailed to the account,
+  can be applied to unpaid trade-ins, and sends a "details changed" email.
+- **Alerts**: price alerts (shop or trade-in) and back-in-stock alerts.
+- **Privacy (UK GDPR)**: marketing consent (recorded in `audit_log`), "Download my data"
+  (`/account/export`, JSON, bank details masked) and account deletion (emailed code; blocked while
+  anything is in progress). Deletion removes what it can and anonymises order, payment and
+  trade-in records that must be kept for 6 years.
+- Checkout fills in a signed-in customer's details and default address.
+
+**Testing**: the test snapshot includes demo customers (`src/db/seed/demo.ts`). With
+`EMAIL_OUTBOX_DIR` set (never in production), emails such as sign-in links and codes are also
+written there as JSON; the e2e tests sign in by reading them.
+
 ## Authentication
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.

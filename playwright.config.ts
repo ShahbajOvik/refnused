@@ -13,6 +13,7 @@ const stripeSecretKey = process.env.E2E_STRIPE_SECRET_KEY ?? "";
 if (stripeSecretKey && !stripeSecretKey.startsWith("sk_test_")) {
   throw new Error("E2E tests only run against Stripe test mode (sk_test_…)");
 }
+export const E2E_OUTBOX_DIR = `${process.cwd()}/.test-db/outbox`;
 export const E2E_WEBHOOK_SECRET =
   process.env.E2E_STRIPE_WEBHOOK_SECRET ?? "whsec_e2e_test_secret_not_real";
 
@@ -33,18 +34,19 @@ export default defineConfig({
     {
       name: "desktop-chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /checkout\.spec\.ts/,
+      testIgnore: /(checkout|account)\.spec\.ts/,
     },
     {
       name: "mobile-chromium",
       use: { ...devices["Pixel 7"] },
-      testIgnore: /checkout\.spec\.ts/,
+      testIgnore: /(checkout|account)\.spec\.ts/,
     },
-    // Purchases sell units, so they run after everything that counts stock.
+    // Purchases sell units and account tests change demo customers, so they
+    // run after everything that counts stock.
     {
       name: "checkout",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: /checkout\.spec\.ts/,
+      testMatch: /(checkout|account)\.spec\.ts/,
       dependencies: ["desktop-chromium", "mobile-chromium"],
     },
   ],
@@ -66,6 +68,8 @@ export default defineConfig({
       STRIPE_SECRET_KEY: stripeSecretKey,
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.E2E_STRIPE_PUBLISHABLE_KEY ?? "",
       STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
+      // Emails (sign-in links, codes) are written here for the tests to read.
+      EMAIL_OUTBOX_DIR: E2E_OUTBOX_DIR,
     },
   },
 });

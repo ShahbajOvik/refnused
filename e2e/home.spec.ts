@@ -93,9 +93,8 @@ test.describe("home hero", () => {
           page
             .locator("[data-hero-poster='a']")
             .evaluate((el) => getComputedStyle(el.parentElement!).opacity),
-        {
-          timeout: 15_000,
-        },
+        // The fade waits for rendered frames, which are slow under parallel load.
+        { timeout: 30_000 },
       )
       .toBe("0");
   });
@@ -195,9 +194,8 @@ test.describe("home sections", () => {
       "href",
       "tel:+441913800456",
     );
-    await expect(page.getByRole("link", { name: /Directions to FairTech, South Shields/ })).toHaveAttribute(
-      "href",
-      /google\.com\/maps\/dir/,
-    );
+    await expect(
+      page.getByRole("link", { name: /Directions to FairTech, South Shields/ }),
+    ).toHaveAttribute("href", /google\.com\/maps\/dir/);
   });
 });

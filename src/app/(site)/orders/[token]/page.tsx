@@ -7,6 +7,8 @@ import { Suspense } from "react";
 
 import { ClearBasket, OrderStatusRefresher } from "@/components/checkout/order-status-refresher";
 import { OrderRequestForm } from "@/components/checkout/order-request-form";
+
+import { createOrderRequestAction } from "../actions";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -251,8 +253,10 @@ function AfterSales({ order, token }: { order: OrderView; token: string }) {
       <ul className="mt-6 flex flex-col gap-6">
         {order.items.map((item) => {
           const requests = order.requests.filter((r) => r.orderItemId === item.id);
-          const canReturn = item.returnEligibility.allowed;
-          const canClaim = item.warrantyEligibility.allowed;
+          const open = (type: string) =>
+            requests.some((r) => r.type === type && ["submitted", "approved"].includes(r.status));
+          const canReturn = item.returnEligibility.allowed && !open("return");
+          const canClaim = item.warrantyEligibility.allowed && !open("warranty");
           return (
             <li key={item.id} className="rounded-2xl border p-6">
               <h3 className="font-semibold">{item.description}</h3>
@@ -281,14 +285,14 @@ function AfterSales({ order, token }: { order: OrderView; token: string }) {
               <div className="mt-4">
                 {canReturn || canClaim ? (
                   <OrderRequestForm
-                    token={token}
+                    submitAction={createOrderRequestAction.bind(null, token)}
                     orderItemId={item.id}
                     itemName={item.description}
                     canReturn={canReturn}
                     canClaimWarranty={canClaim}
                     turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                   />
-                ) : (
+                ) : item.returnEligibility.allowed || item.warrantyEligibility.allowed ? null : (
                   <p className="text-sm text-muted-foreground">
                     The return and warranty periods for this phone have ended.
                   </p>

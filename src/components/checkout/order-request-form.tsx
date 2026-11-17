@@ -2,10 +2,7 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 
-import {
-  createOrderRequestAction,
-  type OrderRequestActionResult,
-} from "@/app/(site)/orders/actions";
+import type { OrderRequestActionResult } from "@/app/(site)/orders/actions";
 import { TurnstileWidget } from "@/components/sell/turnstile-widget";
 import { Button } from "@/components/ui/button";
 import { RETURN_REASONS, WARRANTY_FAULTS } from "@/lib/orders/requests";
@@ -15,14 +12,15 @@ const selectClass =
 
 /** Return (within 14 days) or warranty claim for one phone in an order. */
 export function OrderRequestForm({
-  token,
+  submitAction,
   orderItemId,
   itemName,
   canReturn,
   canClaimWarranty,
   turnstileSiteKey,
 }: {
-  token: string;
+  /** Server action (bound to the order link's token, or the account's session). */
+  submitAction: (raw: unknown, turnstileToken: string | null) => Promise<OrderRequestActionResult>;
   orderItemId: string;
   itemName: string;
   canReturn: boolean;
@@ -56,8 +54,7 @@ export function OrderRequestForm({
         event.preventDefault();
         const data = new FormData(event.currentTarget);
         startTransition(async () => {
-          const next = await createOrderRequestAction(
-            token,
+          const next = await submitAction(
             {
               type,
               orderItemId,
