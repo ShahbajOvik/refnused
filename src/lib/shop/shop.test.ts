@@ -13,6 +13,7 @@ import {
 } from "./filters";
 import { penceToDecimal, productJsonLd, type ProductJsonLdInput } from "./json-ld";
 import { batteryRating, tradeInSaving } from "./product-info";
+import { parseCompareItems } from "./compare";
 import { productSlug, slugify } from "./slug";
 
 describe("slugify / productSlug", () => {
@@ -234,5 +235,17 @@ describe("productJsonLd", () => {
     expect(productJsonLd({ ...input, availability: "reserved" }).offers.availability).toBe(
       "https://schema.org/Reserved",
     );
+  });
+});
+
+describe("parseCompareItems", () => {
+  it("keeps up to 3 unique valid slugs in order", () => {
+    expect(parseCompareItems("b-1,a-2,b-1")).toEqual(["b-1", "a-2"]);
+    expect(parseCompareItems(["a-1,b-2", "c-3", "d-4"])).toEqual(["a-1", "b-2", "c-3"]);
+  });
+
+  it("drops junk", () => {
+    expect(parseCompareItems("../x,<script>,,UPPER")).toEqual([]);
+    expect(parseCompareItems(undefined)).toEqual([]);
   });
 });

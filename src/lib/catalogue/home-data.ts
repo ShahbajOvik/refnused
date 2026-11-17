@@ -1,16 +1,10 @@
 import { and, asc, count, desc, eq, max, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import {
-  brands,
-  deviceModels,
-  modelVariants,
-  products,
-  reviews,
-  stores,
-  tradeInPrices,
-} from "@/db/schema";
+import { brands, deviceModels, modelVariants, reviews, stores, tradeInPrices } from "@/db/schema";
 import type { AppDb } from "@/db/types";
+import { searchProducts, type ShopProduct } from "@/lib/shop/catalogue";
+import { EMPTY_FILTERS } from "@/lib/shop/filters";
 
 /*
  * Read-only queries for the home page and quick-quote search. Prices are
@@ -92,42 +86,11 @@ export async function getQuoteStats(db: AppDb): Promise<QuoteStats> {
   };
 }
 
-export type FeaturedProduct = {
-  id: string;
-  model: string;
-  brand: string;
-  storageGb: number;
-  colour: string;
-  grade: "A" | "B" | "C";
-  batteryHealthPercent: number;
-  pricePence: number;
-  warrantyMonths: number;
-  storeTown: string;
-};
+export type FeaturedProduct = ShopProduct;
 
 /** Most recently listed refurbished phones. */
 export async function getFeaturedProducts(db: AppDb, limit = 6): Promise<FeaturedProduct[]> {
-  return db
-    .select({
-      id: products.id,
-      model: deviceModels.name,
-      brand: brands.name,
-      storageGb: modelVariants.storageGb,
-      colour: modelVariants.colour,
-      grade: products.grade,
-      batteryHealthPercent: products.batteryHealthPercent,
-      pricePence: products.pricePence,
-      warrantyMonths: products.warrantyMonths,
-      storeTown: stores.town,
-    })
-    .from(products)
-    .innerJoin(modelVariants, eq(products.variantId, modelVariants.id))
-    .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
-    .innerJoin(brands, eq(deviceModels.brandId, brands.id))
-    .innerJoin(stores, eq(products.storeId, stores.id))
-    .where(eq(products.status, "listed"))
-    .orderBy(desc(products.listedAt), asc(products.pricePence))
-    .limit(limit);
+  return (await searchProducts(db, EMPTY_FILTERS, limit)).items;
 }
 
 export type PublishedReview = {

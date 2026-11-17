@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { deviceModels, modelVariants, products, stockAlerts } from "@/db/schema";
@@ -137,7 +137,7 @@ export function stockAlertConfirmationEmail(input: {
       /[&<>"']/g,
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
     );
-  const subject = `We’ll tell you when a ${what} is in stock`;
+  const subject = `We’ll tell you when we have the ${what} in stock`;
   const text = [
     `Thanks. We’ll email you when a refurbished ${what} is back in stock at RefurbednUsed.`,
     "",
