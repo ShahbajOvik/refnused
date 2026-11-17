@@ -84,6 +84,12 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 - Bank details are encrypted at the application level (`src/lib/crypto/bank-details.ts`). Never log, return to the client, or write to `audit_log` decrypted values.
 - Write an `audit_log` entry for price changes, quote/inspection decisions, payouts, refunds and staff/role changes.
 
+### Selling (trade-ins)
+
+- Offers come only from `src/lib/sell/pricing.ts` (pure, fully tested) fed by the database: `trade_in_prices` plus `quote_questions` / `quote_answer_options`. Never price in the browser or trust a client-sent price; recompute when creating a quote.
+- Change questions and deductions in the database, not in code. Keep the pricing engine's tests passing for any change to its rules.
+- Every public form that writes data needs Zod validation, rate limiting (`src/lib/security/rate-limit.ts`) and Turnstile.
+
 ### Auth
 
 - Customers and staff use separate Auth.js instances (`src/auth/customer.ts` at `/api/auth`, `src/auth/staff.ts` at `/api/staff-auth`) with separate tables and cookies. Never mix them.

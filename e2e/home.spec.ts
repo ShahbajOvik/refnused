@@ -76,7 +76,16 @@ test.describe("home hero", () => {
   test("loads the 3D scene when forced, then hides the poster", async ({ page, isMobile }) => {
     test.skip(isMobile, "One run is enough");
     await page.goto("/?hero=3d");
-    await expect(page.locator("[data-hero] canvas")).toHaveCount(1, { timeout: 15_000 });
+    // 3D waits for browser idle time; tight polling keeps the page busy and
+    // delays it, so poll gently. The generous timeout covers the e2e server's
+    // in-process database competing with parallel test browsers.
+    test.setTimeout(90_000);
+    await expect
+      .poll(() => page.locator("[data-hero] canvas").count(), {
+        intervals: [1000],
+        timeout: 60_000,
+      })
+      .toBe(1);
     await expect(page.locator("[data-hero-mode]")).toHaveAttribute("data-hero-mode", "3d");
     await expect
       .poll(
@@ -98,8 +107,20 @@ test.describe("quick quote", () => {
       route.fulfill({
         json: {
           results: [
-            { slug: "iphone-15", name: "iPhone 15", brand: "Apple", maxPricePence: 31000 },
-            { slug: "iphone-13", name: "iPhone 13", brand: "Apple", maxPricePence: 18000 },
+            {
+              slug: "iphone-15",
+              brandSlug: "apple",
+              name: "iPhone 15",
+              brand: "Apple",
+              maxPricePence: 31000,
+            },
+            {
+              slug: "iphone-13",
+              brandSlug: "apple",
+              name: "iPhone 13",
+              brand: "Apple",
+              maxPricePence: 18000,
+            },
           ],
         },
       }),
@@ -111,7 +132,7 @@ test.describe("quick quote", () => {
     await expect(page.getByRole("option").first()).toContainText("Up to £310");
     await search.press("ArrowDown");
     await search.press("Enter");
-    await expect(page).toHaveURL(/\/sell\/iphone-15$/);
+    await expect(page).toHaveURL(/\/sell\/apple\/iphone-15$/);
   });
 
   test("submits as a normal form", async ({ page }) => {

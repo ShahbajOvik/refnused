@@ -75,6 +75,27 @@ Bank details on payouts are encrypted with AES-256-GCM before they reach the dat
 last 4 digits of the account number are stored in clear. To rotate keys, put a new key first in
 `FIELD_ENCRYPTION_KEYS` and keep the old ones until existing rows are re-encrypted.
 
+## Selling flow
+
+`/sell` → `/sell/[brand]` → `/sell/[brand]/[model]` (static, generated from the database), then a
+condition wizard, instant offer, delivery choice and details. Quotes get a 14-day price lock, an
+email and SMS confirmation, and a private tracking page at `/sell/track/[token]`.
+
+- **Pricing** is configured in the database: base prices per variant and grade in
+  `trade_in_prices`; questions, answers, grade caps and deductions in `quote_questions` and
+  `quote_answer_options`. The engine is `src/lib/sell/pricing.ts`.
+- **Protection**: Zod validation (IMEI Luhn check, UK postcode, phone, sort code and account
+  number), Postgres-backed rate limits, Cloudflare Turnstile, and bank details encrypted at rest.
+- **Builds need a database**, because the sell pages are generated from it. Without Postgres you can
+  use the test snapshot:
+
+  ```bash
+  npm run db:test-snapshot
+  DATABASE_URL=pglite://$PWD/.test-db/snapshot.tar.gz npm run build
+  ```
+
+  `pglite://` is for tests and CI only (refused on Vercel production). E2E tests use it automatically.
+
 ## Authentication
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.
