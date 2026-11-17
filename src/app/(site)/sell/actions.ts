@@ -6,12 +6,15 @@ import { z } from "zod";
 import { db } from "@/db";
 import { recordAudit } from "@/lib/audit";
 import { getFieldCipher } from "@/lib/crypto/field-encryption";
-import { serverEnv, turnstileEnabled } from "@/lib/env.server";
 import { sendEmail } from "@/lib/notify/email";
 import { sendSms } from "@/lib/notify/sms";
 import { getRequestMeta } from "@/lib/request-meta";
-import { consumeRateLimit, rateLimitKey } from "@/lib/security/rate-limit";
-import { verifyTurnstile } from "@/lib/security/turnstile";
+import {
+  BOT_CHECK_FAILED,
+  isRateLimited,
+  passesBotCheck,
+  TOO_MANY_REQUESTS,
+} from "@/lib/security/guards";
 import { absoluteUrl } from "@/lib/seo";
 import { computeOffer } from "@/lib/sell/offer-service";
 import { PricingError, type OfferDeduction } from "@/lib/sell/pricing";
@@ -26,6 +29,7 @@ import {
   createQuoteSchema,
   getQuoteByTrackingToken,
 } from "@/lib/sell/quote-service";
+import { fieldErrorsByPath } from "@/lib/validation/field-errors";
 import { isUkMobile } from "@/lib/validation/uk";
 
 export type OfferActionResult =
@@ -43,35 +47,14 @@ export type QuoteActionResult =
   | { ok: true; trackingPath: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]>; newOfferPence?: number };
 
-/** Zod issues keyed by dotted path ("bank.sortCode"), for nested fields. */
-function fieldErrorsByPath(error: z.ZodError) {
-  const errors: Record<string, string[]> = {};
-  for (const issue of error.issues) {
-    const path = issue.path.join(".");
-    (errors[path] ??= []).push(issue.message);
-  }
-  return errors;
-}
-
-const TOO_MANY = "You’ve made a lot of requests. Please wait a few minutes and try again.";
-
-async function limited(scope: string, identifier: string, limit: number, windowSeconds: number) {
-  const result = await consumeRateLimit(db, {
-    key: rateLimitKey(scope, identifier, serverEnv.AUTH_SECRET),
-    limit,
-    windowSeconds,
-  });
-  return !result.allowed;
-}
-
 /** Instant offer. Calculated on the server from database prices only. */
 export async function getOfferAction(raw: {
   variantId: string;
   answers: Record<string, string>;
 }): Promise<OfferActionResult> {
   const meta = await getRequestMeta();
-  if (await limited("sell:offer:ip", meta.ipAddress ?? "unknown", 40, 600)) {
-    return { ok: false, error: TOO_MANY };
+  if (await isRateLimited("sell:offer:ip", meta.ipAddress ?? "unknown", 40, 600)) {
+    return { ok: false, error: TOO_MANY_REQUESTS };
   }
   const parsed = z.object({ variantId: z.uuid(), answers: answersSchema }).safeParse(raw);
   if (!parsed.success) return { ok: false, error: "Please answer every question." };
@@ -92,17 +75,11 @@ export async function createQuoteAction(
   const meta = await getRequestMeta();
   const ip = meta.ipAddress ?? "unknown";
   // Attempts (including ones with mistakes) per IP; successful quotes per email below.
-  if (await limited("sell:quote:ip", ip, 10, 3600)) return { ok: false, error: TOO_MANY };
+  if (await isRateLimited("sell:quote:ip", ip, 10, 3600))
+    return { ok: false, error: TOO_MANY_REQUESTS };
 
-  if (turnstileEnabled) {
-    const check = await verifyTurnstile(turnstileToken, {
-      secret: serverEnv.TURNSTILE_SECRET_KEY!,
-      remoteIp: meta.ipAddress,
-      action: "sell_quote",
-    });
-    if (!check.success) {
-      return { ok: false, error: "We couldn’t confirm you’re not a robot. Please try again." };
-    }
+  if (!(await passesBotCheck(turnstileToken, "sell_quote", meta.ipAddress))) {
+    return { ok: false, error: BOT_CHECK_FAILED };
   }
 
   const parsed = createQuoteSchema.safeParse(raw);
@@ -113,8 +90,8 @@ export async function createQuoteAction(
       fieldErrors: fieldErrorsByPath(parsed.error),
     };
   }
-  if (await limited("sell:quote:email", parsed.data.email, 3, 86_400)) {
-    return { ok: false, error: TOO_MANY };
+  if (await isRateLimited("sell:quote:email", parsed.data.email, 3, 86_400)) {
+    return { ok: false, error: TOO_MANY_REQUESTS };
   }
 
   const result = await createQuote(db, parsed.data, { cipher: getFieldCipher(), meta });
