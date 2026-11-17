@@ -81,7 +81,7 @@ async function BasketContents() {
                 {line.description}
               </Link>
               <p className="text-sm text-muted-foreground">
-                {line.warrantyMonths}-month warranty · at {line.storeName}
+                {line.warrantyMonths}-month warranty · at {line.storeName}, {line.storeTown}
               </p>
               {line.available ? null : (
                 <p className="mt-1 text-sm font-medium text-destructive">

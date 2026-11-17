@@ -30,6 +30,10 @@ export function StoreMap({ name, address }: { name: string; address: string }) {
       <Button variant="secondary" size="sm" onClick={() => setShow(true)}>
         <MapIcon aria-hidden />
         Show map
+        <span className="sr-only">
+          {" "}
+          of {name}, {address}
+        </span>
       </Button>
       <p className="max-w-56 text-xs text-muted-foreground">
         Loads Google Maps, which may set cookies.

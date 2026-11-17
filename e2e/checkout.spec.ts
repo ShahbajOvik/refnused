@@ -267,7 +267,7 @@ test.describe("purchase", () => {
     await page.getByRole("radio", { name: /^Reserve and collect in store/ }).check();
     await page.getByRole("radio", { name: /^MetroTech, North Shields/ }).check();
     await expect(
-      page.getByText("Ready to collect from MetroTech today.", { exact: false }),
+      page.getByText("Ready to collect from MetroTech, North Shields today.", { exact: false }),
     ).toBeVisible();
     await expect(page.getByTestId("summary-delivery")).toHaveText("Free");
 

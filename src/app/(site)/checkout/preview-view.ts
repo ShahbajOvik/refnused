@@ -6,7 +6,7 @@ export type PreviewView = {
   lines: { productId: string; description: string; pricePence: number; available: boolean }[];
   totals: OrderTotals;
   deliveryLabel: string;
-  collection?: { storeName: string; sameDay: boolean };
+  collection?: { storeName: string; storeTown: string; sameDay: boolean };
   tradeIn?: { ok: true; reference: string; device: string } | { ok: false; message: string };
 };
 
@@ -30,6 +30,7 @@ export function toPreviewView(preview: CheckoutPreview): PreviewView {
     deliveryLabel: preview.deliveryLabel,
     collection: preview.collection && {
       storeName: preview.collection.storeName,
+      storeTown: preview.collection.storeTown,
       sameDay: preview.collection.sameDay,
     },
     tradeIn: preview.tradeIn

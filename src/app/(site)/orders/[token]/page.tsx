@@ -131,7 +131,9 @@ async function Order({ params, searchParams }: PageProps<"/orders/[token]">) {
               <h2 className="flex items-center gap-2 font-semibold">
                 <StoreIcon className="size-4 text-primary" aria-hidden /> Click and collect
               </h2>
-              <p className="mt-2">{order.collectionStore.name}</p>
+              <p className="mt-2">
+                {order.collectionStore.name}, {order.collectionStore.town}
+              </p>
               <address className="mt-1 text-muted-foreground not-italic">
                 {order.collectionStore.street}
                 <br />

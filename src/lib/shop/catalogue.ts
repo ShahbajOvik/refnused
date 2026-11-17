@@ -256,7 +256,7 @@ export async function getShopFacets(db: AppDb, filters: ShopFilters): Promise<Sh
       })
         .where(where("stores"))
         .groupBy(stores.id)
-        .orderBy(asc(stores.name)),
+        .orderBy(asc(stores.name), asc(stores.town)),
       fromProducts(
         db,
         Object.fromEntries(
@@ -402,7 +402,7 @@ export async function getStockByStore(
     )
     .where(eq(stores.isActive, true))
     .groupBy(stores.id)
-    .orderBy(asc(stores.name));
+    .orderBy(asc(stores.name), asc(stores.town));
   return rows;
 }
 

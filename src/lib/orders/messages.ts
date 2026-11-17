@@ -17,7 +17,7 @@ export type OrderMessageInput = {
   totalPence: number;
   fulfilment:
     | { method: "delivery"; label: string; address: string }
-    | { method: "click_and_collect"; storeName: string; storeAddress: string };
+    | { method: "click_and_collect"; storeName: string; storeTown?: string; storeAddress: string };
   orderUrl: string;
 };
 
@@ -76,7 +76,7 @@ export function orderConfirmationSms(
   const how =
     o.fulfilment.method === "delivery"
       ? "We’ll email you when it’s on its way."
-      : `We’ll text you when it’s ready to collect from ${o.fulfilment.storeName}.`;
+      : `We’ll text you when it’s ready to collect from ${o.fulfilment.storeName}${o.fulfilment.storeTown ? `, ${o.fulfilment.storeTown}` : ""}.`;
   return `${siteConfig.name}: order ${o.orderNumber} confirmed (${formatPrice(o.totalPence)} paid). ${how} ${o.orderUrl}`;
 }
 

@@ -61,7 +61,7 @@ async function Checkout() {
       })
       .from(stores)
       .where(eq(stores.isActive, true))
-      .orderBy(stores.name),
+      .orderBy(stores.name, stores.town),
   ]);
 
   if (!result.ok) {

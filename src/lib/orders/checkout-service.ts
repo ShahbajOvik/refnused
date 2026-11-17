@@ -122,6 +122,7 @@ export type BasketLine = {
   warrantyMonths: number;
   storeId: string;
   storeName: string;
+  storeTown: string;
   /** True when it can be bought now (listed and not held by someone else). */
   available: boolean;
 };
@@ -140,6 +141,7 @@ type ProductRow = {
   status: string;
   storeId: string;
   storeName: string;
+  storeTown: string;
   holdOrderId: string | null;
   holdUntil: Date | null;
 };
@@ -161,6 +163,7 @@ async function loadProducts(db: AppDb, ids: string[]): Promise<ProductRow[]> {
       status: products.status,
       storeId: stores.id,
       storeName: stores.name,
+      storeTown: stores.town,
       holdOrderId: products.checkoutHoldOrderId,
       holdUntil: products.checkoutHoldUntil,
     })
@@ -206,6 +209,7 @@ function toLine(p: ProductRow, available: boolean): BasketLine {
     warrantyMonths: p.warrantyMonths,
     storeId: p.storeId,
     storeName: p.storeName,
+    storeTown: p.storeTown,
     available,
   };
 }
@@ -295,7 +299,7 @@ export type CheckoutPreview = {
   totals: OrderTotals;
   deliveryLabel: string;
   /** Click and collect: whether every phone is already at that store. */
-  collection?: { storeId: string; storeName: string; sameDay: boolean };
+  collection?: { storeId: string; storeName: string; storeTown: string; sameDay: boolean };
   tradeIn?: TradeInCheck;
 };
 
@@ -324,16 +328,17 @@ export async function previewCheckout(
     deliveryLabel = option.label;
   } else {
     const [store] = await db
-      .select({ id: stores.id, name: stores.name })
+      .select({ id: stores.id, name: stores.name, town: stores.town })
       .from(stores)
       .where(and(eq(stores.slug, input.fulfilment.storeSlug), eq(stores.isActive, true)));
     if (!store) return { ok: false, reason: "unknown_store" };
     collection = {
       storeId: store.id,
       storeName: store.name,
+      storeTown: store.town,
       sameDay: lines.every((l) => l.storeId === store.id),
     };
-    deliveryLabel = `Click and collect from ${store.name}`;
+    deliveryLabel = `Click and collect from ${store.name}, ${store.town}`;
   }
 
   let tradeIn: TradeInCheck | undefined;

@@ -18,7 +18,7 @@ export function StoresSection() {
           title="Pop into a store"
           intro="Sell your phone over the counter, or see refurbished phones in person before you buy."
         />
-        <ul className="mt-10 grid gap-6 md:grid-cols-2">
+        <ul className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {stores.map((store, index) => {
             const address = `${store.address.street}, ${store.address.town} ${store.address.postcode}`;
             const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
@@ -52,7 +52,7 @@ export function StoresSection() {
                         Directions
                         <span className="sr-only">
                           {" "}
-                          to {store.name} (opens Google Maps in a new tab)
+                          to {store.name}, {store.address.town} (opens Google Maps in a new tab)
                         </span>
                       </a>
                     </Button>

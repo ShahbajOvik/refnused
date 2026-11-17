@@ -205,7 +205,11 @@ describe("product pages", () => {
     expect(stock.reduce((sum, s) => sum + s.variantCount, 0)).toBe(
       iphone15.filter((p) => p.storageGb === 128 && p.colour === "Black").length,
     );
-    expect(stock.map((s) => s.storeName)).toEqual(["FairTech", "MetroTech"]);
+    expect(stock.map((s) => `${s.storeName}, ${s.storeTown}`)).toEqual([
+      "FairTech, North Shields",
+      "FairTech, South Shields",
+      "MetroTech, North Shields",
+    ]);
   });
 
   it("suggests the same model first and never the unit itself", async () => {

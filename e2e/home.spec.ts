@@ -195,7 +195,7 @@ test.describe("home sections", () => {
       "href",
       "tel:+441913800456",
     );
-    await expect(page.getByRole("link", { name: /Directions to FairTech/ })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: /Directions to FairTech, South Shields/ })).toHaveAttribute(
       "href",
       /google\.com\/maps\/dir/,
     );

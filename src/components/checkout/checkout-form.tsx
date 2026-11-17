@@ -380,8 +380,8 @@ export function CheckoutForm({
                   {preview.collection ? (
                     <p className="mt-3 text-sm text-muted-foreground" role="status">
                       {preview.collection.sameDay
-                        ? `Ready to collect from ${preview.collection.storeName} today. We’ll text you when it’s ready.`
-                        : `We’ll move your phone to ${preview.collection.storeName}: usually ready in 2 working days. We’ll text you.`}
+                        ? `Ready to collect from ${preview.collection.storeName}, ${preview.collection.storeTown} today. We’ll text you when it’s ready.`
+                        : `We’ll move your phone to ${preview.collection.storeName}, ${preview.collection.storeTown}: usually ready in 2 working days. We’ll text you.`}
                     </p>
                   ) : null}
                 </fieldset>

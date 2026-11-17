@@ -66,7 +66,7 @@ describe("home page data", () => {
     const stats = await getQuoteStats(db);
     expect(stats).toEqual({
       models: 10,
-      stores: 2,
+      stores: 3,
       maxTradeInPence: sampleTradeInPence(62000, 2, "A"),
     });
   });

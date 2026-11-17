@@ -56,7 +56,13 @@ export const stores: Store[] = [
     phone: "+441914472311",
     phoneDisplay: "0191 447 2311",
   },
-  // TODO: add Store 3 once details are confirmed.
+  {
+    slug: "fairtech-north-shields",
+    name: "FairTech",
+    address: { street: "20B Saville Street (West)", town: "North Shields", postcode: "NE29 6QR" },
+    phone: "+441914358411",
+    phoneDisplay: "0191 435 8411",
+  },
 ];
 
 export const legalNav: NavItem[] = [

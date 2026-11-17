@@ -208,7 +208,7 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
                   className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
                   <PhoneIcon className="size-4" aria-hidden />
-                  Questions? Call {p.storeName}
+                  Questions? Call {p.storeName}, {p.storeTown}
                 </a>
               </div>
             </div>

@@ -384,6 +384,7 @@ export async function getOrderForMessages(
           : {
               method: "click_and_collect",
               storeName: order.storeName ?? "our store",
+              storeTown: order.storeTown ?? undefined,
               storeAddress: `${order.storeStreet}, ${order.storeTown} ${order.storePostcode}`,
             },
     },

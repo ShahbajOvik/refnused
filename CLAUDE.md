@@ -16,11 +16,11 @@ Guidance for all work in this repository.
 
 ## Stores
 
-| Store     | Address                                    | Phone            |
-| --------- | ------------------------------------------ | ---------------- |
-| MetroTech | 77A Rudyerd Street, North Shields NE29 6RR | +44 191 380 0456 |
-| FairTech  | 2 King St, South Shields NE33 1HT          | +44 191 447 2311 |
-| [Store 3] | [Store 3 details]                          | [Store 3 phone]  |
+| Store     | Address                                           | Phone            |
+| --------- | ------------------------------------------------- | ---------------- |
+| MetroTech | 77A Rudyerd Street, North Shields NE29 6RR        | +44 191 380 0456 |
+| FairTech  | 2 King St, South Shields NE33 1HT                 | +44 191 447 2311 |
+| FairTech  | 20B Saville Street (West), North Shields NE29 6QR | +44 191 435 8411 |
 
 Keep store data in one place (CMS or a single config module). Never hard-code it across components.
 

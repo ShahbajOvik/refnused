@@ -101,5 +101,5 @@ export async function listDropOffStores(db: AppDb) {
     })
     .from(stores)
     .where(eq(stores.isActive, true))
-    .orderBy(asc(stores.name));
+    .orderBy(asc(stores.name), asc(stores.town));
 }

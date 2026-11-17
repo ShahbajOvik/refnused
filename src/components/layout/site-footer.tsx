@@ -44,10 +44,12 @@ export async function SiteFooter() {
 
         <div className="lg:col-span-2">
           <h2 className="mb-4 text-base font-semibold">Our stores</h2>
-          <ul className="grid gap-6 sm:grid-cols-2">
+          <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {stores.map((store) => (
               <li key={store.slug}>
-                <p className="font-medium">{store.name}</p>
+                <p className="font-medium">
+                  {store.name}, {store.address.town}
+                </p>
                 <address className="mt-1 flex gap-2 text-muted-foreground not-italic">
                   <MapPinIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
                   <span>
@@ -62,7 +64,10 @@ export async function SiteFooter() {
                 >
                   <PhoneIcon className="size-4" aria-hidden />
                   {store.phoneDisplay}
-                  <span className="sr-only"> (call {store.name})</span>
+                  <span className="sr-only">
+                    {" "}
+                    (call {store.name}, {store.address.town})
+                  </span>
                 </a>
               </li>
             ))}
