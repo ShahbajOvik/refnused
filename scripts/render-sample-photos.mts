@@ -19,7 +19,7 @@ const SIZE = { width: 1200, height: 1500 };
 
 /** Rotation (radians) of each view. */
 const VIEWS = {
-  front: { x: 0, y: 0 },
+  front: { x: 0.08, y: 0.3 },
   back: { x: 0, y: Math.PI },
   angle: { x: 0.12, y: -0.6 },
   side: { x: 0, y: Math.PI / 2 },

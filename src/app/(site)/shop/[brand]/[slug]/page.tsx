@@ -469,10 +469,10 @@ function StockPerStore({
             <th scope="col" className="py-1 font-normal">
               Store
             </th>
-            <th scope="col" className="py-1 text-right font-normal">
+            <th scope="col" className="py-1 pl-3 text-right font-normal">
               {p.storageGb}GB {p.colour}
             </th>
-            <th scope="col" className="py-1 text-right font-normal">
+            <th scope="col" className="py-1 pl-3 text-right font-normal">
               Any {p.model}
             </th>
           </tr>
