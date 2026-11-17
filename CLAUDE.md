@@ -76,6 +76,14 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 
 - Meet WCAG 2.2 AA: semantic HTML, keyboard access, visible focus, sufficient contrast, labelled form controls, alt text, and minimum target sizes.
 
+### Database
+
+- Schema lives in `src/db/schema/`. Change it, then run `npm run db:generate` to create a migration. Never edit a migration that has been applied anywhere; add a new one.
+- Store money as integer pence (`*Pence` columns). Never use floats for money.
+- Import `db` from `@/db` in server code only.
+- Bank details are encrypted at the application level (`src/lib/crypto/bank-details.ts`). Never log, return to the client, or write to `audit_log` decrypted values.
+- Write an `audit_log` entry for price changes, quote/inspection decisions, payouts, refunds and staff/role changes.
+
 ### Testing
 
 - Write tests for pricing, checkout and auth logic. Cover edge cases (grade boundaries, rounding, discounts, invalid input, unauthorised access).

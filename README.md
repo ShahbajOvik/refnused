@@ -48,6 +48,33 @@ e2e/                   Playwright tests, including axe WCAG 2.2 AA scans
 scripts/               Tooling scripts
 ```
 
+## Database
+
+PostgreSQL with Drizzle ORM. Schema in [src/db/schema/](src/db/schema/), migrations in
+[drizzle/](drizzle/).
+
+1. Get a Postgres database: [Postgres.app](https://postgresapp.com) or `brew install postgresql@17`
+   locally, or a free [Neon](https://neon.tech) database (pick the London region).
+2. Set `DATABASE_URL` in `.env.local`.
+3. Generate an encryption key with `npm run key:generate` and set `FIELD_ENCRYPTION_KEYS`.
+4. Run `npm run db:migrate`, then `npm run db:seed`.
+
+| Command               | What it does                                                |
+| --------------------- | ----------------------------------------------------------- |
+| `npm run db:generate` | Create a migration from schema changes                      |
+| `npm run db:migrate`  | Apply pending migrations                                    |
+| `npm run db:seed`     | Seed stores, 10 models, variants and sample trade-in prices |
+| `npm run db:studio`   | Browse data in Drizzle Studio                               |
+| `npm run db:check`    | Check migrations are consistent                             |
+
+The seed is safe to re-run. It never overwrites trade-in prices that already exist, and it
+refuses to run against production. Tests apply the migrations to an in-memory Postgres
+(PGlite), so `npm test` needs no database.
+
+Bank details on payouts are encrypted with AES-256-GCM before they reach the database. Only the
+last 4 digits of the account number are stored in clear. To rotate keys, put a new key first in
+`FIELD_ENCRYPTION_KEYS` and keep the old ones until existing rows are re-encrypted.
+
 ## Design system
 
 - **Colour:** tokens in [src/app/globals.css](src/app/globals.css). One brand accent
