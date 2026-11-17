@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { AppDb } from "@/db/types";
+import { withImeiCheckDigit } from "@/lib/validation/uk";
 
 import { stores as storeConfig } from "@/config/site";
 import * as schema from "@/db/schema";
@@ -9,7 +10,7 @@ import {
   seedBrands,
   seedModels,
   seedProducts,
-  withImeiCheckDigit,
+  seedQuoteQuestions,
 } from "./catalogue";
 
 export type SeedDb = AppDb;
@@ -161,6 +162,37 @@ export async function seed(db: SeedDb) {
       .onConflictDoNothing({ target: schema.products.imei })
       .returning({ id: schema.products.id });
 
+    // Trade-in questions and options (only when missing).
+    const questionRows = await tx
+      .insert(schema.quoteQuestions)
+      .values(
+        seedQuoteQuestions.map((q, index) => ({
+          key: q.key,
+          section: q.section,
+          title: q.title,
+          help: q.help ?? null,
+          sortOrder: index,
+        })),
+      )
+      .onConflictDoNothing({ target: schema.quoteQuestions.key })
+      .returning({ id: schema.quoteQuestions.id, key: schema.quoteQuestions.key });
+    const optionValues = questionRows.flatMap((row) =>
+      seedQuoteQuestions
+        .find((q) => q.key === row.key)!
+        .options.map((o, index) => ({
+          questionId: row.id,
+          key: o.key,
+          label: o.label,
+          description: o.description ?? null,
+          illustration: o.illustration ?? null,
+          sortOrder: index,
+          gradeCap: o.gradeCap ?? null,
+          deductionBasisPoints: o.deductionBasisPoints ?? 0,
+          deductionPence: o.deductionPence ?? 0,
+        })),
+    );
+    if (optionValues.length) await tx.insert(schema.quoteAnswerOptions).values(optionValues);
+
     await tx.insert(schema.auditLog).values({
       actorType: "system",
       action: "seed.run",
@@ -173,6 +205,7 @@ export async function seed(db: SeedDb) {
           variants: variantRows.length,
           tradeInPricesInserted: insertedPrices.length,
           productsInserted: insertedProducts.length,
+          quoteQuestionsInserted: questionRows.length,
         },
       },
     });
@@ -184,6 +217,7 @@ export async function seed(db: SeedDb) {
       variants: variantRows.length,
       tradeInPricesInserted: insertedPrices.length,
       productsInserted: insertedProducts.length,
+      quoteQuestionsInserted: questionRows.length,
     };
   });
 }

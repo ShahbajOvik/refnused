@@ -54,6 +54,7 @@ describe("seed", () => {
       variants: expectedVariants,
       tradeInPricesInserted: expectedVariants * 4,
       productsInserted: 6,
+      quoteQuestionsInserted: 6,
     });
   });
 
@@ -67,6 +68,7 @@ describe("seed", () => {
     const again = await seed(db);
     expect(again.tradeInPricesInserted).toBe(0);
     expect(again.productsInserted).toBe(0);
+    expect(again.quoteQuestionsInserted).toBe(0);
 
     const [{ value: models }] = await db.select({ value: count() }).from(schema.deviceModels);
     expect(models).toBe(10);
@@ -205,7 +207,10 @@ describe("constraints", () => {
         offeredPricePence: 18000,
         priceLockedUntil: new Date(Date.now() + 14 * 86_400_000),
         status: "approved",
-        deliveryMethod: "freepost",
+        deliveryMethod: "postage_pack",
+        contactEmail: customer.email,
+        ownershipDeclaredAt: new Date(),
+        activationLockOffDeclaredAt: new Date(),
       })
       .returning();
 

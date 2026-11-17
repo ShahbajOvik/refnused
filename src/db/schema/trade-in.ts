@@ -27,6 +27,22 @@ import { customers, staffUsers } from "./people";
 import { stores } from "./stores";
 
 /** The customer's answers to the condition questions, as shown when quoted. */
+/** Contact address for a trade-in (postage pack delivery and returns). */
+export type QuoteAddress = {
+  line1: string;
+  line2?: string;
+  town: string;
+  postcode: string;
+};
+
+/** Snapshot of how the offer was calculated, kept with the quote. */
+export type OfferBreakdown = {
+  grade: "A" | "B" | "C" | "faulty";
+  basePricePence: number;
+  deductions: { questionKey: string; optionKey: string; label: string; amountPence: number }[];
+  offerPence: number;
+};
+
 export type QuoteAnswers = {
   /** Bump when the question set changes so old answers stay readable. */
   version: number;
@@ -57,6 +73,19 @@ export const quotes = pgTable(
     dropOffStoreId: uuid().references(() => stores.id, { onDelete: "restrict" }),
     acceptedAt: timestamp({ withTimezone: true }),
     receivedAt: timestamp({ withTimezone: true }),
+    /** Contact details given when accepting (kept even if the account changes). */
+    contactName: text(),
+    contactEmail: text(),
+    /** E.164, e.g. +447700900123. */
+    contactPhone: text(),
+    contactAddress: jsonb().$type<QuoteAddress>(),
+    offerBreakdown: jsonb().$type<OfferBreakdown>(),
+    /** SHA-256 of the secret tracking token emailed to the customer. */
+    trackingTokenHash: text().unique("quotes_tracking_token_hash_unique"),
+    /** Customer declared they own the phone and can sell it. */
+    ownershipDeclaredAt: timestamp({ withTimezone: true }),
+    /** Customer declared Find My iPhone / Google account lock is off. */
+    activationLockOffDeclaredAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -68,6 +97,10 @@ export const quotes = pgTable(
     check(
       "quotes_drop_off_store_check",
       sql`${t.deliveryMethod} is distinct from 'store_drop_off' or ${t.dropOffStoreId} is not null`,
+    ),
+    check(
+      "quotes_declarations_check",
+      sql`${t.status} in ('offered', 'expired', 'cancelled') or (${t.ownershipDeclaredAt} is not null and ${t.activationLockOffDeclaredAt} is not null and ${t.contactEmail} is not null)`,
     ),
     check(
       "quotes_accepted_check",

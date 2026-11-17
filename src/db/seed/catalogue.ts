@@ -132,20 +132,6 @@ export function sampleTradeInPence(
   return Math.floor(raw / 500) * 500;
 }
 
-/** Appends the Luhn check digit to a 14-digit IMEI body. */
-export function withImeiCheckDigit(body14: string): string {
-  let sum = 0;
-  for (let i = 0; i < 14; i++) {
-    let d = Number(body14[i]);
-    if (i % 2 === 1) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-  }
-  return body14 + String((10 - (sum % 10)) % 10);
-}
-
 export type SeedProduct = {
   model: string;
   storageGb: number;
@@ -220,5 +206,147 @@ export const seedProducts: SeedProduct[] = [
     pricePence: 15900,
     storeSlug: "fairtech-south-shields",
     imeiBody: "35000000000006",
+  },
+];
+
+type SeedOption = {
+  key: string;
+  label: string;
+  description?: string;
+  illustration?: string;
+  gradeCap?: "A" | "B" | "C" | "faulty";
+  deductionBasisPoints?: number;
+  deductionPence?: number;
+};
+
+/**
+ * Trade-in questions and SAMPLE deductions. Inserted only if missing, so
+ * changes made by staff in the database are never overwritten.
+ */
+export const seedQuoteQuestions: {
+  key: string;
+  section: "device" | "condition";
+  title: string;
+  help?: string;
+  options: SeedOption[];
+}[] = [
+  {
+    key: "network",
+    section: "device",
+    title: "Network",
+    help: "Unlocked phones work on any network. If you're not sure, try another network's SIM.",
+    options: [
+      { key: "unlocked", label: "Unlocked" },
+      { key: "locked", label: "Locked to a UK network", deductionPence: 1000 },
+    ],
+  },
+  {
+    key: "powers_on",
+    section: "condition",
+    title: "Does it turn on and work normally?",
+    help: "Calls, Wi-Fi, cameras, buttons and speakers all work.",
+    options: [
+      { key: "yes", label: "Yes, everything works", illustration: "power-on" },
+      {
+        key: "no",
+        label: "No, or something doesn’t work",
+        illustration: "power-off",
+        gradeCap: "faulty",
+      },
+    ],
+  },
+  {
+    key: "screen",
+    section: "condition",
+    title: "What’s the screen like?",
+    help: "Check with the screen on and off, under a bright light.",
+    options: [
+      {
+        key: "perfect",
+        label: "Like new",
+        description: "No scratches at all",
+        illustration: "screen-perfect",
+      },
+      {
+        key: "light",
+        label: "Light scratches",
+        description: "Only visible when the screen is off",
+        illustration: "screen-light",
+        gradeCap: "B",
+      },
+      {
+        key: "heavy",
+        label: "Heavy scratches",
+        description: "Visible with the screen on",
+        illustration: "screen-heavy",
+        gradeCap: "C",
+      },
+      {
+        key: "cracked",
+        label: "Cracked or faulty",
+        description: "Cracks, dead pixels, lines or burn-in",
+        illustration: "screen-cracked",
+        gradeCap: "faulty",
+      },
+    ],
+  },
+  {
+    key: "body",
+    section: "condition",
+    title: "What’s the back and frame like?",
+    options: [
+      { key: "perfect", label: "Like new", description: "No marks", illustration: "body-perfect" },
+      {
+        key: "light",
+        label: "Light marks",
+        description: "Small scuffs on the edges",
+        illustration: "body-light",
+        gradeCap: "B",
+      },
+      {
+        key: "heavy",
+        label: "Heavy wear",
+        description: "Dents, chips or deep scratches",
+        illustration: "body-heavy",
+        gradeCap: "C",
+      },
+      {
+        key: "damaged",
+        label: "Cracked or bent",
+        description: "Cracked back glass or a bent frame",
+        illustration: "body-damaged",
+        gradeCap: "faulty",
+      },
+    ],
+  },
+  {
+    key: "battery",
+    section: "condition",
+    title: "What’s the battery health?",
+    help: "iPhone: Settings › Battery › Battery Health. Android: in battery settings, or ask us in store.",
+    options: [
+      { key: "good", label: "85% or more", illustration: "battery-good" },
+      { key: "ok", label: "80% to 84%", illustration: "battery-ok", deductionPence: 1000 },
+      {
+        key: "poor",
+        label: "Below 80%, or “Service” shown",
+        illustration: "battery-poor",
+        deductionPence: 2500,
+      },
+    ],
+  },
+  {
+    key: "biometrics",
+    section: "condition",
+    title: "Does Face ID or the fingerprint reader work?",
+    options: [
+      { key: "works", label: "Yes, it works", illustration: "biometrics-ok" },
+      {
+        key: "broken",
+        label: "No, it doesn’t work",
+        illustration: "biometrics-broken",
+        deductionBasisPoints: 2000,
+      },
+    ],
   },
 ];

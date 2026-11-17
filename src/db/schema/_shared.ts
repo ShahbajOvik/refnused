@@ -55,9 +55,11 @@ export const quoteStatus = pgEnum("quote_status", [
 ]);
 
 export const deliveryMethod = pgEnum("delivery_method", [
-  "freepost",
+  "freepost", // deprecated: superseded by postage_pack / print_label
   "courier_collection",
   "store_drop_off",
+  "postage_pack", // we post the customer a free pack
+  "print_label", // customer prints a label and posts it
 ]);
 
 export const checkmendResult = pgEnum("checkmend_result", [
