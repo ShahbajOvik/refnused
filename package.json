@@ -26,7 +26,7 @@
     "secret:generate": "node -e \"console.log(require('node:crypto').randomBytes(32).toString('base64url'))\"",
     "model:placeholder": "node --import tsx scripts/generate-placeholder-phone.mts",
     "hero:poster": "node --import tsx scripts/render-hero-poster.mts",
-    "db:test-snapshot": "node --import tsx scripts/create-test-db.mts",
+    "db:test-snapshot": "node --conditions=react-server --import tsx scripts/create-test-db.mts",
     "media:samples": "node --import tsx scripts/render-sample-photos.mts"
   },
   "dependencies": {

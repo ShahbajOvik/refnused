@@ -148,6 +148,13 @@ export const orders = pgTable(
     placedAt: timestamp({ withTimezone: true }),
     /** Dispatched or collected; the returns window starts from here. */
     fulfilledAt: timestamp({ withTimezone: true }),
+    /** Delivery tracking, set when dispatched. */
+    trackingCarrier: text(),
+    trackingNumber: text(),
+    /** Click and collect: when it was ready at the store. */
+    readyForCollectionAt: timestamp({ withTimezone: true }),
+    /** Delivered (or collected) and finished. */
+    completedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [

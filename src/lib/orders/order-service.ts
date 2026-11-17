@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, or, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -57,6 +57,9 @@ export type OrderView = {
   totalPence: number;
   placedAt: Date | null;
   fulfilledAt: Date | null;
+  readyForCollectionAt: Date | null;
+  completedAt: Date | null;
+  tracking: { carrier: string; number: string; url: string | null } | null;
   expiresAt: Date | null;
   createdAt: Date;
   paymentStatus: string | null;
@@ -81,14 +84,46 @@ export type OrderView = {
   }[];
 };
 
+/** Who is asking for an order: the holder of its private link, or the signed-in customer. */
+export type OrderOwner = { token: string } | { customerId: string };
+
+function ownerCondition(owner: OrderOwner): SQL | null {
+  if ("token" in owner) {
+    return TOKEN.test(owner.token)
+      ? eq(orders.accessTokenHash, hashAccessToken(owner.token))
+      : null;
+  }
+  return eq(orders.customerId, owner.customerId);
+}
+
 /** The order behind a customer's private order link. */
 export async function getOrderByAccessToken(
   db: AppDb,
   token: string,
   now: Date = new Date(),
 ): Promise<OrderView | null> {
-  if (!TOKEN.test(token)) return null;
-  const [order] = await db
+  const [order] = await loadOrderViews(db, { token }, now, { limit: 1 });
+  return order ?? null;
+}
+
+/** A signed-in customer's orders (paid ones, plus any still waiting for payment), newest first. */
+export async function listCustomerOrders(
+  db: AppDb,
+  customerId: string,
+  now: Date = new Date(),
+): Promise<OrderView[]> {
+  return loadOrderViews(db, { customerId }, now, { placedOrPending: true });
+}
+
+async function loadOrderViews(
+  db: AppDb,
+  owner: OrderOwner,
+  now: Date,
+  options: { limit?: number; placedOrPending?: boolean } = {},
+): Promise<OrderView[]> {
+  const condition = ownerCondition(owner);
+  if (!condition) return [];
+  const rows = await db
     .select({
       id: orders.id,
       orderNumber: orders.orderNumber,
@@ -106,6 +141,10 @@ export async function getOrderByAccessToken(
       totalPence: orders.totalPence,
       placedAt: orders.placedAt,
       fulfilledAt: orders.fulfilledAt,
+      readyForCollectionAt: orders.readyForCollectionAt,
+      completedAt: orders.completedAt,
+      trackingCarrier: orders.trackingCarrier,
+      trackingNumber: orders.trackingNumber,
       expiresAt: orders.expiresAt,
       createdAt: orders.createdAt,
       storeName: stores.name,
@@ -117,10 +156,46 @@ export async function getOrderByAccessToken(
     .from(orders)
     .leftJoin(stores, eq(orders.collectionStoreId, stores.id))
     .leftJoin(quotes, eq(orders.tradeInQuoteId, quotes.id))
-    .where(eq(orders.accessTokenHash, hashAccessToken(token)))
-    .limit(1);
-  if (!order) return null;
+    .where(
+      and(
+        condition,
+        options.placedOrPending
+          ? or(isNotNull(orders.placedAt), eq(orders.status, "pending_payment"))
+          : undefined,
+      ),
+    )
+    .orderBy(desc(orders.createdAt))
+    .limit(options.limit ?? 100);
+  return Promise.all(rows.map((order) => toOrderView(db, order, now)));
+}
 
+async function toOrderView(
+  db: AppDb,
+  order: {
+    id: string;
+    status: string;
+    placedAt: Date | null;
+    fulfilledAt: Date | null;
+    trackingCarrier: string | null;
+    trackingNumber: string | null;
+    storeName: string | null;
+    storeStreet: string | null;
+    storeTown: string | null;
+    storePostcode: string | null;
+    storePhone: string | null;
+    deliveryOptionKey: string | null;
+  } & Omit<
+    OrderView,
+    | "deliveryLabel"
+    | "collectionStore"
+    | "paymentStatus"
+    | "paymentFailure"
+    | "items"
+    | "requests"
+    | "tracking"
+  >,
+  now: Date,
+): Promise<OrderView> {
   const [items, [payment], requests] = await Promise.all([
     db
       .select({
@@ -166,10 +241,20 @@ export async function getOrderByAccessToken(
     storePostcode,
     storePhone,
     deliveryOptionKey,
+    trackingCarrier,
+    trackingNumber,
     ...rest
   } = order;
   return {
     ...rest,
+    tracking:
+      trackingCarrier && trackingNumber
+        ? {
+            carrier: trackingCarrier,
+            number: trackingNumber,
+            url: trackingUrl(trackingCarrier, trackingNumber),
+          }
+        : null,
     deliveryLabel: DELIVERY_OPTIONS.find((o) => o.key === deliveryOptionKey)?.label ?? null,
     collectionStore: storeName
       ? {
@@ -193,6 +278,23 @@ export async function getOrderByAccessToken(
     })),
     requests,
   };
+}
+
+/** Public tracking page for a carrier's tracking number, when we know the carrier. */
+export function trackingUrl(carrier: string, number: string): string | null {
+  const n = encodeURIComponent(number.trim());
+  switch (carrier.toLowerCase().replace(/[\s_-]/g, "")) {
+    case "royalmail":
+      return `https://www.royalmail.com/track-your-item#/tracking-results/${n}`;
+    case "dpd":
+      return `https://track.dpd.co.uk/parcels/${n}`;
+    case "evri":
+      return `https://www.evri.com/track/parcel/${n}`;
+    case "dhl":
+      return `https://www.dhl.com/gb-en/home/tracking.html?tracking-id=${n}`;
+    default:
+      return null;
+  }
 }
 
 // Returns and warranty claims ---------------------------------------------------
@@ -236,15 +338,20 @@ function requestReference(type: "return" | "warranty") {
   return `RU-${type === "return" ? "R" : "W"}-${code}`;
 }
 
-/** A return (within 14 days) or warranty claim, from the customer's order link. */
+/**
+ * A return (within 14 days) or warranty claim, from the order link (token)
+ * or the signed-in customer's account.
+ */
 export async function createOrderRequest(
   db: AppDb,
-  token: string,
+  ownerOrToken: string | OrderOwner,
   input: OrderRequestInput,
   options: { now?: Date; meta?: RequestMeta } = {},
 ): Promise<CreateOrderRequestResult> {
   const now = options.now ?? new Date();
-  if (!TOKEN.test(token)) return { ok: false, reason: "unknown_order" };
+  const owner = typeof ownerOrToken === "string" ? { token: ownerOrToken } : ownerOrToken;
+  const condition = ownerCondition(owner);
+  if (!condition) return { ok: false, reason: "unknown_order" };
   const [row] = await db
     .select({
       orderId: orders.id,
@@ -257,15 +364,10 @@ export async function createOrderRequest(
     .from(orders)
     .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
     .innerJoin(products, eq(orderItems.productId, products.id))
-    .where(
-      and(eq(orders.accessTokenHash, hashAccessToken(token)), eq(orderItems.id, input.orderItemId)),
-    )
+    .where(and(condition, eq(orderItems.id, input.orderItemId)))
     .limit(1);
   if (!row) {
-    const [order] = await db
-      .select({ id: orders.id })
-      .from(orders)
-      .where(eq(orders.accessTokenHash, hashAccessToken(token)));
+    const [order] = await db.select({ id: orders.id }).from(orders).where(condition).limit(1);
     return { ok: false, reason: order ? "unknown_item" : "unknown_order" };
   }
   const eligibility = requestEligibility(input.type, row, row, now);

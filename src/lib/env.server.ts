@@ -73,6 +73,7 @@ export const smsEnabled = Boolean(
 export const stripeEnabled = Boolean(serverEnv.STRIPE_SECRET_KEY);
 
 if (process.env.VERCEL_ENV === "production") {
+  if (process.env.EMAIL_OUTBOX_DIR) throw new Error("EMAIL_OUTBOX_DIR is for tests only");
   if (!stripeEnabled || !serverEnv.STRIPE_WEBHOOK_SECRET) {
     throw new Error("STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are required in production");
   }

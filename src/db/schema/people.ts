@@ -26,7 +26,11 @@ export const customers = pgTable(
     phone: text(),
     emailVerified: timestamp({ withTimezone: true }),
     image: text(),
+    /** Marketing emails (opt-in, UK GDPR/PECR). Changes are recorded in audit_log. */
     marketingOptIn: boolean().notNull().default(false),
+    /** Marketing texts (opt-in). */
+    marketingSmsOptIn: boolean().notNull().default(false),
+    marketingUpdatedAt: timestamp({ withTimezone: true }),
     /** Set when a customer is erased under UK GDPR; personal fields are cleared. */
     deletedAt: timestamp({ withTimezone: true }),
     ...timestamps,

@@ -1,4 +1,5 @@
 export * from "./_shared";
+export * from "./account";
 export * from "./audit";
 export * from "./auth";
 export * from "./catalogue";

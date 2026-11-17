@@ -2,12 +2,15 @@ import "server-only";
 
 import { logMagicLinksToConsole, serverEnv } from "@/lib/env.server";
 
+import { writeToOutbox } from "./outbox";
+
 export type EmailMessage = { to: string; subject: string; text: string; html: string };
 
 /** Sends an email with Resend, or prints it in development. */
 export async function sendEmail(message: EmailMessage) {
   if (logMagicLinksToConsole) {
     console.info(`\n[email] to ${message.to}: ${message.subject}\n${message.text}\n`);
+    writeToOutbox(message);
     return;
   }
   const response = await fetch("https://api.resend.com/emails", {
