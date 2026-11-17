@@ -53,6 +53,7 @@ describe("seed", () => {
       models: 10,
       variants: expectedVariants,
       tradeInPricesInserted: expectedVariants * 4,
+      productsInserted: 6,
     });
   });
 
@@ -65,6 +66,7 @@ describe("seed", () => {
 
     const again = await seed(db);
     expect(again.tradeInPricesInserted).toBe(0);
+    expect(again.productsInserted).toBe(0);
 
     const [{ value: models }] = await db.select({ value: count() }).from(schema.deviceModels);
     expect(models).toBe(10);

@@ -4,7 +4,13 @@ import type { AppDb } from "@/db/types";
 import { stores as storeConfig } from "@/config/site";
 import * as schema from "@/db/schema";
 
-import { sampleTradeInPence, seedBrands, seedModels } from "./catalogue";
+import {
+  sampleTradeInPence,
+  seedBrands,
+  seedModels,
+  seedProducts,
+  withImeiCheckDigit,
+} from "./catalogue";
 
 export type SeedDb = AppDb;
 
@@ -43,7 +49,7 @@ export async function seed(db: SeedDb) {
           updatedAt: sql`now()`,
         },
       })
-      .returning({ id: schema.stores.id });
+      .returning({ id: schema.stores.id, slug: schema.stores.slug });
 
     const brandRows = await tx
       .insert(schema.brands)
@@ -102,6 +108,7 @@ export async function seed(db: SeedDb) {
         id: schema.modelVariants.id,
         modelId: schema.modelVariants.modelId,
         storageGb: schema.modelVariants.storageGb,
+        colour: schema.modelVariants.colour,
       });
 
     const modelById = new Map(seedModels.map((m) => [modelId.get(m.slug)!, m]));
@@ -123,6 +130,37 @@ export async function seed(db: SeedDb) {
       })
       .returning({ id: schema.tradeInPrices.id });
 
+    // Sample refurbished stock (only inserted if the IMEI isn't there yet).
+    const storeId = new Map(storeRows.map((s) => [s.slug, s.id]));
+    const variantByKey = new Map(
+      variantRows.map((v) => [`${v.modelId}|${v.storageGb}|${v.colour}`, v.id] as const),
+    );
+    const productValues = seedProducts.map((p, index) => {
+      const vId = variantByKey.get(`${modelId.get(p.model)}|${p.storageGb}|${p.colour}`);
+      const sId = storeId.get(p.storeSlug);
+      if (!vId || !sId)
+        throw new Error(
+          `Seed product ${p.model} ${p.storageGb}GB ${p.colour} has no variant or store`,
+        );
+      const imei = withImeiCheckDigit(p.imeiBody);
+      return {
+        variantId: vId,
+        imei,
+        grade: p.grade,
+        batteryHealthPercent: p.batteryHealthPercent,
+        pricePence: p.pricePence,
+        storeId: sId,
+        status: "listed" as const,
+        dataWipeCertificateKey: `certificates/sample-${imei}.pdf`,
+        listedAt: new Date(Date.now() - index * 3_600_000),
+      };
+    });
+    const insertedProducts = await tx
+      .insert(schema.products)
+      .values(productValues)
+      .onConflictDoNothing({ target: schema.products.imei })
+      .returning({ id: schema.products.id });
+
     await tx.insert(schema.auditLog).values({
       actorType: "system",
       action: "seed.run",
@@ -134,6 +172,7 @@ export async function seed(db: SeedDb) {
           models: modelRows.length,
           variants: variantRows.length,
           tradeInPricesInserted: insertedPrices.length,
+          productsInserted: insertedProducts.length,
         },
       },
     });
@@ -144,6 +183,7 @@ export async function seed(db: SeedDb) {
       models: modelRows.length,
       variants: variantRows.length,
       tradeInPricesInserted: insertedPrices.length,
+      productsInserted: insertedProducts.length,
     };
   });
 }

@@ -131,3 +131,94 @@ export function sampleTradeInPence(
   const raw = basePence * (1 + SAMPLE_STORAGE_STEP * storageIndex) * SAMPLE_GRADE_MULTIPLIER[grade];
   return Math.floor(raw / 500) * 500;
 }
+
+/** Appends the Luhn check digit to a 14-digit IMEI body. */
+export function withImeiCheckDigit(body14: string): string {
+  let sum = 0;
+  for (let i = 0; i < 14; i++) {
+    let d = Number(body14[i]);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return body14 + String((10 - (sum % 10)) % 10);
+}
+
+export type SeedProduct = {
+  model: string;
+  storageGb: number;
+  colour: string;
+  grade: "A" | "B" | "C";
+  batteryHealthPercent: number;
+  /** SAMPLE retail price in pence. */
+  pricePence: number;
+  storeSlug: string;
+  /** 14 digits; the check digit is added. Fake TAC "35000000" marks sample units. */
+  imeiBody: string;
+};
+
+/** SAMPLE refurbished stock so the shop and home page have something to show. */
+export const seedProducts: SeedProduct[] = [
+  {
+    model: "iphone-15",
+    storageGb: 128,
+    colour: "Black",
+    grade: "A",
+    batteryHealthPercent: 96,
+    pricePence: 46900,
+    storeSlug: "metrotech-north-shields",
+    imeiBody: "35000000000001",
+  },
+  {
+    model: "galaxy-s24",
+    storageGb: 256,
+    colour: "Cobalt Violet",
+    grade: "A",
+    batteryHealthPercent: 93,
+    pricePence: 39900,
+    storeSlug: "fairtech-south-shields",
+    imeiBody: "35000000000002",
+  },
+  {
+    model: "pixel-9",
+    storageGb: 128,
+    colour: "Obsidian",
+    grade: "B",
+    batteryHealthPercent: 91,
+    pricePence: 32900,
+    storeSlug: "metrotech-north-shields",
+    imeiBody: "35000000000003",
+  },
+  {
+    model: "iphone-13",
+    storageGb: 128,
+    colour: "Midnight",
+    grade: "B",
+    batteryHealthPercent: 87,
+    pricePence: 25900,
+    storeSlug: "fairtech-south-shields",
+    imeiBody: "35000000000004",
+  },
+  {
+    model: "iphone-16",
+    storageGb: 128,
+    colour: "Ultramarine",
+    grade: "A",
+    batteryHealthPercent: 99,
+    pricePence: 59900,
+    storeSlug: "metrotech-north-shields",
+    imeiBody: "35000000000005",
+  },
+  {
+    model: "galaxy-a55",
+    storageGb: 128,
+    colour: "Awesome Navy",
+    grade: "C",
+    batteryHealthPercent: 88,
+    pricePence: 15900,
+    storeSlug: "fairtech-south-shields",
+    imeiBody: "35000000000006",
+  },
+];
