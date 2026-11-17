@@ -22,6 +22,13 @@ const serverEnvSchema = z
     TWILIO_AUTH_TOKEN: z.string().min(1).optional(),
     /** Sender: an E.164 number or a Messaging Service SID (MG…). */
     TWILIO_FROM: z.string().min(1).optional(),
+    /** Stripe secret key (sk_test_… or sk_live_…). Unset: a stand-in gateway (dev/tests only). */
+    STRIPE_SECRET_KEY: z
+      .string()
+      .regex(/^sk_(test|live)_/)
+      .optional(),
+    /** Signing secret of the webhook endpoint (whsec_…). */
+    STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
   })
   .refine((env) => !!env.AUTH_GOOGLE_ID === !!env.AUTH_GOOGLE_SECRET, {
     message: "Set both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET, or neither",
@@ -39,6 +46,8 @@ export const serverEnv = serverEnvSchema.parse({
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || undefined,
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || undefined,
   TWILIO_FROM: process.env.TWILIO_FROM || undefined,
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || undefined,
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || undefined,
 });
 
 export const isGoogleSignInEnabled = Boolean(serverEnv.AUTH_GOOGLE_ID);
@@ -60,7 +69,16 @@ export const smsEnabled = Boolean(
   serverEnv.TWILIO_ACCOUNT_SID && serverEnv.TWILIO_AUTH_TOKEN && serverEnv.TWILIO_FROM,
 );
 
+/** Real Stripe payments. Without a secret key a stand-in gateway is used (never in production). */
+export const stripeEnabled = Boolean(serverEnv.STRIPE_SECRET_KEY);
+
 if (process.env.VERCEL_ENV === "production") {
+  if (!stripeEnabled || !serverEnv.STRIPE_WEBHOOK_SECRET) {
+    throw new Error("STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are required in production");
+  }
+  if (serverEnv.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
+    throw new Error("Use a live Stripe key in production");
+  }
   if (!turnstileEnabled) throw new Error("TURNSTILE_SECRET_KEY is required in production");
   if (!smsEnabled) throw new Error("Twilio settings are required in production");
 }

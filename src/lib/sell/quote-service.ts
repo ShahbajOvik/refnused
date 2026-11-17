@@ -1,18 +1,11 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import {
-  brands,
-  customers,
-  deviceModels,
-  modelVariants,
-  payouts,
-  quotes,
-  stores,
-} from "@/db/schema";
+import { brands, deviceModels, modelVariants, payouts, quotes, stores } from "@/db/schema";
 import type { AppDb } from "@/db/types";
+import { findOrCreateCustomer } from "@/lib/customers";
 import { recordAudit, type RequestMeta } from "@/lib/audit";
 import { bankDetailsSchema, encryptBankDetails } from "@/lib/crypto/bank-details";
 import type { FieldCipher } from "@/lib/crypto/field-encryption";
@@ -139,22 +132,11 @@ export async function createQuote(
   const bank = encryptBankDetails(input.bank, options.cipher);
 
   const created = await db.transaction(async (tx) => {
-    // Find or create the customer by email (case-insensitive).
-    let [customer] = await tx
-      .select({ id: customers.id, name: customers.name, phone: customers.phone })
-      .from(customers)
-      .where(sql`lower(${customers.email}) = ${input.email}`);
-    if (!customer) {
-      [customer] = await tx
-        .insert(customers)
-        .values({ email: input.email, name: input.name, phone: input.phone })
-        .returning({ id: customers.id, name: customers.name, phone: customers.phone });
-    } else if (!customer.name || !customer.phone) {
-      await tx
-        .update(customers)
-        .set({ name: customer.name ?? input.name, phone: customer.phone ?? input.phone })
-        .where(eq(customers.id, customer.id));
-    }
+    const customer = await findOrCreateCustomer(tx as unknown as AppDb, {
+      email: input.email,
+      name: input.name,
+      phone: input.phone,
+    });
 
     // Retry on the (unlikely) chance of a duplicate reference.
     for (let attempt = 0; attempt < 5; attempt++) {

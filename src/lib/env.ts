@@ -13,6 +13,11 @@ const publicEnvSchema = z.object({
    * Public URL of the Cloudflare R2 media bucket (custom domain), no trailing
    * slash. Unset: media is served from /media in public/ (sample data only).
    */
+  /** Stripe publishable key (pk_…), for the Payment Element. */
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
+    .string()
+    .regex(/^pk_(test|live)_/)
+    .optional(),
   NEXT_PUBLIC_MEDIA_BASE_URL: z
     .url({ protocol: /^https?$/ })
     .transform((url) => url.replace(/\/+$/, ""))
@@ -23,4 +28,5 @@ export const publicEnv = publicEnvSchema.parse({
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined,
   NEXT_PUBLIC_MEDIA_BASE_URL: process.env.NEXT_PUBLIC_MEDIA_BASE_URL || undefined,
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || undefined,
 });

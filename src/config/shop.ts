@@ -45,7 +45,8 @@ export const CLICK_AND_COLLECT = {
 };
 
 export const RETURN_POLICY = {
-  days: 30,
+  /** Matches RETURN_WINDOW_DAYS in src/lib/orders/requests.ts. */
+  days: 14,
   freeReturns: true,
   byMail: true,
   inStore: true,

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   char,
   check,
@@ -78,6 +79,15 @@ export const products = pgTable(
     sourceQuoteId: uuid().references(() => quotes.id, { onDelete: "set null" }),
     listedAt: timestamp({ withTimezone: true }),
     soldAt: timestamp({ withTimezone: true }),
+    /**
+     * Checkout hold: the unit is kept for this pending order until
+     * checkoutHoldUntil (15 minutes, longer while a payment is processing).
+     * Expired holds can be taken over by another checkout.
+     */
+    checkoutHoldOrderId: uuid().references((): AnyPgColumn => orders.id, {
+      onDelete: "set null",
+    }),
+    checkoutHoldUntil: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -90,6 +100,10 @@ export const products = pgTable(
     check("products_battery_check", sql`${t.batteryHealthPercent} between 0 and 100`),
     check("products_price_check", sql`${t.pricePence} > 0`),
     check("products_warranty_check", sql`${t.warrantyMonths} >= 0`),
+    check(
+      "products_hold_check",
+      sql`(${t.checkoutHoldOrderId} is null) = (${t.checkoutHoldUntil} is null)`,
+    ),
     check(
       "products_wipe_certificate_check",
       sql`${t.status} in ('draft', 'withdrawn') or ${t.dataWipeCertificateKey} is not null`,
@@ -106,29 +120,52 @@ export const orders = pgTable(
     /** Null for guest checkout. */
     customerId: uuid().references(() => customers.id, { onDelete: "restrict" }),
     email: text().notNull(),
+    contactName: text(),
+    /** E.164, e.g. +447700900123. */
+    contactPhone: text(),
     status: orderStatus().notNull().default("pending_payment"),
     fulfilmentMethod: fulfilmentMethod().notNull(),
+    /** Key from DELIVERY_OPTIONS in src/config/shop.ts (delivery orders only). */
+    deliveryOptionKey: text(),
     collectionStoreId: uuid().references(() => stores.id, { onDelete: "restrict" }),
     shippingAddress: jsonb().$type<PostalAddress>(),
     subtotalPence: integer().notNull(),
     deliveryPence: integer().notNull().default(0),
     discountPence: integer().notNull().default(0),
+    /** Trade-in quote whose value is taken off this order. */
+    tradeInQuoteId: uuid().references(() => quotes.id, { onDelete: "restrict" }),
+    tradeInCreditPence: integer().notNull().default(0),
     totalPence: integer().notNull(),
     currency: char({ length: 3 }).notNull().default("GBP"),
     stripeCheckoutSessionId: text().unique("orders_stripe_checkout_session_id_unique"),
+    /** SHA-256 of the secret token in the customer's order link. */
+    accessTokenHash: text().unique("orders_access_token_hash_unique"),
+    /** End of the 15-minute checkout hold on the units. */
+    expiresAt: timestamp({ withTimezone: true }),
+    /** When the payment succeeded (set from the Stripe webhook only). */
     placedAt: timestamp({ withTimezone: true }),
+    /** Dispatched or collected; the returns window starts from here. */
+    fulfilledAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [
     index("orders_customer_idx").on(t.customerId),
     index("orders_status_idx").on(t.status),
+    // A trade-in can be credited to one live order (cancelled ones free it).
+    uniqueIndex("orders_trade_in_quote_unique")
+      .on(t.tradeInQuoteId)
+      .where(sql`${t.status} <> 'cancelled'`),
     check(
       "orders_amounts_check",
-      sql`${t.subtotalPence} >= 0 and ${t.deliveryPence} >= 0 and ${t.discountPence} >= 0 and ${t.totalPence} >= 0`,
+      sql`${t.subtotalPence} >= 0 and ${t.deliveryPence} >= 0 and ${t.discountPence} >= 0 and ${t.tradeInCreditPence} >= 0 and ${t.totalPence} >= 0`,
     ),
     check(
       "orders_total_check",
-      sql`${t.totalPence} = ${t.subtotalPence} + ${t.deliveryPence} - ${t.discountPence}`,
+      sql`${t.totalPence} = ${t.subtotalPence} + ${t.deliveryPence} - ${t.discountPence} - ${t.tradeInCreditPence}`,
+    ),
+    check(
+      "orders_trade_in_check",
+      sql`(${t.tradeInQuoteId} is null) = (${t.tradeInCreditPence} = 0)`,
     ),
     check(
       "orders_fulfilment_check",
