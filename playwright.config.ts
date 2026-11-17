@@ -3,6 +3,19 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
 
+/*
+ * Payments in e2e tests. By default there are no Stripe keys: checkout uses
+ * the stand-in gateway and the tests play Stripe by sending signed webhooks.
+ * To test against Stripe test mode (the real Payment Element), set
+ * E2E_STRIPE_SECRET_KEY=sk_test_… and E2E_STRIPE_PUBLISHABLE_KEY=pk_test_….
+ */
+const stripeSecretKey = process.env.E2E_STRIPE_SECRET_KEY ?? "";
+if (stripeSecretKey && !stripeSecretKey.startsWith("sk_test_")) {
+  throw new Error("E2E tests only run against Stripe test mode (sk_test_…)");
+}
+export const E2E_WEBHOOK_SECRET =
+  process.env.E2E_STRIPE_WEBHOOK_SECRET ?? "whsec_e2e_test_secret_not_real";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -17,15 +30,30 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
+    {
+      name: "desktop-chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /checkout\.spec\.ts/,
+    },
+    {
+      name: "mobile-chromium",
+      use: { ...devices["Pixel 7"] },
+      testIgnore: /checkout\.spec\.ts/,
+    },
+    // Purchases sell units, so they run after everything that counts stock.
+    {
+      name: "checkout",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /checkout\.spec\.ts/,
+      dependencies: ["desktop-chromium", "mobile-chromium"],
+    },
   ],
   webServer: {
     // Test against a production build so results reflect what ships.
     command: `npm run db:test-snapshot && npm run build && npm run start -- --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 240_000,
+    timeout: 420_000,
     // Test values: no real email, SMS or bot-check providers are called.
     env: {
       // In-process Postgres loaded from a seeded snapshot (see src/db/client.ts).
@@ -35,6 +63,9 @@ export default defineConfig({
       FIELD_ENCRYPTION_KEYS:
         process.env.FIELD_ENCRYPTION_KEYS ?? "k1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
       NEXT_PUBLIC_SITE_URL: baseURL,
+      STRIPE_SECRET_KEY: stripeSecretKey,
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.E2E_STRIPE_PUBLISHABLE_KEY ?? "",
+      STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
     },
   },
 });

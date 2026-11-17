@@ -31,10 +31,23 @@ export function createDatabase(
   return { db: db as unknown as AppDb, close: () => client.end({ timeout: 5 }) };
 }
 
-function createPgliteDatabase(snapshotPath: string) {
+type PgliteHandle = { db: AppDb; close: () => Promise<void> };
+
+/**
+ * One in-memory database per snapshot for the whole process. Next.js
+ * bundles route handlers and server actions separately, so each would
+ * otherwise load its own copy and not see the other's writes.
+ */
+const pgliteInstances = ((
+  globalThis as { __pgliteInstances?: Map<string, PgliteHandle> }
+).__pgliteInstances ??= new Map());
+
+function createPgliteDatabase(snapshotPath: string): PgliteHandle {
   if (process.env.VERCEL_ENV === "production") {
     throw new Error("pglite:// databases are for tests only");
   }
+  const existing = pgliteInstances.get(snapshotPath);
+  if (existing) return existing;
   // Loaded at runtime with a computed name so bundlers and file tracing
   // never pull PGlite (a dev dependency) into production builds.
   const load = process.getBuiltinModule("node:module").createRequire(`${process.cwd()}/`);
@@ -47,5 +60,13 @@ function createPgliteDatabase(snapshotPath: string) {
 
   const client = new PGlite({ loadDataDir: new Blob([readFileSync(snapshotPath)]) });
   const db = drizzlePglite({ client, schema, casing: "snake_case" });
-  return { db: db as unknown as AppDb, close: () => client.close() };
+  const handle: PgliteHandle = {
+    db: db as unknown as AppDb,
+    close: async () => {
+      pgliteInstances.delete(snapshotPath);
+      await client.close();
+    },
+  };
+  pgliteInstances.set(snapshotPath, handle);
+  return handle;
 }

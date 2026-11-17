@@ -114,6 +114,40 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
 - **Photos** are R2 object keys in `products.photos`, served from `NEXT_PUBLIC_MEDIA_BASE_URL`.
   Without it they come from `public/media` (sample photos: `npm run media:samples`).
 
+## Basket and checkout
+
+`/basket` → `/checkout` → Stripe Payment Element → `/orders/[token]` (private order page).
+
+- **Basket**: a cookie of unit ids only. Prices, delivery and trade-in credit are always worked
+  out on the server (`src/lib/orders/totals.ts`), and the full total is shown before payment.
+- **Fulfilment**: home delivery (options in `src/config/shop.ts`) or reserve and collect in store
+  (paid online, collected with photo ID).
+- **Trade-in credit**: enter an open quote's reference (same email as the quote). Its value comes
+  off the order; any part that would take the card payment below Stripe's minimum is paid to the
+  customer's bank as usual.
+- **Holds**: "Continue to payment" creates the order and holds the phones for 15 minutes. Expired
+  holds can be taken by another customer only after their payment intent is cancelled; payments
+  still processing (e.g. Klarna) keep their hold.
+- **Payments**: orders become paid only from the Stripe webhook (`/api/stripe/webhook`), which
+  verifies the signature, records each event id (idempotent), checks amount and currency, and
+  refunds automatically if a unit was sold elsewhere. Then the confirmation email and SMS go out.
+- **Returns and warranty**: from the order page, a return within 14 days (from dispatch or
+  collection) or a warranty claim within the unit's warranty, one open request per phone.
+
+### Stripe setup
+
+1. Set `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`
+   (test keys outside production).
+2. In the Stripe Dashboard, enable cards, Apple Pay, Google Pay and Klarna, and register the site's
+   domain for Apple Pay.
+3. Add a webhook endpoint for `<site>/api/stripe/webhook` with `payment_intent.succeeded`,
+   `payment_intent.processing`, `payment_intent.payment_failed`, `payment_intent.canceled` and
+   `charge.refunded`. Locally: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+
+Without Stripe keys (development and tests) a stand-in gateway is used and no payment form is
+shown; orders are still only paid by a signed webhook. E2E tests run against Stripe test mode when
+`E2E_STRIPE_SECRET_KEY` and `E2E_STRIPE_PUBLISHABLE_KEY` are set.
+
 ## Authentication
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.

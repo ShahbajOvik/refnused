@@ -99,6 +99,14 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 - Trade-in-and-save shows an "up to" estimate from `trade_in_prices`. It is not an offer; offers only come from the sell flow.
 - Revalidate the `products` cache tag (or `product:<id>`) whenever a unit is listed, reserved, sold or repriced.
 
+### Checkout and orders
+
+- Totals come only from `calculateOrderTotals` (`src/lib/orders/totals.ts`) fed by database prices. The PaymentIntent amount is the server's total; never accept an amount from the browser.
+- Only the Stripe webhook (`src/lib/orders/webhook-service.ts`) marks an order paid. Verify the signature, record the event id in `stripe_events` in the same transaction, and check amount and currency.
+- Units are held for 15 minutes per checkout (`products.checkout_hold_*`). Cancel a held order's payment intent before taking its units; never take units whose payment is processing.
+- Order links use a secret token: store only its hash (and the encrypted copy for emails). Order pages are `noindex` with `no-referrer`.
+- The basket cookie holds unit ids only. Don't put prices or totals in it.
+
 ### Auth
 
 - Customers and staff use separate Auth.js instances (`src/auth/customer.ts` at `/api/auth`, `src/auth/staff.ts` at `/api/staff-auth`) with separate tables and cookies. Never mix them.
