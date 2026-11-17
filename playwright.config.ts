@@ -22,14 +22,15 @@ export default defineConfig({
   ],
   webServer: {
     // Test against a production build so results reflect what ships.
-    command: `npm run build && npm run start -- --port ${PORT}`,
+    command: `npm run db:test-snapshot && npm run build && npm run start -- --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
-    // Dummy values so the app boots without real services. The e2e tests
-    // only exercise paths that don't reach the database.
+    // Test values: no real email, SMS or bot-check providers are called.
     env: {
-      DATABASE_URL: process.env.DATABASE_URL ?? "postgres://e2e:e2e@127.0.0.1:5432/e2e",
+      // In-process Postgres loaded from a seeded snapshot (see src/db/client.ts).
+      DATABASE_URL:
+        process.env.E2E_DATABASE_URL ?? `pglite://${process.cwd()}/.test-db/snapshot.tar.gz`,
       AUTH_SECRET: process.env.AUTH_SECRET ?? "e2e-secret-e2e-secret-e2e-secret-e2e",
       FIELD_ENCRYPTION_KEYS:
         process.env.FIELD_ENCRYPTION_KEYS ?? "k1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",

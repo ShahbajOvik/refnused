@@ -46,3 +46,6 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# PGlite test snapshot (npm run db:test-snapshot)
+/.test-db/

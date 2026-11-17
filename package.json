@@ -25,7 +25,8 @@
     "staff:create": "node --env-file-if-exists=.env.local --import tsx scripts/staff-create.mts",
     "secret:generate": "node -e \"console.log(require('node:crypto').randomBytes(32).toString('base64url'))\"",
     "model:placeholder": "node --import tsx scripts/generate-placeholder-phone.mts",
-    "hero:poster": "node --import tsx scripts/render-hero-poster.mts"
+    "hero:poster": "node --import tsx scripts/render-hero-poster.mts",
+    "db:test-snapshot": "node --import tsx scripts/create-test-db.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
