@@ -75,6 +75,37 @@ Bank details on payouts are encrypted with AES-256-GCM before they reach the dat
 last 4 digits of the account number are stored in clear. To rotate keys, put a new key first in
 `FIELD_ENCRYPTION_KEYS` and keep the old ones until existing rows are re-encrypted.
 
+## Authentication
+
+Auth.js v5, with two separate instances so customer and staff sessions can never be confused.
+
+|               | Customers                               | Staff                                              |
+| ------------- | --------------------------------------- | -------------------------------------------------- |
+| Sign in       | `/sign-in`: magic link, Google, passkey | `/admin/sign-in`: magic link or Google, then 2FA   |
+| Second factor | Not required                            | Passkey or authenticator app (TOTP), every sign-in |
+| Session       | 30 days, rolling                        | 30 minutes idle, 12 hours maximum                  |
+| Accounts      | Created on first sign-in                | Created by an owner only                           |
+| Protected     | `/account`                              | `/admin`, by role (see `src/auth/roles.ts`)        |
+
+**First owner.** After migrating, create the first owner:
+
+```bash
+npm run staff:create -- --email you@example.co.uk --name "Your Name" --role owner
+```
+
+Then sign in at `/admin/sign-in`. You'll be asked to set up a passkey or authenticator app.
+Owners add other staff, change roles, reset lost 2FA and deactivate accounts at `/admin/staff`.
+
+**Roles.** `owner` (everything, including staff), `manager` (operations, prices, payouts,
+refunds, content, audit log), `staff` (trade-ins, inspections, stock, orders) and
+`content_editor` (content and reviews).
+
+**Local development.** Without `AUTH_RESEND_KEY`, magic links are printed in the terminal running
+`npm run dev`. Passkeys work on `http://localhost`.
+
+**Audit log.** Sign-ins, sign-outs, denied sign-ins, 2FA success/failure/lockout, idle timeouts,
+permission denials and staff changes are written to `audit_log`.
+
 ## Design system
 
 - **Colour:** tokens in [src/app/globals.css](src/app/globals.css). One brand accent

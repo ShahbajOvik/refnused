@@ -84,6 +84,16 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 - Bank details are encrypted at the application level (`src/lib/crypto/bank-details.ts`). Never log, return to the client, or write to `audit_log` decrypted values.
 - Write an `audit_log` entry for price changes, quote/inspection decisions, payouts, refunds and staff/role changes.
 
+### Auth
+
+- Customers and staff use separate Auth.js instances (`src/auth/customer.ts` at `/api/auth`, `src/auth/staff.ts` at `/api/staff-auth`) with separate tables and cookies. Never mix them.
+- Every `/admin` page calls `requireStaff(permission)`, and every admin server action is wrapped in `staffAction(permission, zodSchema, handler)`. The proxy (`src/proxy.ts`) is a first check only, never the only one.
+- Permissions per role live in `src/auth/roles.ts`. Add each new admin section to `ADMIN_ROUTE_PERMISSIONS` and give its actions the matching permission.
+- Staff must pass a passkey or TOTP step after the first sign-in factor, and are signed out after 30 minutes idle. Never add a path around this.
+- Staff accounts are created only by an owner (`/admin/staff`) or `npm run staff:create`, never by signing in.
+- Customer passkeys can only be added while signed in. Never allow creating an account from a passkey alone.
+- Don't set `AUTH_URL`; it would override both instances' base paths.
+
 ### Testing
 
 - Write tests for pricing, checkout and auth logic. Cover edge cases (grade boundaries, rounding, discounts, invalid input, unauthorised access).

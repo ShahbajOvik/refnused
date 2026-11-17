@@ -26,5 +26,14 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
+    // Dummy values so the app boots without real services. The e2e tests
+    // only exercise paths that don't reach the database.
+    env: {
+      DATABASE_URL: process.env.DATABASE_URL ?? "postgres://e2e:e2e@127.0.0.1:5432/e2e",
+      AUTH_SECRET: process.env.AUTH_SECRET ?? "e2e-secret-e2e-secret-e2e-secret-e2e",
+      FIELD_ENCRYPTION_KEYS:
+        process.env.FIELD_ENCRYPTION_KEYS ?? "k1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      NEXT_PUBLIC_SITE_URL: baseURL,
+    },
   },
 });
