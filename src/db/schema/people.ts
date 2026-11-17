@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 import { staffRole, timestamps } from "./_shared";
 import { stores } from "./stores";
@@ -25,17 +34,31 @@ export const customers = pgTable(
   (t) => [uniqueIndex("customers_email_lower_idx").on(sql`lower(${t.email})`)],
 );
 
+/**
+ * Staff accounts. Pre-provisioned only (`npm run staff:create`): sign-in
+ * never creates a staff user. Columns name/email/emailVerified/image are
+ * what the staff Auth.js instance's adapter needs.
+ */
 export const staffUsers = pgTable(
   "staff_users",
   {
     id: uuid().primaryKey().defaultRandom(),
     email: text().notNull(),
     name: text().notNull(),
+    emailVerified: timestamp({ withTimezone: true }),
+    image: text(),
     role: staffRole().notNull(),
     /** Home store. Null for head-office staff. */
     storeId: uuid().references(() => stores.id, { onDelete: "set null" }),
-    /** Null when the account signs in only through SSO / magic link. */
-    passwordHash: text(),
+    /**
+     * TOTP secret, encrypted with src/lib/crypto/field-encryption.ts
+     * (context "staff_users.totp_secret"). Set during setup; only trusted
+     * once totpEnabledAt is set.
+     */
+    totpSecretEncrypted: text(),
+    totpEnabledAt: timestamp({ withTimezone: true }),
+    /** Last accepted TOTP time step, to block code replay. */
+    totpLastUsedStep: integer(),
     isActive: boolean().notNull().default(true),
     lastLoginAt: timestamp({ withTimezone: true }),
     ...timestamps,

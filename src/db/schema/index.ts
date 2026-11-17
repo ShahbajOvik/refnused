@@ -1,5 +1,6 @@
 export * from "./_shared";
 export * from "./audit";
+export * from "./auth";
 export * from "./catalogue";
 export * from "./people";
 export * from "./relations";

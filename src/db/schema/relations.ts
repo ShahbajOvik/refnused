@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 
+import { staffPasskeys, staffSessions } from "./auth";
 import { brands, deviceModels, modelVariants, tradeInPrices } from "./catalogue";
 import { customers, staffUsers } from "./people";
 import { orderItems, orders, payments, priceAlerts, products, reviews } from "./shop";
@@ -50,6 +51,16 @@ export const customersRelations = relations(customers, ({ many }) => ({
 export const staffUsersRelations = relations(staffUsers, ({ one, many }) => ({
   store: one(stores, { fields: [staffUsers.storeId], references: [stores.id] }),
   inspections: many(inspections),
+  sessions: many(staffSessions),
+  passkeys: many(staffPasskeys),
+}));
+
+export const staffSessionsRelations = relations(staffSessions, ({ one }) => ({
+  staff: one(staffUsers, { fields: [staffSessions.userId], references: [staffUsers.id] }),
+}));
+
+export const staffPasskeysRelations = relations(staffPasskeys, ({ one }) => ({
+  staff: one(staffUsers, { fields: [staffPasskeys.staffId], references: [staffUsers.id] }),
 }));
 
 export const quotesRelations = relations(quotes, ({ one, many }) => ({

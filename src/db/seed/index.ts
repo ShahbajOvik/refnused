@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm";
-import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { AppDb } from "@/db/types";
 
 import { stores as storeConfig } from "@/config/site";
 import * as schema from "@/db/schema";
 
 import { sampleTradeInPence, seedBrands, seedModels } from "./catalogue";
 
-export type SeedDb = PgDatabase<PgQueryResultHKT, typeof schema>;
+export type SeedDb = AppDb;
 
 const TRADE_IN_GRADES = schema.tradeInGrade.enumValues;
 

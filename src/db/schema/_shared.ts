@@ -28,7 +28,17 @@ export const productGrade = pgEnum("product_grade", ["A", "B", "C"]);
 /** Condition of a phone we buy. Same A/B/C scale as the shop, plus faulty. */
 export const tradeInGrade = pgEnum("trade_in_grade", ["A", "B", "C", "faulty"]);
 
-export const staffRole = pgEnum("staff_role", ["admin", "manager", "inspector", "store_staff"]);
+/**
+ * Staff roles. Permissions per role live in src/auth/roles.ts.
+ * owner: everything, including staff management.
+ * manager: day-to-day operations, prices, payouts, refunds.
+ * staff: trade-ins, inspections, stock and orders.
+ * content_editor: site content and reviews only.
+ */
+export const staffRole = pgEnum("staff_role", ["owner", "manager", "staff", "content_editor"]);
+
+/** How a staff session completed its second factor. */
+export const mfaMethod = pgEnum("mfa_method", ["passkey", "totp"]);
 
 export const quoteStatus = pgEnum("quote_status", [
   "offered", // instant quote shown, not yet accepted
