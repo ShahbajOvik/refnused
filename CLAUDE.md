@@ -90,6 +90,15 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 - Change questions and deductions in the database, not in code. Keep the pricing engine's tests passing for any change to its rules.
 - Every public form that writes data needs Zod validation, rate limiting (`src/lib/security/rate-limit.ts`) and Turnstile.
 
+### Shop
+
+- A product is one physical unit, addressed by its permanent `products.slug` (`src/lib/shop/slug.ts`). Never reuse or change a slug.
+- Listing filters are URL search params, parsed with `parseShopFilters` and written with `serializeShopFilters` (`src/lib/shop/filters.ts`). Filter, sort and paginate in the database, never in the browser.
+- Only `listed` units appear in listings and can be bought. `reserved` and `sold` units keep their page (with notify-me and similar phones); other statuses are not found.
+- Delivery, collection and returns terms come from `src/config/shop.ts`, which also feeds the Product JSON-LD. Don't repeat them in components.
+- Trade-in-and-save shows an "up to" estimate from `trade_in_prices`. It is not an offer; offers only come from the sell flow.
+- Revalidate the `products` cache tag (or `product:<id>`) whenever a unit is listed, reserved, sold or repriced.
+
 ### Auth
 
 - Customers and staff use separate Auth.js instances (`src/auth/customer.ts` at `/api/auth`, `src/auth/staff.ts` at `/api/staff-auth`) with separate tables and cookies. Never mix them.

@@ -96,6 +96,24 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
 
   `pglite://` is for tests and CI only (refused on Vercel production). E2E tests use it automatically.
 
+## Shop
+
+`/shop` and `/shop/[brand]` list refurbished units; each unit has its own page at
+`/shop/[brand]/[slug]`, and `/compare?items=a,b,c` compares up to three.
+
+- **Filters live in the URL** (`?brand=apple,samsung&grade=A&storage=128&min=200&max=500&battery=90&store=…&sort=price-asc&page=2`),
+  so any filtered page can be shared. Parsing (`src/lib/shop/filters.ts`) drops bad values instead
+  of erroring, and filtering, facet counts, sorting and pagination all run in the database
+  (`src/lib/shop/catalogue.ts`). Only the plain listings are indexed; filtered pages are `noindex`.
+- **Product pages** show photos of the actual unit, a lazy-loaded 3D viewer (`View in 3D`), grade,
+  battery health, warranty, delivery and click-and-collect, stock per store, a trade-in-and-save
+  estimate and similar phones, with `Product` + `Offer` JSON-LD. Delivery, collection and returns
+  terms are in `src/config/shop.ts` (sample values).
+- **Sold and reserved units** keep their page, with a "notify me" form (`stock_alerts`) and similar
+  phones in stock. Only `draft`, `withdrawn` and `returned` units are hidden.
+- **Photos** are R2 object keys in `products.photos`, served from `NEXT_PUBLIC_MEDIA_BASE_URL`.
+  Without it they come from `public/media` (sample photos: `npm run media:samples`).
+
 ## Authentication
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.
