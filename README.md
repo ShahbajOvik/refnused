@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RefurbednUsed
 
-## Getting Started
+UK site for selling used phones (instant trade-in quotes), buying graded refurbished phones with
+warranty, and finding our stores. See [CLAUDE.md](CLAUDE.md) for the project rules.
 
-First, run the development server:
+## Getting started
+
+Requires Node.js 22 or later.
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. The design system lives at http://localhost:3000/styleguide.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command             | What it does                                                  |
+| ------------------- | ------------------------------------------------------------- |
+| `npm run dev`       | Start the dev server                                          |
+| `npm run build`     | Production build                                              |
+| `npm run check`     | Typecheck, lint, format check and unit tests                  |
+| `npm run typecheck` | Generate route types and run `tsc`                            |
+| `npm run lint`      | ESLint                                                        |
+| `npm run format`    | Prettier (sorts Tailwind classes too)                         |
+| `npm test`          | Vitest unit tests                                             |
+| `npm run test:e2e`  | Playwright tests (builds and serves the app first)            |
+| `npm run budget`    | Checks initial JS per page is under 200KB (run after a build) |
 
-## Learn More
+First time running e2e tests: `npx playwright install chromium`.
 
-To learn more about Next.js, take a look at the following resources:
+## Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/                 Routes (App Router). Server Components by default.
+    styleguide/        Design system reference page (noindex)
+  components/
+    ui/                Base components (shadcn/ui, customised)
+    layout/            Header, footer, mobile menu, logo
+    seo/               JSON-LD and breadcrumbs
+    theme/             Light/dark theme provider and toggle
+  config/site.ts       Brand, navigation, stores and links (single source)
+  lib/                 Formatting, grades, SEO helpers, env validation
+e2e/                   Playwright tests, including axe WCAG 2.2 AA scans
+scripts/               Tooling scripts
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Design system
 
-## Deploy on Vercel
+- **Colour:** tokens in [src/app/globals.css](src/app/globals.css). One brand accent
+  (`primary`) for actions; everything else neutral. Grade A/B/C have their own semantic tokens.
+  All text pairs meet WCAG AA in light and dark.
+- **Type:** Geist via `next/font`.
+- **Spacing:** Tailwind's 4px scale, plus `page-container`, `max-w-page`, `--spacing-section`
+  and `--spacing-header` layout tokens.
+- **Radius:** base 12px (`rounded-lg`), with sm/md/xl/2xl steps.
+- **Components:** Button, Card, Badge and GradeBadge, Input, Select, Dialog, Sheet, Toast (Sonner),
+  Skeleton, Breadcrumbs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Add new shadcn components with `npx shadcn@latest add <name>`, then align sizes with the existing
+ones (40px default control height).
