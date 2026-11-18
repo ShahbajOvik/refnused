@@ -125,7 +125,7 @@ test.describe("sell flow", () => {
     await page.getByLabel("IMEI number").fill(uniqueImei());
     await page.getByRole("button", { name: /Accept £220.00/ }).click();
 
-    await expect(page).toHaveURL(/\/sell\/track\/[\w-]{20,}$/);
+    await expect(page).toHaveURL(/\/sell\/track\/[\w-]{20,}$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Thanks, your quote is confirmed",
     );

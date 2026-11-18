@@ -297,6 +297,33 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
       .onConflictDoNothing();
   }
 
+  // Store details for the store pages (test data only; real hours are set in /admin/stores).
+  const weekday = { opens: "09:00", closes: "17:30" };
+  await db
+    .update(schema.stores)
+    .set({
+      openingHours: {
+        mon: weekday,
+        tue: weekday,
+        wed: weekday,
+        thu: weekday,
+        fri: weekday,
+        sat: { opens: "10:00", closes: "16:00" },
+        sun: null,
+      },
+      parkingInfo: "Demo parking text: on-street pay-and-display parking nearby.",
+    })
+    .where(eq(schema.stores.slug, "metrotech-north-shields"));
+  await db.insert(schema.reviews).values({
+    displayName: "Demo reviewer",
+    storeId: store.id,
+    rating: 5,
+    title: "Demo review",
+    body: "Test data for the store page. Not a real review.",
+    status: "published",
+    publishedAt: new Date(now.getTime() - 2 * DAY),
+  });
+
   // Sam: work for the admin tests.
   await quote(DEMO.admin, "Sam Admin"); // waiting for the phone
   await quote(DEMO.admin, "Sam Admin"); // a second one, to approve
