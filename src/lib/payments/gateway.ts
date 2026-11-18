@@ -28,8 +28,8 @@ export type PaymentGateway = {
    * must keep its units.
    */
   cancelPaymentIntent(id: string): Promise<"canceled" | "not_cancelable">;
-  /** Full refund of a payment. */
-  refund(paymentIntentId: string, idempotencyKey: string): Promise<void>;
+  /** Refunds a payment: in full, or `amountPence` of it. */
+  refund(paymentIntentId: string, idempotencyKey: string, amountPence?: number): Promise<void>;
 };
 
 export function createStripeGateway(secretKey: string): PaymentGateway {
@@ -69,8 +69,11 @@ export function createStripeGateway(secretKey: string): PaymentGateway {
         throw error;
       }
     },
-    async refund(paymentIntentId, idempotencyKey) {
-      await stripe.refunds.create({ payment_intent: paymentIntentId }, { idempotencyKey });
+    async refund(paymentIntentId, idempotencyKey, amountPence) {
+      await stripe.refunds.create(
+        { payment_intent: paymentIntentId, ...(amountPence ? { amount: amountPence } : {}) },
+        { idempotencyKey },
+      );
     },
   };
 }

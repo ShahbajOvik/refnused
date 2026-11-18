@@ -85,7 +85,7 @@ export type OrderView = {
 };
 
 /** Who is asking for an order: the holder of its private link, or the signed-in customer. */
-export type OrderOwner = { token: string } | { customerId: string };
+export type OrderOwner = { token: string } | { customerId: string } | { orderId: string };
 
 function ownerCondition(owner: OrderOwner): SQL | null {
   if ("token" in owner) {
@@ -93,6 +93,7 @@ function ownerCondition(owner: OrderOwner): SQL | null {
       ? eq(orders.accessTokenHash, hashAccessToken(owner.token))
       : null;
   }
+  if ("orderId" in owner) return eq(orders.id, owner.orderId);
   return eq(orders.customerId, owner.customerId);
 }
 
@@ -103,6 +104,16 @@ export async function getOrderByAccessToken(
   now: Date = new Date(),
 ): Promise<OrderView | null> {
   const [order] = await loadOrderViews(db, { token }, now, { limit: 1 });
+  return order ?? null;
+}
+
+/** One order by id, for staff (admin pages check permissions). */
+export async function getOrderById(
+  db: AppDb,
+  orderId: string,
+  now: Date = new Date(),
+): Promise<OrderView | null> {
+  const [order] = await loadOrderViews(db, { orderId }, now, { limit: 1 });
   return order ?? null;
 }
 
