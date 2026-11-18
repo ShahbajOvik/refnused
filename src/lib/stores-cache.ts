@@ -5,7 +5,8 @@ import { cacheLife, cacheTag } from "next/cache";
 import { stores as configStores } from "@/config/site";
 import { db } from "@/db";
 
-import { listPublicStores, type PublicStore } from "./stores";
+import type { PublicStore } from "./stores";
+import { listPublicStores } from "./stores.server";
 
 async function cachedStores(): Promise<PublicStore[]> {
   "use cache";

@@ -1,9 +1,5 @@
-import { asc, eq } from "drizzle-orm";
-
 import type { Store } from "@/config/site";
-import { stores } from "@/db/schema";
 import type { DayOfWeek, OpeningHours } from "@/db/schema/stores";
-import type { AppDb } from "@/db/types";
 
 /*
  * Stores, from the database (edited in /admin/stores). src/config/site.ts
@@ -68,23 +64,5 @@ export function formatOpeningHours(
   return groups.map((g) => ({
     days: g.from === g.to ? DAYS[g.from]!.short : `${DAYS[g.from]!.short}–${DAYS[g.to]!.short}`,
     hours: g.text,
-  }));
-}
-
-export async function listPublicStores(db: AppDb): Promise<PublicStore[]> {
-  const rows = await db
-    .select()
-    .from(stores)
-    .where(eq(stores.isActive, true))
-    .orderBy(asc(stores.name), asc(stores.town));
-  return rows.map((s) => ({
-    slug: s.slug,
-    name: s.name,
-    address: { street: s.street, town: s.town, postcode: s.postcode },
-    phone: s.phone,
-    phoneDisplay: ukPhoneDisplay(s.phone),
-    openingHours: s.openingHours,
-    latitude: s.latitude,
-    longitude: s.longitude,
   }));
 }

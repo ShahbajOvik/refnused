@@ -1,7 +1,17 @@
-import { staffRole } from "@/db/schema/_shared";
+import type { staffRole } from "@/db/schema/_shared";
 
-export const STAFF_ROLES = staffRole.enumValues;
+/*
+ * A plain list, not staffRole.enumValues: this module is used by client
+ * components, and importing the schema would bundle drizzle-orm. The type
+ * check below fails the build if the list and the database enum differ.
+ */
+export const STAFF_ROLES = ["owner", "manager", "staff", "content_editor"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
+
+type DbStaffRole = (typeof staffRole.enumValues)[number];
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const rolesMatchDatabase: Same<StaffRole, DbStaffRole> = true;
+void rolesMatchDatabase;
 
 export const ROLE_LABELS: Record<StaffRole, string> = {
   owner: "Owner",
