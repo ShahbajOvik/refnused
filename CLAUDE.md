@@ -127,8 +127,9 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 ### Admin
 
 - Admin services live in `src/lib/admin/` and take `db` as an argument; pages and actions stay thin.
-- Every admin write records an `audit_log` entry in the same transaction (prices, inspections,
-  payouts, products, orders, refunds, requests, stores, staff).
+- Every admin write records an `audit_log` entry in the same transaction as the change (prices,
+  inspections, payouts, products, orders, requests, stores, staff). Refunds are audited when
+  requested from Stripe; the webhook then updates the order.
 - Staff uploads go through `/admin/upload` (`src/lib/storage/uploads.ts`): check content, re-encode
   photos (strips EXIF/GPS), certificates to the private bucket only.
 - Stores are edited in `/admin/stores` and read with `loadPublicStores()` (cache tag `stores`);
