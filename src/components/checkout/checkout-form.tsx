@@ -3,7 +3,7 @@
 import { LockIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { cloneElement, useId, useRef, useState, useTransition } from "react";
+import { cloneElement, useEffect, useId, useRef, useState, useTransition } from "react";
 
 import {
   previewCheckoutAction,
@@ -113,6 +113,12 @@ export function CheckoutForm({
   const [pending, startTransition] = useTransition();
   const [pricing, startPricing] = useTransition();
 
+  // Move focus to the payment step once it has rendered.
+  const paymentOrder = payment?.orderNumber;
+  useEffect(() => {
+    if (paymentOrder) paymentHeading.current?.focus();
+  }, [paymentOrder]);
+
   const fe = (path: string) => fieldErrors[path]?.[0];
   const emailValue = () =>
     (formRef.current?.elements.namedItem("email") as HTMLInputElement | null)?.value ?? "";
@@ -187,7 +193,6 @@ export function CheckoutForm({
             : {}),
         },
       });
-      requestAnimationFrame(() => paymentHeading.current?.focus());
     });
   }
 
