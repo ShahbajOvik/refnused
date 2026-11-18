@@ -35,6 +35,7 @@ const adapter: Adapter = {
 /**
  * Staff authentication, first factor only: magic link or Google.
  * Served from /api/staff-auth with its own cookies and session table.
+ * Password sign-in is the third first factor, in src/auth/staff-password.ts.
  *
  * After this, the session must complete a second factor (passkey or TOTP)
  * at /admin/verify before it can reach /admin. That, the 30-minute idle

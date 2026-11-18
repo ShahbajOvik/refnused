@@ -23,6 +23,7 @@
     "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/db-seed.mts",
     "key:generate": "node -e \"console.log('k1:' + require('node:crypto').randomBytes(32).toString('base64'))\"",
     "staff:create": "node --env-file-if-exists=.env.local --import tsx scripts/staff-create.mts",
+    "staff:set-password": "node --env-file-if-exists=.env.local --import tsx scripts/staff-set-password.mts",
     "secret:generate": "node -e \"console.log(require('node:crypto').randomBytes(32).toString('base64url'))\"",
     "model:placeholder": "node --import tsx scripts/generate-placeholder-phone.mts",
     "hero:poster": "node --import tsx scripts/render-hero-poster.mts",

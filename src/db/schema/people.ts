@@ -52,6 +52,9 @@ export const staffUsers = pgTable(
     emailVerified: timestamp({ withTimezone: true }),
     image: text(),
     role: staffRole().notNull(),
+    /** scrypt hash (src/auth/password.ts). Null until the person sets a password. */
+    passwordHash: text(),
+    passwordChangedAt: timestamp({ withTimezone: true }),
     /** Home store. Null for head-office staff. */
     storeId: uuid().references(() => stores.id, { onDelete: "set null" }),
     /**

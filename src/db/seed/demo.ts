@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
+import { hashPassword } from "@/auth/password";
 import * as schema from "@/db/schema";
 import type { AppDb } from "@/db/types";
 import type { FieldCipher } from "@/lib/crypto/field-encryption";
@@ -28,6 +29,12 @@ export const DEMO_STAFF = {
   staff: { email: "demo.staff@example.co.uk", name: "Sid Staff", role: "staff" },
 } as const;
 export const DEMO_TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
+/** Demo staff who signs in with a password. Public test value: test data only. */
+export const DEMO_PASSWORD_STAFF = {
+  email: "demo.password@example.co.uk",
+  name: "Pat Password",
+  password: "demo password for tests",
+} as const;
 
 const DAY = 86_400_000;
 const perfect = {
@@ -296,6 +303,18 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
       })
       .onConflictDoNothing();
   }
+  await db
+    .insert(schema.staffUsers)
+    .values({
+      email: DEMO_PASSWORD_STAFF.email,
+      name: DEMO_PASSWORD_STAFF.name,
+      role: "staff",
+      passwordHash: await hashPassword(DEMO_PASSWORD_STAFF.password),
+      passwordChangedAt: now,
+      totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
+      totpEnabledAt: now,
+    })
+    .onConflictDoNothing();
 
   // Store details for the store pages (test data only; real hours are set in /admin/stores).
   const weekday = { opens: "09:00", closes: "17:30" };

@@ -71,6 +71,13 @@
       "when": 1794984015118,
       "tag": "0009_store_pages",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795015125195,
+      "tag": "0010_groovy_paladin",
+      "breakpoints": true
     }
   ]
 }
