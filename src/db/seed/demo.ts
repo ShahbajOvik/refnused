@@ -18,7 +18,16 @@ import { sampleTradeInPence } from "./catalogue";
 export const DEMO = {
   quotes: "demo.alex@example.co.uk",
   deletable: "demo.dee@example.co.uk",
+  /** Used by the admin tests (kept apart from the account tests' customers). */
+  admin: "demo.sam@example.co.uk",
 } as const;
+
+/** Demo staff for admin tests. TOTP secret is a public test value: test data only. */
+export const DEMO_STAFF = {
+  owner: { email: "demo.owner@example.co.uk", name: "Olivia Owner", role: "owner" },
+  staff: { email: "demo.staff@example.co.uk", name: "Sid Staff", role: "staff" },
+} as const;
+export const DEMO_TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
 
 const DAY = 86_400_000;
 const perfect = {
@@ -166,6 +175,9 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
     status: "paid" | "dispatched" | "ready_for_collection" | "completed";
   }) {
     const placedAt = new Date(now.getTime() - input.placedDaysAgo * DAY);
+    const shipped =
+      input.method === "delivery" &&
+      (input.status === "dispatched" || input.status === "completed");
     const [row] = await db
       .insert(schema.orders)
       .values({
@@ -195,8 +207,8 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
           input.status === "dispatched" || input.status === "completed"
             ? new Date(placedAt.getTime() + DAY)
             : null,
-        trackingCarrier: input.method === "delivery" ? "Royal Mail" : null,
-        trackingNumber: input.method === "delivery" ? "AB123456789GB" : null,
+        trackingCarrier: shipped ? "Royal Mail" : null,
+        trackingNumber: shipped ? "AB123456789GB" : null,
         readyForCollectionAt:
           input.status === "ready_for_collection" ? new Date(placedAt.getTime() + DAY / 4) : null,
         completedAt: input.status === "completed" ? new Date(placedAt.getTime() + 3 * DAY) : null,
@@ -269,5 +281,52 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
     type: "shop",
     modelId: model!.id,
     targetPricePence: 30000,
+  });
+
+  // Demo staff with two-step verification already set up.
+  for (const member of Object.values(DEMO_STAFF)) {
+    await db
+      .insert(schema.staffUsers)
+      .values({
+        email: member.email,
+        name: member.name,
+        role: member.role,
+        totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
+        totpEnabledAt: now,
+      })
+      .onConflictDoNothing();
+  }
+
+  // Sam: work for the admin tests.
+  await quote(DEMO.admin, "Sam Admin"); // waiting for the phone
+  await quote(DEMO.admin, "Sam Admin"); // a second one, to approve
+  const ready = await quote(DEMO.admin, "Sam Admin");
+  await inspect(ready.quoteId, null); // approved: payout ready
+  const [sam] = await db
+    .select({ id: schema.customers.id })
+    .from(schema.customers)
+    .where(eq(schema.customers.email, DEMO.admin));
+  await order({
+    customerId: sam!.id,
+    email: DEMO.admin,
+    number: "RU-900010",
+    productId: await soldUnit("iphone-15-128gb-black-demo10", 46900),
+    pricePence: 46900,
+    placedDaysAgo: 0,
+    method: "delivery",
+    status: "paid",
+  });
+  const [samOrder] = await db
+    .select({ id: schema.orders.id, itemId: schema.orderItems.id })
+    .from(schema.orders)
+    .innerJoin(schema.orderItems, eq(schema.orderItems.orderId, schema.orders.id))
+    .where(eq(schema.orders.orderNumber, "RU-900010"));
+  await db.insert(schema.orderRequests).values({
+    reference: "RU-R-DEMO10",
+    orderId: samOrder!.id,
+    orderItemId: samOrder!.itemId,
+    type: "return",
+    reason: "changed_mind",
+    description: "Ordered the wrong colour, sorry.",
   });
 }

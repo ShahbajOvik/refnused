@@ -86,8 +86,9 @@ describe("dashboard", () => {
       "North Shields",
     ]);
     expect(dashboard.stock.reduce((sum, s) => sum + s.listed, 0)).toBe(26);
-    // Demo orders: 3 days ago (£459) and 1 day ago (£449); 60 days ago excluded.
-    expect(dashboard.revenue!.last7DaysPence).toBe(45900 + 44900);
+    // Demo orders: today (£469), 3 days ago (£459) and 1 day ago (£449); 60 days ago excluded.
+    expect(dashboard.revenue!.todayPence).toBe(46900);
+    expect(dashboard.revenue!.last7DaysPence).toBe(46900 + 45900 + 44900);
     expect((await getDashboard(db, { includeRevenue: false })).revenue).toBeNull();
   });
 });

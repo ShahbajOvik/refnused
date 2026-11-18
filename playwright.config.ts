@@ -34,19 +34,19 @@ export default defineConfig({
     {
       name: "desktop-chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /(checkout|account)\.spec\.ts/,
+      testIgnore: /(checkout|account|admin)\.spec\.ts/,
     },
     {
       name: "mobile-chromium",
       use: { ...devices["Pixel 7"] },
-      testIgnore: /(checkout|account)\.spec\.ts/,
+      testIgnore: /(checkout|account|admin)\.spec\.ts/,
     },
     // Purchases sell units and account tests change demo customers, so they
     // run after everything that counts stock.
     {
       name: "checkout",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: /(checkout|account)\.spec\.ts/,
+      testMatch: /(checkout|account|admin)\.spec\.ts/,
       dependencies: ["desktop-chromium", "mobile-chromium"],
     },
   ],
