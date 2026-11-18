@@ -229,22 +229,25 @@ secret in `src/db/seed/demo.ts`, test data only).
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.
 
-|               | Customers                               | Staff                                              |
-| ------------- | --------------------------------------- | -------------------------------------------------- |
-| Sign in       | `/sign-in`: magic link, Google, passkey | `/admin/sign-in`: magic link or Google, then 2FA   |
-| Second factor | Not required                            | Passkey or authenticator app (TOTP), every sign-in |
-| Session       | 30 days, rolling                        | 30 minutes idle, 12 hours maximum                  |
-| Accounts      | Created on first sign-in                | Created by an owner only                           |
-| Protected     | `/account`                              | `/admin`, by role (see `src/auth/roles.ts`)        |
+|               | Customers                               | Staff                                                      |
+| ------------- | --------------------------------------- | ---------------------------------------------------------- |
+| Sign in       | `/sign-in`: magic link, Google, passkey | `/admin/sign-in`: password, magic link or Google, then 2FA |
+| Second factor | Not required                            | Passkey or authenticator app (TOTP), every sign-in         |
+| Session       | 30 days, rolling                        | 30 minutes idle, 12 hours maximum                          |
+| Accounts      | Created on first sign-in                | Created by an owner only                                   |
+| Protected     | `/account`                              | `/admin`, by role (see `src/auth/roles.ts`)                |
 
 **First owner.** After migrating, create the first owner:
 
 ```bash
 npm run staff:create -- --email you@example.co.uk --name "Your Name" --role owner
+npm run staff:set-password -- --email you@example.co.uk
 ```
 
-Then sign in at `/admin/sign-in`. You'll be asked to set up a passkey or authenticator app.
-Owners add other staff, change roles, reset lost 2FA and deactivate accounts at `/admin/staff`.
+Then sign in at `/admin/sign-in` with that email and password. You'll be asked to set up a passkey
+or authenticator app. Owners add other staff, change roles, reset lost 2FA and deactivate accounts
+at `/admin/staff`. Staff set or change their own password at `/admin/security`; anyone who forgets
+theirs can sign in with an emailed link and set a new one there.
 
 **Roles.** `owner` (everything, including staff), `manager` (operations, prices, payouts,
 refunds, content, audit log), `staff` (trade-ins, inspections, stock, orders) and

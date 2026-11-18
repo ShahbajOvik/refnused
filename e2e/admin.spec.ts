@@ -116,6 +116,37 @@ test.afterAll(async () => {
   await staff?.close();
 });
 
+test("staff sign in with an ID and password, and still need two-step verification", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ locale: "en-GB", timezoneId: "Europe/London" });
+  const signIn = await context.newPage();
+  await signIn.setExtraHTTPHeaders({ "x-forwarded-for": "198.18.3.10" });
+  await signIn.goto("/admin/sign-in");
+
+  await signIn.getByLabel("Staff ID (work email)").fill("demo.password@example.co.uk");
+  await signIn.getByLabel("Password", { exact: true }).fill("not the right password");
+  await signIn.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(
+    signIn.getByRole("alert").filter({ hasText: "That staff ID or password isn’t right." }),
+  ).toBeVisible();
+  await expect(signIn).toHaveURL(/\/admin\/sign-in/);
+
+  await signIn.getByLabel("Staff ID (work email)").fill("demo.password@example.co.uk");
+  await signIn.getByLabel("Password", { exact: true }).fill("demo password for tests");
+  await signIn.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(signIn).toHaveURL(/\/admin\/verify/);
+
+  // The password alone doesn't open the admin.
+  await signIn.goto("/admin/orders");
+  await expect(signIn).toHaveURL(/\/admin\/verify/);
+
+  await signIn.getByLabel("6-digit code").fill(generateTotp(TOTP_SECRET));
+  await signIn.getByRole("button", { name: "Verify code" }).click();
+  await expect(signIn).toHaveURL(/\/admin\/orders$/);
+  await context.close();
+});
+
 test("staff only see the sections their role allows, checked on the server", async () => {
   const staffPage = await staff.newPage();
   await staffPage.goto("/admin");

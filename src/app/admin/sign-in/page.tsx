@@ -3,13 +3,19 @@ import { Suspense } from "react";
 
 import { safeCallbackUrl } from "@/auth/access";
 import { AdminAuthShell } from "@/app/admin/_components/admin-auth-shell";
+import { StaffPasswordSignInForm } from "@/app/admin/_components/staff-password-sign-in-form";
 import { AuthCard, AuthCardSkeleton, Divider, FormMessage } from "@/components/auth/auth-card";
 import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
 import { GoogleIcon } from "@/components/auth/google-icon";
 import { Button } from "@/components/ui/button";
+import { publicEnv } from "@/lib/env";
 import { isGoogleSignInEnabled } from "@/lib/env.server";
 
-import { signInStaffWithEmail, signInStaffWithGoogle } from "./actions";
+import {
+  signInStaffWithEmail,
+  signInStaffWithGoogle,
+  signInStaffWithPasswordAction,
+} from "./actions";
 
 export const metadata: Metadata = { title: "Staff sign in" };
 
@@ -52,6 +58,12 @@ async function StaffSignIn({ searchParams }: Pick<PageProps<"/admin/sign-in">, "
     >
       {reason ? <FormMessage tone="info">{reason}</FormMessage> : null}
       {error ? <FormMessage>{error}</FormMessage> : null}
+      <StaffPasswordSignInForm
+        action={signInStaffWithPasswordAction}
+        callbackUrl={callbackUrl}
+        turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      />
+      <Divider label="or use a sign-in link" />
       <EmailSignInForm action={signInStaffWithEmail} callbackUrl={callbackUrl} />
       {isGoogleSignInEnabled ? (
         <>
