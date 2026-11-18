@@ -3,9 +3,11 @@ import { cacheLife } from "next/cache";
 import Link from "next/link";
 
 import { Logo } from "@/components/layout/logo";
+import { StoreAddress } from "@/components/stores/store-actions";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { legalNav, mainNav, siteConfig, socialLinks } from "@/config/site";
 import { telHref } from "@/lib/format";
+import { storeName, storePath } from "@/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 const linkClass =
@@ -49,26 +51,21 @@ export async function SiteFooter() {
             {stores.map((store) => (
               <li key={store.slug}>
                 <p className="font-medium">
-                  {store.name}, {store.address.town}
+                  <Link href={storePath(store)} className={linkClass}>
+                    {storeName(store)}
+                  </Link>
                 </p>
-                <address className="mt-1 flex gap-2 text-muted-foreground not-italic">
+                <div className="mt-1 flex gap-2 text-muted-foreground">
                   <MapPinIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <span>
-                    {store.address.street}
-                    <br />
-                    {store.address.town} {store.address.postcode}
-                  </span>
-                </address>
+                  <StoreAddress store={store} className="not-italic" />
+                </div>
                 <a
                   href={telHref(store.phone)}
                   className={`mt-1 inline-flex min-h-9 items-center gap-2 font-medium text-primary ${linkClass}`}
                 >
                   <PhoneIcon className="size-4" aria-hidden />
                   {store.phoneDisplay}
-                  <span className="sr-only">
-                    {" "}
-                    (call {store.name}, {store.address.town})
-                  </span>
+                  <span className="sr-only"> (call {storeName(store)})</span>
                 </a>
               </li>
             ))}

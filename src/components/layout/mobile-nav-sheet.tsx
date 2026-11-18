@@ -23,6 +23,7 @@ export type MobileNavStore = {
   phoneDisplay: string;
 };
 import { telHref } from "@/lib/format";
+import { storeName } from "@/lib/stores";
 
 const itemClass =
   "flex min-h-12 items-center gap-3 rounded-lg px-3 text-base font-medium hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none data-active:bg-accent data-active:text-primary";
@@ -116,8 +117,7 @@ export default function MobileNavSheet({
                 >
                   <PhoneIcon className="size-4 text-muted-foreground" aria-hidden />
                   <span>
-                    {store.name}, {store.address.town}:{" "}
-                    <span className="font-medium">{store.phoneDisplay}</span>
+                    {storeName(store)}: <span className="font-medium">{store.phoneDisplay}</span>
                   </span>
                 </a>
               </li>

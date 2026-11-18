@@ -53,7 +53,7 @@ async function ReviewList() {
           delay={(index % 3) * 0.08}
           className="flex flex-col gap-3 rounded-2xl border bg-card p-6"
         >
-          <p className="flex gap-0.5" aria-label={`${review.rating} out of 5 stars`}>
+          <p className="flex gap-0.5" role="img" aria-label={`${review.rating} out of 5 stars`}>
             {Array.from({ length: 5 }, (_, i) => (
               <StarIcon
                 key={i}
