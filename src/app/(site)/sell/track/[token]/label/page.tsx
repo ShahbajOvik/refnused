@@ -4,7 +4,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { PrintButton } from "@/components/sell/print-button";
-import { siteConfig, stores } from "@/config/site";
+import { RECEIVING_STORE_SLUG, siteConfig } from "@/config/site";
+import { loadPublicStores } from "@/lib/stores-cache";
 import { db } from "@/db";
 import { getQuoteByTrackingToken } from "@/lib/sell/quote-service";
 
@@ -16,7 +17,6 @@ export const metadata: Metadata = {
 
 // TODO: confirm which store receives posted trade-ins, and replace this
 // slip with a prepaid carrier label (e.g. Royal Mail Click & Drop API).
-const RECEIVING_STORE = stores[0]!;
 
 export default function LabelPage({ params }: PageProps<"/sell/track/[token]/label">) {
   return (
@@ -29,6 +29,8 @@ export default function LabelPage({ params }: PageProps<"/sell/track/[token]/lab
 }
 
 async function Label({ params }: Pick<PageProps<"/sell/track/[token]/label">, "params">) {
+  const stores = await loadPublicStores();
+  const RECEIVING_STORE = stores.find((st) => st.slug === RECEIVING_STORE_SLUG) ?? stores[0]!;
   await connection();
   const quote = await getQuoteByTrackingToken(db, (await params).token);
   if (!quote) notFound();

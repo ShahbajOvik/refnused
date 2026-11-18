@@ -14,6 +14,7 @@ import { MotionProvider } from "@/components/motion/motion-provider";
 import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
 import { absoluteUrl, organizationJsonLd, storesJsonLd } from "@/lib/seo";
+import { loadPublicStores } from "@/lib/stores-cache";
 
 export const metadata: Metadata = {
   title: { absolute: `${siteConfig.name}: sell your phone or buy refurbished` },
@@ -51,10 +52,14 @@ export default function HomePage() {
             url: absoluteUrl("/"),
             inLanguage: "en-GB",
           },
-          ...storesJsonLd(),
           faqJsonLd(),
         ]}
       />
+      <StoresJsonLd />
     </MotionProvider>
   );
+}
+
+async function StoresJsonLd() {
+  return <JsonLd data={storesJsonLd(await loadPublicStores())} />;
 }

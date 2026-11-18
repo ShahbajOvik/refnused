@@ -65,6 +65,9 @@ export const stores: Store[] = [
   },
 ];
 
+/** Where posted trade-ins are sent. */
+export const RECEIVING_STORE_SLUG = "metrotech-north-shields";
+
 export const legalNav: NavItem[] = [
   { label: "Terms and conditions", href: "/terms" },
   { label: "Privacy policy", href: "/privacy" },

@@ -25,11 +25,28 @@ describe("breadcrumbJsonLd", () => {
 
 describe("storesJsonLd", () => {
   it("describes every store with a GB postal address", () => {
-    const data = storesJsonLd();
+    const data = storesJsonLd(
+      stores.map((s) => ({
+        ...s,
+        openingHours: {
+          mon: { opens: "09:00", closes: "17:30" },
+          tue: { opens: "09:00", closes: "17:30" },
+          wed: { opens: "09:00", closes: "17:30" },
+          thu: { opens: "09:00", closes: "17:30" },
+          fri: { opens: "09:00", closes: "17:30" },
+          sat: { opens: "10:00", closes: "16:00" },
+          sun: null,
+        },
+        latitude: 55.0,
+        longitude: -1.45,
+      })),
+    );
     expect(data).toHaveLength(stores.length);
     for (const entry of data) {
       expect(entry["@type"]).toBe("MobilePhoneStore");
       expect(entry.address.addressCountry).toBe("GB");
+      expect(entry.openingHoursSpecification).toHaveLength(6);
+      expect(entry.geo).toMatchObject({ latitude: 55.0 });
     }
   });
 });

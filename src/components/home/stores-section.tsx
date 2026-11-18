@@ -2,13 +2,15 @@ import { NavigationIcon, PhoneIcon } from "lucide-react";
 
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
-import { stores } from "@/config/site";
 import { telHref } from "@/lib/format";
+import { formatOpeningHours } from "@/lib/stores";
+import { loadPublicStores } from "@/lib/stores-cache";
 
 import { SectionHeading } from "./section-heading";
 import { StoreMap } from "./store-map";
 
-export function StoresSection() {
+export async function StoresSection() {
+  const stores = await loadPublicStores();
   return (
     <section id="stores" aria-labelledby="stores-heading" className="py-(--spacing-section)">
       <div className="page-container">
@@ -39,6 +41,7 @@ export function StoresSection() {
                     </h3>
                     <address className="mt-1 text-muted-foreground not-italic">{address}</address>
                   </div>
+                  <OpeningHoursList hours={formatOpeningHours(store.openingHours)} />
                   <div className="flex flex-wrap gap-2">
                     <Button asChild>
                       <a href={telHref(store.phone)}>
@@ -64,5 +67,21 @@ export function StoresSection() {
         </ul>
       </div>
     </section>
+  );
+}
+
+function OpeningHoursList({ hours }: { hours: ReturnType<typeof formatOpeningHours> }) {
+  if (!hours) {
+    return <p className="text-sm text-muted-foreground">Call for opening hours.</p>;
+  }
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-sm">
+      {hours.map((row) => (
+        <div key={row.days} className="contents">
+          <dt className="font-medium">{row.days}</dt>
+          <dd className="text-muted-foreground">{row.hours}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

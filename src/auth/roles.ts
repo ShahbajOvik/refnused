@@ -24,6 +24,8 @@ export const PERMISSIONS = [
   "stores.manage",
   "audit.view",
   "staff.manage",
+  "reports.view",
+  "customers.view",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -40,6 +42,8 @@ export const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<Permission>> = {
   manager: new Set<Permission>([
     "admin.access",
     ...OPERATIONS,
+    "reports.view",
+    "customers.view",
     "prices.update",
     "payouts.approve",
     "refunds.issue",
@@ -48,7 +52,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<Permission>> = {
     "stores.manage",
     "audit.view",
   ]),
-  staff: new Set<Permission>(["admin.access", ...OPERATIONS]),
+  staff: new Set<Permission>(["admin.access", ...OPERATIONS, "customers.view"]),
   content_editor: new Set<Permission>(["admin.access", "content.edit", "reviews.moderate"]),
 };
 
@@ -74,6 +78,10 @@ const ADMIN_ROUTE_PERMISSIONS: [prefix: string, permission: Permission][] = [
   ["/admin/inspections", "inspections.manage"],
   ["/admin/products", "products.manage"],
   ["/admin/orders", "orders.manage"],
+  ["/admin/returns", "orders.manage"],
+  ["/admin/intake", "products.manage"],
+  ["/admin/customers", "customers.view"],
+  ["/admin/files", "admin.access"],
 ];
 
 export function permissionForAdminPath(pathname: string): Permission {

@@ -13,7 +13,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { mainNav, stores } from "@/config/site";
+import { mainNav } from "@/config/site";
+
+export type MobileNavStore = {
+  slug: string;
+  name: string;
+  address: { town: string };
+  phone: string;
+  phoneDisplay: string;
+};
 import { telHref } from "@/lib/format";
 
 const itemClass =
@@ -27,10 +35,12 @@ export default function MobileNavSheet({
   open,
   onOpenChange,
   returnFocusTo,
+  stores,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   returnFocusTo: React.RefObject<HTMLButtonElement | null>;
+  stores: MobileNavStore[];
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

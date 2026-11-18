@@ -1,5 +1,6 @@
-import { siteConfig, stores } from "@/config/site";
+import { siteConfig } from "@/config/site";
 import { publicEnv } from "@/lib/env";
+import { DAYS, type PublicStore } from "@/lib/stores";
 
 /** Absolute URL for canonical links, Open Graph and JSON-LD. */
 export function absoluteUrl(path = "/"): string {
@@ -19,12 +20,12 @@ export function organizationJsonLd() {
   };
 }
 
-export function storesJsonLd() {
-  return stores.map((store) => ({
+export function storesJsonLd(list: PublicStore[]) {
+  return list.map((store) => ({
     "@context": "https://schema.org",
     "@type": "MobilePhoneStore",
     "@id": absoluteUrl(`/stores/${store.slug}#store`),
-    name: store.name,
+    name: `${store.name}, ${store.address.town}`,
     url: absoluteUrl(`/stores/${store.slug}`),
     telephone: store.phone,
     parentOrganization: { "@id": absoluteUrl("/#organization") },
@@ -35,6 +36,26 @@ export function storesJsonLd() {
       postalCode: store.address.postcode,
       addressCountry: "GB",
     },
+    ...(store.latitude != null && store.longitude != null
+      ? { geo: { "@type": "GeoCoordinates", latitude: store.latitude, longitude: store.longitude } }
+      : {}),
+    ...(store.openingHours
+      ? {
+          openingHoursSpecification: DAYS.flatMap((day) => {
+            const h = store.openingHours![day.key];
+            return h
+              ? [
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    dayOfWeek: `https://schema.org/${day.schema}`,
+                    opens: h.opens,
+                    closes: h.closes,
+                  },
+                ]
+              : [];
+          }),
+        }
+      : {}),
   }));
 }
 

@@ -29,8 +29,9 @@ const TRADE_IN_GRADES = schema.tradeInGrade.enumValues;
  */
 export async function seed(db: SeedDb) {
   return db.transaction(async (tx) => {
-    // Stores come from src/config/site.ts, the single source of store details.
-    const storeRows = await tx
+    // Starting store list from src/config/site.ts. After that the database is
+    // the source of truth (edited in /admin/stores).
+    await tx
       .insert(schema.stores)
       .values(
         storeConfig.map((s) => ({
@@ -40,21 +41,13 @@ export async function seed(db: SeedDb) {
           town: s.address.town,
           postcode: s.address.postcode,
           phone: s.phone,
-          // TODO: add latitude/longitude and opening hours once confirmed.
         })),
       )
-      .onConflictDoUpdate({
-        target: schema.stores.slug,
-        set: {
-          name: sql`excluded.name`,
-          street: sql`excluded.street`,
-          town: sql`excluded.town`,
-          postcode: sql`excluded.postcode`,
-          phone: sql`excluded.phone`,
-          updatedAt: sql`now()`,
-        },
-      })
-      .returning({ id: schema.stores.id, slug: schema.stores.slug });
+      // Only adds missing stores: details and opening hours are edited in /admin/stores.
+      .onConflictDoNothing({ target: schema.stores.slug });
+    const storeRows = await tx
+      .select({ id: schema.stores.id, slug: schema.stores.slug })
+      .from(schema.stores);
 
     const brandRows = await tx
       .insert(schema.brands)

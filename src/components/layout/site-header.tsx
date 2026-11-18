@@ -7,8 +7,16 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { NavLink } from "@/components/layout/nav-link";
 import { Button } from "@/components/ui/button";
 import { mainNav } from "@/config/site";
+import { loadPublicStores } from "@/lib/stores-cache";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const stores = (await loadPublicStores()).map(({ slug, name, address, phone, phoneDisplay }) => ({
+    slug,
+    name,
+    address: { town: address.town },
+    phone,
+    phoneDisplay,
+  }));
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
       <div className="page-container flex h-(--spacing-header) items-center gap-4">
@@ -36,7 +44,7 @@ export function SiteHeader() {
             </Link>
           </Button>
           <BasketLink />
-          <MobileNav />
+          <MobileNav stores={stores} />
         </div>
       </div>
     </header>

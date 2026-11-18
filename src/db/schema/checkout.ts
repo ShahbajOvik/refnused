@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { timestamps } from "./_shared";
+import { staffUsers } from "./people";
 import { orderItems, orders } from "./shop";
 
 /**
@@ -53,6 +54,9 @@ export const orderRequests = pgTable(
     reason: text().notNull(),
     description: text().notNull(),
     status: orderRequestStatus().notNull().default("submitted"),
+    /** Staff notes, shown to staff only. */
+    staffNotes: text(),
+    resolvedById: uuid().references(() => staffUsers.id, { onDelete: "set null" }),
     resolvedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },

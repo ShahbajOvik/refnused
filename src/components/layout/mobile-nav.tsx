@@ -6,6 +6,8 @@ import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import type { MobileNavStore } from "./mobile-nav-sheet";
+
 const loadSheet = () => import("./mobile-nav-sheet");
 const MobileNavSheet = dynamic(loadSheet, { ssr: false });
 
@@ -14,7 +16,7 @@ const MobileNavSheet = dynamic(loadSheet, { ssr: false });
  * shows intent (hover, focus, touch) or taps, keeping it out of every
  * page's initial JavaScript.
  */
-export function MobileNav() {
+export function MobileNav({ stores }: { stores: MobileNavStore[] }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -42,7 +44,12 @@ export function MobileNav() {
         <MenuIcon className="size-6" aria-hidden />
       </Button>
       {requested ? (
-        <MobileNavSheet open={open} onOpenChange={setOpen} returnFocusTo={trigger} />
+        <MobileNavSheet
+          open={open}
+          onOpenChange={setOpen}
+          returnFocusTo={trigger}
+          stores={stores}
+        />
       ) : null}
     </>
   );

@@ -127,6 +127,8 @@ export const inspections = pgTable(
     checkmendResult: checkmendResult(),
     checkmendReference: text(),
     notes: text(),
+    /** Inspection photos (media object keys), e.g. damage the customer didn't declare. */
+    photos: jsonb().$type<{ key: string; alt: string }[]>().notNull().default([]),
     inspectedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     ...timestamps,
   },
@@ -170,6 +172,9 @@ export const payouts = pgTable(
     /** Payment reference shown on the customer's statement. */
     reference: text(),
     paidAt: timestamp({ withTimezone: true }),
+    /** Included in a bank payment file (status moves to processing). */
+    exportedAt: timestamp({ withTimezone: true }),
+    exportBatchId: text(),
     processedBy: uuid().references(() => staffUsers.id, { onDelete: "set null" }),
     failureReason: text(),
     ...timestamps,

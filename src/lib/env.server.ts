@@ -29,6 +29,17 @@ const serverEnvSchema = z
       .optional(),
     /** Signing secret of the webhook endpoint (whsec_…). */
     STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
+    R2_ACCOUNT_ID: z.string().min(1).optional(),
+    R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+    R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    /** Public bucket (custom domain = NEXT_PUBLIC_MEDIA_BASE_URL) for photos. */
+    R2_MEDIA_BUCKET: z.string().min(1).optional(),
+    /** Private bucket for data-wipe certificates. */
+    R2_PRIVATE_BUCKET: z.string().min(1).optional(),
+    /** Without R2: folder for uploads (development and tests only). */
+    MEDIA_LOCAL_DIR: z.string().min(1).optional(),
+    /** Sanity Studio URL, for the admin content links. */
+    SANITY_STUDIO_URL: z.url().optional(),
   })
   .refine((env) => !!env.AUTH_GOOGLE_ID === !!env.AUTH_GOOGLE_SECRET, {
     message: "Set both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET, or neither",
@@ -48,6 +59,13 @@ export const serverEnv = serverEnvSchema.parse({
   TWILIO_FROM: process.env.TWILIO_FROM || undefined,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || undefined,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || undefined,
+  R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID || undefined,
+  R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID || undefined,
+  R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY || undefined,
+  R2_MEDIA_BUCKET: process.env.R2_MEDIA_BUCKET || undefined,
+  R2_PRIVATE_BUCKET: process.env.R2_PRIVATE_BUCKET || undefined,
+  MEDIA_LOCAL_DIR: process.env.MEDIA_LOCAL_DIR || undefined,
+  SANITY_STUDIO_URL: process.env.SANITY_STUDIO_URL || undefined,
 });
 
 export const isGoogleSignInEnabled = Boolean(serverEnv.AUTH_GOOGLE_ID);

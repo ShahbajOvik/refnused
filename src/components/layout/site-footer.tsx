@@ -4,8 +4,9 @@ import Link from "next/link";
 
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { legalNav, mainNav, siteConfig, socialLinks, stores } from "@/config/site";
+import { legalNav, mainNav, siteConfig, socialLinks } from "@/config/site";
 import { telHref } from "@/lib/format";
+import { loadPublicStores } from "@/lib/stores-cache";
 
 const linkClass =
   "rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
@@ -17,7 +18,7 @@ async function getCurrentYear() {
 }
 
 export async function SiteFooter() {
-  const year = await getCurrentYear();
+  const [year, stores] = await Promise.all([getCurrentYear(), loadPublicStores()]);
 
   return (
     <footer className="mt-auto border-t bg-muted/40 text-sm">
