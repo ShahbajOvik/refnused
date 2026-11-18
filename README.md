@@ -170,6 +170,39 @@ and privacy.
 `EMAIL_OUTBOX_DIR` set (never in production), emails such as sign-in links and codes are also
 written there as JSON; the e2e tests sign in by reading them.
 
+## Admin
+
+`/admin` is for staff (separate sign-in plus passkey or TOTP). It works on phones and tablets: a
+sidebar on large screens, a sideways-scrolling section bar on smaller ones. Each role sees only the
+sections it can use (`src/auth/roles.ts`), and every page and action checks permission on the server.
+
+| Section            | What it does                                                                                             |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| Dashboard          | Today's trade-ins, orders and payouts, stock by store, revenue after refunds (owners and managers only). |
+| Trade-ins          | Queue by stage; mark received; inspection form (actual grade, photos, CheckMEND result, revised offer).  |
+| Payouts            | Approved payouts; export a bank CSV (the only place bank details are decrypted); mark paid or failed.    |
+| Device intake      | Enter or scan an IMEI, grade, battery health, photos, data-wipe certificate, price, store; publish.      |
+| Products           | Edit price, status and store of any unit.                                                                |
+| Orders             | Dispatch with tracking, ready for collection, delivered/collected, full or part refunds.                 |
+| Returns & warranty | Approve, reject and complete requests; completing a return marks the unit as returned.                   |
+| Prices             | Trade-in price table per model, variant and grade; CSV export/import with preview; margin calculator.    |
+| Customers          | Search, then see a customer's trade-ins, orders and requests.                                            |
+| Stores             | Address, phone and opening hours (shown on the site and in JSON-LD).                                     |
+| Content            | Links to Sanity Studio (set `SANITY_STUDIO_URL`).                                                        |
+| Staff, Audit log   | Staff users and roles (owners); every change above is in `audit_log`.                                    |
+
+**Files**: photos and certificates go to Cloudflare R2 (`R2_*` variables): photos to the public
+media bucket, re-encoded to WebP with location data removed; certificates to the private bucket,
+served only to staff. Without R2 they are stored in `.media/` for local development.
+
+**Notes**: CheckMEND results are entered by hand (no API integration). The bank export is a plain
+CSV; check the layout your bank expects. Margin calculator VAT and card fee values are examples.
+IMEI scanning uses the browser's BarcodeDetector (Chrome on Android); elsewhere type the IMEI.
+Refunds are requested from Stripe and the order updates when the webhook confirms them.
+
+**Testing**: the test snapshot has demo staff (`demo.owner@` and `demo.staff@example.co.uk`, TOTP
+secret in `src/db/seed/demo.ts`, test data only).
+
 ## Authentication
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.

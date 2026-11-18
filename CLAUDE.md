@@ -124,6 +124,18 @@ Keep store data in one place (CMS or a single config module). Never hard-code it
 - Customer passkeys can only be added while signed in. Never allow creating an account from a passkey alone.
 - Don't set `AUTH_URL`; it would override both instances' base paths.
 
+### Admin
+
+- Admin services live in `src/lib/admin/` and take `db` as an argument; pages and actions stay thin.
+- Every admin write records an `audit_log` entry in the same transaction (prices, inspections,
+  payouts, products, orders, refunds, requests, stores, staff).
+- Staff uploads go through `/admin/upload` (`src/lib/storage/uploads.ts`): check content, re-encode
+  photos (strips EXIF/GPS), certificates to the private bucket only.
+- Stores are edited in `/admin/stores` and read with `loadPublicStores()` (cache tag `stores`);
+  `src/config/site.ts` only seeds them. Revalidate `stores` after changes.
+- Client components must not import `@/db` or `drizzle-orm` (keeps pages within the JS budget).
+  Put DB queries in `*.server.ts` or `src/lib/admin/`.
+
 ### Testing
 
 - Write tests for pricing, checkout and auth logic. Cover edge cases (grade boundaries, rounding, discounts, invalid input, unauthorised access).
