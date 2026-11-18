@@ -37,6 +37,8 @@ export function OrderRequestForm({
   const fieldError = (name: string) =>
     result && !result.ok ? result.fieldErrors?.[name]?.[0] : undefined;
 
+  // The page stays mounted after a refresh, so this message survives even
+  // when there's nothing left to request for this phone.
   if (result?.ok) {
     return (
       <p role="status" className="rounded-xl border bg-muted/40 p-4 font-medium">
@@ -44,6 +46,7 @@ export function OrderRequestForm({
       </p>
     );
   }
+  if (!canReturn && !canClaimWarranty) return null;
 
   return (
     <form

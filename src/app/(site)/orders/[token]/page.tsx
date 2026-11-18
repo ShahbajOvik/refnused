@@ -283,7 +283,7 @@ function AfterSales({ order, token }: { order: OrderView; token: string }) {
                 </ul>
               ) : null}
               <div className="mt-4">
-                {canReturn || canClaim ? (
+                {item.returnEligibility.allowed || item.warrantyEligibility.allowed ? (
                   <OrderRequestForm
                     submitAction={createOrderRequestAction.bind(null, token)}
                     orderItemId={item.id}
@@ -292,7 +292,7 @@ function AfterSales({ order, token }: { order: OrderView; token: string }) {
                     canClaimWarranty={canClaim}
                     turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                   />
-                ) : item.returnEligibility.allowed || item.warrantyEligibility.allowed ? null : (
+                ) : (
                   <p className="text-sm text-muted-foreground">
                     The return and warranty periods for this phone have ended.
                   </p>

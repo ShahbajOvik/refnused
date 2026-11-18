@@ -164,8 +164,8 @@ function OrderCard({ order }: { order: OrderView }) {
                 ))}
               </ul>
             ) : null}
-            {canReturn || canClaim ? (
-              <div className="mt-4">
+            {item.returnEligibility.allowed || item.warrantyEligibility.allowed ? (
+              <div className="mt-4 empty:hidden">
                 <OrderRequestForm
                   submitAction={createAccountOrderRequestAction}
                   orderItemId={item.id}
