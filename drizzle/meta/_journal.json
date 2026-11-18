@@ -64,6 +64,13 @@
       "when": 1794974832923,
       "tag": "0008_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794984015118,
+      "tag": "0009_store_pages",
+      "breakpoints": true
     }
   ]
 }

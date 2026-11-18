@@ -65,6 +65,32 @@ export const stores: Store[] = [
   },
 ];
 
+/**
+ * Starting details the seed fills in only where a store's value is empty
+ * (staff edit them in /admin/stores after that). Coordinates are the
+ * postcode centre (postcodes.io); move the pin to the shop front in admin.
+ */
+export const storeSeedDetails: Record<
+  string,
+  { latitude: number; longitude: number; nearestMetro: string }
+> = {
+  "metrotech-north-shields": {
+    latitude: 55.007484,
+    longitude: -1.447419,
+    nearestMetro: "North Shields Metro station is a short walk away.",
+  },
+  "fairtech-south-shields": {
+    latitude: 54.998719,
+    longitude: -1.432955,
+    nearestMetro: "South Shields Metro station is a short walk away.",
+  },
+  "fairtech-north-shields": {
+    latitude: 55.006602,
+    longitude: -1.447087,
+    nearestMetro: "North Shields Metro station is a short walk away.",
+  },
+};
+
 /** Where posted trade-ins are sent. */
 export const RECEIVING_STORE_SLUG = "metrotech-north-shields";
 

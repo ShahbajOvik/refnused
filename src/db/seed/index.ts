@@ -1,8 +1,8 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { AppDb } from "@/db/types";
 import { withImeiCheckDigit } from "@/lib/validation/uk";
 
-import { stores as storeConfig } from "@/config/site";
+import { storeSeedDetails, stores as storeConfig } from "@/config/site";
 import * as schema from "@/db/schema";
 
 import { productSlug } from "@/lib/shop/slug";
@@ -45,6 +45,17 @@ export async function seed(db: SeedDb) {
       )
       // Only adds missing stores: details and opening hours are edited in /admin/stores.
       .onConflictDoNothing({ target: schema.stores.slug });
+    // Fill starting coordinates and Metro text only where they're still empty.
+    for (const [slug, d] of Object.entries(storeSeedDetails)) {
+      await tx
+        .update(schema.stores)
+        .set({
+          latitude: sql`coalesce(${schema.stores.latitude}, ${d.latitude})`,
+          longitude: sql`coalesce(${schema.stores.longitude}, ${d.longitude})`,
+          nearestMetro: sql`coalesce(${schema.stores.nearestMetro}, ${d.nearestMetro})`,
+        })
+        .where(eq(schema.stores.slug, slug));
+    }
     const storeRows = await tx
       .select({ id: schema.stores.id, slug: schema.stores.slug })
       .from(schema.stores);
