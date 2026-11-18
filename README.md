@@ -170,6 +170,28 @@ and privacy.
 `EMAIL_OUTBOX_DIR` set (never in production), emails such as sign-in links and codes are also
 written there as JSON; the e2e tests sign in by reading them.
 
+## Stores
+
+`/stores` lists every active store and `/stores/[slug]` has one page per store, all from the
+`stores` table (edited in `/admin/stores`):
+
+- Address, tap-to-call, Google Maps directions and a map that only loads when the visitor asks
+  (no Google cookies or scripts until then).
+- Opening hours for each day, with an open-now status worked out in the browser in UK time, so
+  cached pages stay right.
+- Parking and nearest Metro text, photos (uploaded in admin, with descriptions), published reviews
+  of the store, and phones on the shelf there (linking to `/shop?store=…`).
+- `ElectronicsStore` JSON-LD with geo coordinates and opening hours, plus breadcrumbs. Reviews are
+  shown but not added as `aggregateRating`, because Google ignores ratings a business publishes about
+  itself.
+- Name, address and phone are written by the same helpers (`storeName`, `storeAddressLines` in
+  `src/lib/stores.ts`) on store pages, cards, the footer, the mobile menu and JSON-LD.
+
+The seed only fills empty values: coordinates (postcode centres from postcodes.io: move them to the
+shop front in admin) and Metro text. Opening hours and parking are left for staff to enter, and a
+store without hours shows "Call the store for opening hours". `/sitemap.xml` and `/robots.txt` list
+the public pages.
+
 ## Admin
 
 `/admin` is for staff (separate sign-in plus passkey or TOTP). It works on phones and tablets: a

@@ -22,7 +22,7 @@ Guidance for all work in this repository.
 | FairTech  | 2 King St, South Shields NE33 1HT                 | +44 191 447 2311 |
 | FairTech  | 20B Saville Street (West), North Shields NE29 6QR | +44 191 435 8411 |
 
-Keep store data in one place (CMS or a single config module). Never hard-code it across components.
+Store data lives in the `stores` table (edited in `/admin/stores`); `src/config/site.ts` only seeds it. Never hard-code store details in components. Write a store's name, address and phone only with the helpers in `src/lib/stores.ts` (`storeName`, `storeAddressLines`, `storeAddress`, `phoneDisplay`) so they match exactly on pages, in the footer and in JSON-LD.
 
 ## Stack
 
