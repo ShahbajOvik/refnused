@@ -101,6 +101,8 @@ let staff: BrowserContext;
 let page: Page;
 
 test.beforeAll(async ({ browser }) => {
+  // Two sign-ins plus up to 30 s waiting for a fresh TOTP step.
+  test.setTimeout(120_000);
   owner = await staffSession(browser, OWNER);
   // Wait for the next TOTP step so the second sign-in isn't seen as a replay.
   await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 500));
@@ -274,13 +276,11 @@ test("prices: edit in the table, import a CSV, see the history", async () => {
   const cells = lines[1]!.split(",");
   cells[6] = (Number(cells[6]) + 1).toFixed(2); // grade_b
   lines[1] = cells.join(",");
-  await page
-    .getByLabel("Price CSV")
-    .setInputFiles({
-      name: "prices.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(lines.join("\r\n")),
-    });
+  await page.getByLabel("Price CSV").setInputFiles({
+    name: "prices.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(lines.join("\r\n")),
+  });
   await expect(page.getByText(/^1 changes, \d+ unchanged\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Import 1 changes" }).click();
   await expect(page.getByText("1 prices imported.")).toBeVisible();

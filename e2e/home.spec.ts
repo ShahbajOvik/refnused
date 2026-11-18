@@ -184,7 +184,7 @@ test.describe("home sections", () => {
   test("maps only load when asked", async ({ page }) => {
     await page.goto("/#stores");
     await expect(page.locator("iframe")).toHaveCount(0);
-    await page.getByRole("button", { name: "Show map" }).first().click();
+    await page.getByRole("button", { name: /^Show map of MetroTech/ }).click();
     await expect(page.locator("iframe[title^='Map showing MetroTech']")).toBeAttached();
   });
 

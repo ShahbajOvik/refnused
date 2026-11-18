@@ -263,7 +263,8 @@ describe("createQuote", () => {
       model: "iPhone 15",
       brand: "Apple",
     });
-    expect(await getQuoteByTrackingToken(db, result.trackingToken.slice(0, -1) + "x")).toBeNull();
+    const last = result.trackingToken.at(-1) === "x" ? "y" : "x";
+    expect(await getQuoteByTrackingToken(db, result.trackingToken.slice(0, -1) + last)).toBeNull();
     expect(await getQuoteByTrackingToken(db, "'; drop table quotes; --")).toBeNull();
   });
 });
