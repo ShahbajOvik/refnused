@@ -475,13 +475,16 @@ describe("customers and stores", () => {
       latitude: "55.0077",
       longitude: "-1.4472",
       isActive: true,
+      parkingInfo: "  Car park behind the store, 2 hours free.  ",
+      nearestMetro: store!.nearestMetro ?? "",
+      photos: [{ key: "stores/2026-11/front.webp", alt: "Shop front" }],
       hours: {
         mon: day,
         tue: day,
         wed: day,
         thu: day,
         fri: day,
-        sat: { closed: false, opens: "10:00", closes: "16:00" },
+        sat: { closed: false, opens: "10:00", closes: "17:00" },
         sun: { closed: true },
       },
     });
@@ -492,12 +495,28 @@ describe("customers and stores", () => {
       sun: null,
     });
     expect(after!.latitude).toBeCloseTo(55.0077);
+    expect(after!.parkingInfo).toBe("Car park behind the store, 2 hours free.");
+    expect(after!.photos).toEqual([{ key: "stores/2026-11/front.webp", alt: "Shop front" }]);
     const audit = (await audits("store.updated")).at(-1)!;
     expect(Object.keys((audit.changes as { after: object }).after).sort()).toEqual([
       "latitude",
       "longitude",
       "openingHours",
+      "parkingInfo",
+      "photos",
     ]);
+
+    // Photos must be store uploads, with a description.
+    expect(
+      storeUpdateSchema.safeParse({
+        ...input,
+        photos: [{ key: "certificates/2026-11/x.pdf", alt: "x" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      storeUpdateSchema.safeParse({ ...input, photos: [{ key: "stores/a.webp", alt: " " }] })
+        .success,
+    ).toBe(false);
 
     expect(
       storeUpdateSchema.safeParse({

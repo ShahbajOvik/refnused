@@ -10,6 +10,7 @@ import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { stores } from "@/db/schema";
+import { mediaUrl } from "@/lib/media";
 
 import { StoreForm } from "../store-form";
 
@@ -53,6 +54,14 @@ async function Store({ params }: Pick<PageProps<"/admin/stores/[id]">, "params">
             longitude: store.longitude,
             isActive: store.isActive,
             openingHours: store.openingHours,
+            parkingInfo: store.parkingInfo,
+            nearestMetro: store.nearestMetro,
+            photos: store.photos.map((p) => ({
+              key: p.key,
+              alt: p.alt,
+              url: mediaUrl(p.key),
+              name: p.key.split("/").at(-1)!,
+            })),
           }}
         />
       </Section>

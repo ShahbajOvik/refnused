@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { useAdminAction } from "@/app/admin/_components/action-button";
+import { FileUploader, type UploadedFile } from "@/app/admin/_components/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { OpeningHours } from "@/db/schema/stores";
@@ -22,6 +23,9 @@ export type StoreValues = {
   longitude: number | null;
   isActive: boolean;
   openingHours: OpeningHours | null;
+  parkingInfo: string | null;
+  nearestMetro: string | null;
+  photos: UploadedFile[];
 };
 
 export function StoreForm({ store }: { store: StoreValues }) {
@@ -36,7 +40,29 @@ export function StoreForm({ store }: { store: StoreValues }) {
       ]),
     ),
   );
+  const [photos, setPhotos] = useState<UploadedFile[]>(store.photos);
   const err = (k: string) => errors[k]?.[0];
+  const area = (name: "parkingInfo" | "nearestMetro", label: string, hint: string) => (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={`${id}-${name}`} className="text-sm font-medium">
+        {label}
+      </label>
+      <p id={`${id}-${name}-hint`} className="text-sm text-muted-foreground">
+        {hint}
+      </p>
+      <textarea
+        id={`${id}-${name}`}
+        name={name}
+        rows={2}
+        maxLength={300}
+        defaultValue={store[name] ?? ""}
+        aria-describedby={`${id}-${name}-hint`}
+        aria-invalid={err(name) ? true : undefined}
+        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+      />
+      {err(name) ? <p className="text-sm text-destructive">{err(name)}</p> : null}
+    </div>
+  );
 
   const text = (
     name: keyof StoreValues,
@@ -79,6 +105,9 @@ export function StoreForm({ store }: { store: StoreValues }) {
               latitude: get("latitude") as never,
               longitude: get("longitude") as never,
               isActive: data.get("isActive") === "on",
+              parkingInfo: get("parkingInfo"),
+              nearestMetro: get("nearestMetro"),
+              photos: photos.map((p) => ({ key: p.key, alt: p.alt })),
               hours: Object.fromEntries(
                 DAYS.map((d) => [
                   d.key,
@@ -110,6 +139,48 @@ export function StoreForm({ store }: { store: StoreValues }) {
         {text("latitude", "Latitude (optional)", { inputMode: "decimal" })}
         {text("longitude", "Longitude (optional)", { inputMode: "decimal" })}
       </div>
+      <fieldset className="flex flex-col gap-4">
+        <legend className="mb-2 font-medium">Getting here (shown on the store page)</legend>
+        {area(
+          "parkingInfo",
+          "Parking",
+          "E.g. where the nearest car park is and how long you can stay.",
+        )}
+        {area(
+          "nearestMetro",
+          "Nearest Metro station",
+          "E.g. “North Shields Metro station is a 5-minute walk.”",
+        )}
+      </fieldset>
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 font-medium">Photos</legend>
+        <FileUploader
+          kind="store-photo"
+          label="Add store photos"
+          multiple
+          value={photos}
+          onChange={setPhotos}
+          altPrefix={`${store.name} store photo`}
+        />
+        {err("photos") ? <p className="text-sm text-destructive">{err("photos")}</p> : null}
+        {photos.map((photo, index) => (
+          <div key={photo.key} className="flex flex-col gap-1.5">
+            <label htmlFor={`${id}-alt-${index}`} className="text-sm font-medium">
+              Photo {index + 1} description (for screen readers)
+            </label>
+            <Input
+              id={`${id}-alt-${index}`}
+              value={photo.alt}
+              maxLength={200}
+              onChange={(e) =>
+                setPhotos((list) =>
+                  list.map((p, i) => (i === index ? { ...p, alt: e.target.value } : p)),
+                )
+              }
+            />
+          </div>
+        ))}
+      </fieldset>
       <label className="flex min-h-11 items-center gap-2 text-sm">
         <input
           type="checkbox"

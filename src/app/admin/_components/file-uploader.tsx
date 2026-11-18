@@ -20,7 +20,7 @@ export function FileUploader({
   altPrefix,
   describedBy,
 }: {
-  kind: "product-photo" | "inspection-photo" | "certificate";
+  kind: "product-photo" | "inspection-photo" | "certificate" | "store-photo";
   label: string;
   multiple?: boolean;
   value: UploadedFile[];

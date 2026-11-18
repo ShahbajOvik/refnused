@@ -9,6 +9,7 @@ const KINDS = {
   "product-photo": { permission: "products.manage", bucket: "media", prefix: "products" },
   "inspection-photo": { permission: "inspections.manage", bucket: "media", prefix: "inspections" },
   certificate: { permission: "products.manage", bucket: "private", prefix: "certificates" },
+  "store-photo": { permission: "stores.manage", bucket: "media", prefix: "stores" },
 } as const satisfies Record<
   string,
   { permission: Permission; bucket: "media" | "private"; prefix: string }

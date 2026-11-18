@@ -88,6 +88,13 @@ const daySchema = z
     }
   });
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Keep this under ${max} characters`)
+    .transform((v) => v || null);
+
 export const storeUpdateSchema = z.object({
   storeId: z.uuid(),
   name: z.string().trim().min(2).max(60),
@@ -103,6 +110,17 @@ export const storeUpdateSchema = z.object({
     .union([z.literal(""), z.coerce.number().min(-9).max(2)])
     .transform((v) => (v === "" ? null : v)),
   isActive: z.boolean(),
+  parkingInfo: optionalText(300),
+  nearestMetro: optionalText(300),
+  photos: z
+    .array(
+      z.object({
+        key: z.string().regex(/^stores\/[\w/.-]+$/),
+        alt: z.string().trim().min(1, "Describe each photo").max(200),
+      }),
+    )
+    .max(8, "Up to 8 photos")
+    .default([]),
   hours: z.object(
     Object.fromEntries(DAYS.map((d) => [d.key, daySchema])) as Record<DayOfWeek, typeof daySchema>,
   ),
@@ -137,6 +155,9 @@ export async function updateStore(
       latitude: input.latitude,
       longitude: input.longitude,
       isActive: input.isActive,
+      parkingInfo: input.parkingInfo,
+      nearestMetro: input.nearestMetro,
+      photos: input.photos,
       openingHours,
     };
     await tx.update(stores).set(after).where(eq(stores.id, input.storeId));
