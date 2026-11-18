@@ -50,6 +50,14 @@ export const {
   secret: serverEnv.AUTH_SECRET,
   trustHost: true,
   useSecureCookies,
+  /*
+   * Staff have no Auth.js passkey provider (staff passkeys are our own second
+   * step). This flag is still needed: @auth/core's config check keeps
+   * "has a WebAuthn provider" in module state shared by every instance, so
+   * once the customer instance (which has passkeys) has run, staff requests
+   * would fail with ExperimentalFeatureNotEnabled.
+   */
+  experimental: { enableWebAuthn: true },
   cookies: authCookies("ru.staff", STAFF_SESSION_COOKIE),
   adapter,
   session: {
