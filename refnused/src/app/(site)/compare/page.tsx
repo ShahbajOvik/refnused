@@ -10,11 +10,11 @@ import { GradeBadge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@refnused/database/lib/format";
 import { GRADE_INFO } from "@refnused/database/lib/grades";
-import type { ShopProduct } from "@/lib/shop/catalogue";
+import type { ShopProduct } from "@refnused/database/lib/shop/catalogue";
 import { parseCompareItems, MAX_COMPARE_ITEMS } from "@/lib/shop/compare";
 import { orFallback } from "@/lib/shop/load";
 import { productImageSrc, productPath } from "@refnused/database/lib/shop/paths";
-import { batteryRating } from "@/lib/shop/product-info";
+import { batteryRating } from "@refnused/database/lib/shop/product-info";
 import { cachedCompare } from "@/lib/shop/queries";
 import { cn } from "@/lib/utils";
 

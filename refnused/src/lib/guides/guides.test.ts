@@ -9,8 +9,15 @@ import {
   modelValueGuide,
   TEAM_AUTHOR,
 } from "./compose";
-import { buildModelValueTable, type ModelPriceRow } from "@refnused/database/lib/guides/model-value";
-import { isGuideSlug, modelValueSlug, parseModelValueSlug } from "@refnused/database/lib/guides/slugs";
+import {
+  buildModelValueTable,
+  type ModelPriceRow,
+} from "@refnused/database/lib/guides/model-value";
+import {
+  isGuideSlug,
+  modelValueSlug,
+  parseModelValueSlug,
+} from "@refnused/database/lib/guides/slugs";
 import { sanityGuideSchema, type SanityGuide } from "@refnused/database/lib/guides/types";
 
 const day = (d: string) => new Date(`2026-11-${d}T12:00:00.000Z`);

@@ -18,8 +18,12 @@ import {
   listProductParams,
   listTradeInModels,
   searchProducts,
-} from "./catalogue";
-import { EMPTY_FILTERS, parseShopFilters, type ShopFilters } from "@refnused/database/lib/shop/filters";
+} from "@refnused/database/lib/shop/catalogue";
+import {
+  EMPTY_FILTERS,
+  parseShopFilters,
+  type ShopFilters,
+} from "@refnused/database/lib/shop/filters";
 import {
   createStockAlert,
   getStockAlertByToken,

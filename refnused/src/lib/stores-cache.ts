@@ -5,7 +5,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { stores as configStores } from "@refnused/database/config/site";
 import { db } from "@refnused/database/db";
 import { EMPTY_FILTERS } from "@refnused/database/lib/shop/filters";
-import { searchProducts } from "@/lib/shop/catalogue";
+import { searchProducts } from "@refnused/database/lib/shop/catalogue";
 
 import type { PublicStore } from "@refnused/database/lib/stores";
 import { listPublicStores, listStoreReviews, type StoreReviews } from "./stores.server";

@@ -7,7 +7,7 @@ import Passkey from "next-auth/providers/passkey";
 import Resend from "next-auth/providers/resend";
 
 import { authCookies, CUSTOMER_SESSION_COOKIE, useSecureCookies } from "@/auth/cookies";
-import { sendMagicLink } from "@/auth/email";
+import { sendMagicLink } from "@refnused/database/lib/auth/email";
 import { checkCustomerSignIn, logSignIn, logSignOut } from "@/auth/sign-in-rules";
 import { db } from "@refnused/database/db";
 import {

@@ -1,17 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { decideAdminAccess } from "@/auth/access";
-import { CUSTOMER_SESSION_COOKIE, STAFF_SESSION_COOKIE } from "@/auth/cookies";
-import { deleteStaffSession, loadStaffSession, recordStaffActivity } from "@/auth/staff-service";
-import { evaluateStaffSession, shouldRecordActivity } from "@/auth/staff-session";
-import { db } from "@refnused/database/db";
-import { recordAudit } from "@refnused/database/lib/audit";
+import { CUSTOMER_SESSION_COOKIE } from "@/auth/cookies";
 import { publicEnv } from "@refnused/database/lib/env";
-import { buildCsp, createNonce } from "@/lib/security/csp";
+import { buildCsp, createNonce } from "@refnused/database/lib/security/csp";
 
 /**
  * Next.js proxy (formerly "middleware"). Runs before the sensitive routes
- * (src/lib/security/csp.ts SENSITIVE_PREFIXES).
+ * (SENSITIVE_PREFIXES in @refnused/database/lib/security/csp).
  *
  * - All of them: a fresh nonce and the strict Content Security Policy. Next.js
  *   reads the nonce from the request's CSP header and puts it on its
@@ -19,10 +14,8 @@ import { buildCsp, createNonce } from "@/lib/security/csp";
  * - Secret-link pages (orders, trade-in tracking): Referrer-Policy no-referrer.
  *
  * - /account: needs a customer session cookie (the page validates it).
- * - /admin: loads the staff session and applies the same rules as
- *   requireStaff(): both factors done, not idle for 30 minutes, account
- *   active, and the role allowed for that section. Also records activity
- *   for the idle timeout.
+ *
+ * The admin is a separate app with its own proxy (admin/src/proxy.ts).
  *
  * This is a first line of defence. Every page and server action checks
  * again on the server (src/auth/guards.ts).
@@ -57,53 +50,7 @@ export async function proxy(request: NextRequest) {
     return secure(NextResponse.redirect(url));
   }
 
-  if (pathname !== "/admin" && !pathname.startsWith("/admin/")) return secure(next());
-
-  // /admin
-  const token = request.cookies.get(STAFF_SESSION_COOKIE)?.value;
-  const record = token ? await loadStaffSession(db, token) : null;
-  const now = new Date();
-  const status = evaluateStaffSession(record, now);
-  const decision = decideAdminAccess({ pathname, status, role: record?.staff.role });
-
-  if (decision.type === "redirect") {
-    const response = NextResponse.redirect(new URL(decision.to, request.url));
-    if (decision.endSession && token) {
-      await deleteStaffSession(db, token);
-      if (record && status === "idle") {
-        await recordAudit(
-          db,
-          {
-            actorType: "staff",
-            actorId: record.staff.id,
-            action: "auth.session_timeout",
-            entityType: "staff_user",
-            entityId: record.staff.id,
-          },
-          { ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null },
-        );
-      }
-      response.cookies.delete(STAFF_SESSION_COOKIE);
-    }
-    return secure(response);
-  }
-
-  if (decision.type === "forbidden") {
-    return secure(NextResponse.redirect(new URL("/admin?denied=1", request.url)));
-  }
-
-  // Count real navigation and actions as activity, but not link prefetches.
-  const isPrefetch =
-    request.headers.get("next-router-prefetch") === "1" ||
-    request.headers.get("purpose") === "prefetch";
-  if (record && token && !isPrefetch && shouldRecordActivity(record, now)) {
-    await recordStaffActivity(db, token, now);
-  }
-
-  const response = next();
-  // Admin pages are personal: never cache them anywhere.
-  response.headers.set("Cache-Control", "private, no-store");
-  return secure(response);
+  return secure(next());
 }
 
 // Keep in sync with SENSITIVE_PREFIXES (src/lib/security/csp.test.tsx checks).
@@ -111,8 +58,6 @@ export const config = {
   matcher: [
     "/account",
     "/account/:path*",
-    "/admin",
-    "/admin/:path*",
     "/basket",
     "/checkout",
     "/orders/:path*",

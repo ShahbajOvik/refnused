@@ -12,7 +12,7 @@ import {
   withoutValue,
 } from "@refnused/database/lib/shop/filters";
 import { penceToDecimal, productJsonLd, type ProductJsonLdInput } from "./json-ld";
-import { batteryRating, tradeInSaving } from "./product-info";
+import { batteryRating, tradeInSaving } from "@refnused/database/lib/shop/product-info";
 import { parseCompareItems } from "./compare";
 import { productSlug, slugify } from "@refnused/database/lib/shop/slug";
 

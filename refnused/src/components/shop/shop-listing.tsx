@@ -6,7 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@refnused/database/lib/format";
 import { GRADE_INFO, type Grade } from "@refnused/database/lib/grades";
 import { absoluteUrl } from "@refnused/database/lib/seo";
-import type { FacetOption, ShopFacets, ShopSearchResult } from "@/lib/shop/catalogue";
+import type {
+  FacetOption,
+  ShopFacets,
+  ShopSearchResult,
+} from "@refnused/database/lib/shop/catalogue";
 import {
   hasActiveFilters,
   PARAM,

@@ -36,11 +36,11 @@ import { GRADE_INFO, GRADES } from "@refnused/database/lib/grades";
 import { mediaUrl } from "@refnused/database/lib/media";
 import { GRADING_GUIDE_SLUG, guidePath } from "@refnused/database/lib/guides/slugs";
 import { productMetadata } from "@/lib/metadata-templates";
-import type { ProductDetail } from "@/lib/shop/catalogue";
+import type { ProductDetail } from "@refnused/database/lib/shop/catalogue";
 import { productJsonLd, type ProductAvailability } from "@/lib/shop/json-ld";
 import { orFallback } from "@/lib/shop/load";
 import { productImageSrc, productPath, productTitle } from "@refnused/database/lib/shop/paths";
-import { batteryRating } from "@/lib/shop/product-info";
+import { batteryRating } from "@refnused/database/lib/shop/product-info";
 import { itemNoun, variantLabel } from "@refnused/database/lib/shop/variant-label";
 import {
   cachedProduct,

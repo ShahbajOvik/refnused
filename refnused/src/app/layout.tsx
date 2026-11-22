@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SkipLink } from "@/components/layout/skip-link";
 import { PwaRegister } from "@/components/pwa/pwa-register";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
+import { THEME_INIT_SCRIPT } from "@refnused/database/lib/security/theme-script";
 import { LazyToaster } from "@/components/ui/lazy-toaster";
 import { siteConfig } from "@refnused/database/config/site";
 import { publicEnv } from "@refnused/database/lib/env";

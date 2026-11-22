@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { safeCallbackUrl } from "@/auth/access";
+import { safeCallbackUrl } from "@refnused/database/lib/security/safe-callback";
 import { AuthCard, AuthCardSkeleton, Divider, FormMessage } from "@/components/auth/auth-card";
 import { PasskeySignInButton } from "@/components/auth/customer-passkey-buttons";
 import { EmailSignInForm } from "@/components/auth/email-sign-in-form";

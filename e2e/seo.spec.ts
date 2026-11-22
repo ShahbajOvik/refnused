@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { ADMIN_URL } from "../playwright.config";
+
 /*
  * SEO plumbing: sitemaps, robots, canonical + hreflang, noindex, Open Graph
  * images, JSON-LD and guides. Desktop only: none of this depends on the viewport.
@@ -61,7 +63,7 @@ test.describe("sitemaps and robots", () => {
 });
 
 test.describe("noindex", () => {
-  for (const path of ["/basket", "/checkout", "/account", "/admin"]) {
+  for (const path of ["/basket", "/checkout", "/account", `${ADMIN_URL}/admin`]) {
     test(`${path} sends X-Robots-Tag: noindex`, async ({ request }) => {
       const res = await request.get(path, { maxRedirects: 0 });
       expect(res.headers()["x-robots-tag"]).toContain("noindex");

@@ -10,7 +10,9 @@ import {
   type Page,
 } from "@playwright/test";
 
-import { generateTotp } from "../refnused/src/auth/totp";
+import { SITE_URL } from "../playwright.config";
+
+import { generateTotp } from "../admin/src/auth/totp";
 
 /*
  * Admin, with the demo staff and customer "Sam" from src/db/seed/demo.ts
@@ -301,7 +303,7 @@ test("catalogue: add a laptop model, stock it and find it in its shop category",
 
   // The listing refreshes in the background after a change.
   await expect(async () => {
-    await page.goto("/shop/category/laptops");
+    await page.goto(`${SITE_URL}/shop/category/laptops`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Refurbished laptops");
     await expect(page.getByRole("link", { name: "Lenovo ThinkPad T14" })).toBeVisible({
       timeout: 2_000,
@@ -309,7 +311,7 @@ test("catalogue: add a laptop model, stock it and find it in its shop category",
   }).toPass({ timeout: 45_000 });
 
   // Laptops are for sale only: no trade-in page.
-  const sell = await page.goto("/sell/lenovo");
+  const sell = await page.goto(`${SITE_URL}/sell/lenovo`);
   expect(sell?.status()).toBe(404);
 });
 

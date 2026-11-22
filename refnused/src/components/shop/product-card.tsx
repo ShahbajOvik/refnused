@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { Badge, GradeBadge } from "@/components/ui/badge";
 import { formatPrice } from "@refnused/database/lib/format";
-import type { ShopProduct } from "@/lib/shop/catalogue";
+import type { ShopProduct } from "@refnused/database/lib/shop/catalogue";
 import { productImageSrc, productPath, productTitle } from "@refnused/database/lib/shop/paths";
 import { variantLabel } from "@refnused/database/lib/shop/variant-label";
 import { cn } from "@/lib/utils";

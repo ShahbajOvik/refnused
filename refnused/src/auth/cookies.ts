@@ -1,8 +1,8 @@
 import { publicEnv } from "@refnused/database/lib/env";
 
 /**
- * Cookie names for the two Auth.js instances. They must not overlap, so a
- * customer cookie can never be read as a staff one (or the reverse).
+ * Customer cookie names (the website). Staff cookies use a different
+ * namespace in the admin app (admin/src/auth/cookies.ts).
  * Secure (`__Secure-` / `__Host-`) prefixes are used whenever the site is
  * served over HTTPS.
  */
@@ -12,7 +12,6 @@ const securePrefix = useSecureCookies ? "__Secure-" : "";
 const hostPrefix = useSecureCookies ? "__Host-" : "";
 
 export const CUSTOMER_SESSION_COOKIE = `${securePrefix}ru.session`;
-export const STAFF_SESSION_COOKIE = `${securePrefix}ru.staff-session`;
 
 type CookieOptions = {
   httpOnly: boolean;
@@ -31,7 +30,7 @@ const base: CookieOptions = {
 const shortLived: CookieOptions = { ...base, maxAge: 15 * 60 };
 
 /** Full Auth.js `cookies` config with names namespaced by `ns`. */
-export function authCookies(ns: "ru" | "ru.staff", sessionCookieName: string) {
+export function authCookies(ns: "ru", sessionCookieName: string) {
   return {
     sessionToken: { name: sessionCookieName, options: base },
     callbackUrl: { name: `${securePrefix}${ns}.callback-url`, options: base },
@@ -41,9 +40,4 @@ export function authCookies(ns: "ru" | "ru.staff", sessionCookieName: string) {
     nonce: { name: `${securePrefix}${ns}.nonce`, options: base },
     webauthnChallenge: { name: `${securePrefix}${ns}.webauthn-challenge`, options: shortLived },
   };
-}
-
-/** Cookie attributes for a staff session token we set ourselves (after MFA). */
-export function staffSessionCookieOptions(expires: Date) {
-  return { ...base, expires };
 }

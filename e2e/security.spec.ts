@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { ADMIN_URL } from "../playwright.config";
+
 import { createQuote } from "./support/sell";
 
 /*
@@ -97,7 +99,7 @@ test("public pages: static CSP, no violations", async ({ page }) => {
 test("sensitive pages: a fresh nonce on every script, no violations", async ({ page }) => {
   const violations = await watchCsp(page);
   const nonces = new Set<string>();
-  for (const path of ["/basket", "/sign-in", "/admin/sign-in", "/checkout"]) {
+  for (const path of ["/basket", "/sign-in", `${ADMIN_URL}/admin/sign-in`, "/checkout"]) {
     const response = await page.goto(path);
     const csp = response!.headers()["content-security-policy"];
     expect(csp, path).toMatch(/'strict-dynamic'/);
@@ -137,7 +139,7 @@ test("Auth.js's direct magic-link endpoint is closed", async ({ request }) => {
 test("admin uploads need a staff session (the origin check behind it is unit-tested)", async ({
   request,
 }) => {
-  const response = await request.post("/admin/upload", {
+  const response = await request.post(`${ADMIN_URL}/admin/upload`, {
     headers: { origin: "https://evil.example", "sec-fetch-site": "cross-site" },
     multipart: {
       kind: "product-photo",

@@ -13,8 +13,6 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "budget": "node scripts/check-js-budget.mjs",
-    "staff:create": "node --env-file-if-exists=../.env.local --import tsx scripts/staff-create.mts",
-    "staff:set-password": "node --env-file-if-exists=../.env.local --import tsx scripts/staff-set-password.mts",
     "model:placeholder": "node --import tsx scripts/generate-placeholder-phone.mts",
     "hero:poster": "node --import tsx scripts/render-hero-poster.mts",
     "media:samples": "node --import tsx scripts/render-sample-photos.mts",

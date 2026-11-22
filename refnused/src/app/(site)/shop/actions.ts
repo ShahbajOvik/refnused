@@ -14,8 +14,11 @@ import {
   TOO_MANY_REQUESTS,
 } from "@refnused/database/lib/security/guards";
 import { absoluteUrl } from "@refnused/database/lib/seo";
-import { estimateTradeIn } from "@/lib/shop/catalogue";
-import { TRADE_IN_CONDITION_KEYS, type TradeInSaving } from "@/lib/shop/product-info";
+import { estimateTradeIn } from "@refnused/database/lib/shop/catalogue";
+import {
+  TRADE_IN_CONDITION_KEYS,
+  type TradeInSaving,
+} from "@refnused/database/lib/shop/product-info";
 import {
   createStockAlert,
   stockAlertConfirmationEmail,

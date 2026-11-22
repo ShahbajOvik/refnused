@@ -9,7 +9,7 @@ try {
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "@refnused/database/db/schema",
+  schema: "./src/db/schema",
   out: "./drizzle",
   casing: "snake_case",
   dbCredentials: {

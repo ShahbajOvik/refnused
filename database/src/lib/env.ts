@@ -7,6 +7,8 @@ import { z } from "zod";
  */
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
+  /** The admin app's own address (its own Vercel project), e.g. https://admin.example.co.uk. */
+  NEXT_PUBLIC_ADMIN_URL: z.url().default("http://localhost:3001"),
   /** Cloudflare Turnstile site key. Unset: the widget isn't shown (dev/tests). */
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   /**
@@ -36,6 +38,7 @@ const publicEnvSchema = z.object({
 
 export const publicEnv = publicEnvSchema.parse({
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_ADMIN_URL: process.env.NEXT_PUBLIC_ADMIN_URL || undefined,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined,
   NEXT_PUBLIC_MEDIA_BASE_URL: process.env.NEXT_PUBLIC_MEDIA_BASE_URL || undefined,
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || undefined,

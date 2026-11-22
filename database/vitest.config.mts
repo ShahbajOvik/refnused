@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "server-only": fileURLToPath(new URL("./src/test/server-only-stub.ts", import.meta.url)),
+      "server-only": fileURLToPath(new URL("./src/test/server-only-stub", import.meta.url)),
     },
   },
   test: {

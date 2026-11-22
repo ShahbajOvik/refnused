@@ -32,10 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Placeholder values: the build needs them; none are real.
-      DATABASE_URL: pglite://memory
+      # The seeded PGlite snapshot made in the first step (tests and CI only).
+      DATABASE_URL: pglite://${{ github.workspace }}/.test-db/snapshot.tar.gz
       AUTH_SECRET: ci-placeholder-ci-placeholder-ci-placeholder
       FIELD_ENCRYPTION_KEYS: k1:Y2ktcGxhY2Vob2xkZXItY2ktcGxhY2Vob2xkZXItY2k=
       NEXT_PUBLIC_SITE_URL: https://ci.example.invalid
+      NEXT_PUBLIC_ADMIN_URL: https://admin.ci.example.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,5 +45,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run db:test-snapshot
       - run: npm run build --workspaces --if-present
       - run: npm run security:secrets --workspaces --if-present

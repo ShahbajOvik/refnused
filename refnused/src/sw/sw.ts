@@ -74,7 +74,11 @@ const runtimeCaching: RuntimeCaching[] = (Object.keys(strategies) as CacheRule[]
       origin: self.location.origin,
       destination: request.destination,
       imageOrigins: __IMAGE_ORIGINS__,
-    }) === rule,
+    }) === rule &&
+    // Network-only requests are only handled for page loads (so they can
+    // fall back to /offline). API calls and RSC requests go straight to the
+    // network without passing through the worker.
+    (rule !== "network-only" || request.mode === "navigate"),
   handler: strategies[rule],
 }));
 

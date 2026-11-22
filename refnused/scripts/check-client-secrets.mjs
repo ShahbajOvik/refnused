@@ -22,6 +22,7 @@ const ROOTS = [".next/static", "public"];
 /** NEXT_PUBLIC_ variables that are meant to be public. */
 const PUBLIC_ALLOWED = new Set([
   "NEXT_PUBLIC_SITE_URL",
+  "NEXT_PUBLIC_ADMIN_URL",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
   "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   "NEXT_PUBLIC_MEDIA_BASE_URL",

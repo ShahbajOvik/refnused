@@ -9,7 +9,13 @@ import {
   parseModelValueSlug,
   type GuideTemplate,
 } from "@refnused/database/lib/guides/slugs";
-import type { Guide, GuideAuthor, GuideBlocks, GuideSummary, SanityGuide } from "@refnused/database/lib/guides/types";
+import type {
+  Guide,
+  GuideAuthor,
+  GuideBlocks,
+  GuideSummary,
+  SanityGuide,
+} from "@refnused/database/lib/guides/types";
 
 /*
  * Builds guides from their two sources. Pure.

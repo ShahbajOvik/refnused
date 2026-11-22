@@ -5,7 +5,14 @@ import { and, eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { auditLog, orders, payments, payouts, products, stripeEvents } from "@refnused/database/db/schema";
+import {
+  auditLog,
+  orders,
+  payments,
+  payouts,
+  products,
+  stripeEvents,
+} from "@refnused/database/db/schema";
 import { seed } from "@refnused/database/db/seed";
 import { sampleTradeInPence } from "@refnused/database/db/seed/catalogue";
 import type { AppDb } from "@refnused/database/db/types";

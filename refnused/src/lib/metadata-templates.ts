@@ -9,7 +9,12 @@ import { metaDescription, pageMetadata } from "@/lib/metadata";
 import { productPath, productTitle } from "@refnused/database/lib/shop/paths";
 import type { VariantOptions } from "@refnused/database/lib/shop/variant-label";
 import { variantLabel } from "@refnused/database/lib/shop/variant-label";
-import { storeAddress, storeName, storePath, type PublicStore } from "@refnused/database/lib/stores";
+import {
+  storeAddress,
+  storeName,
+  storePath,
+  type PublicStore,
+} from "@refnused/database/lib/stores";
 
 /*
  * generateMetadata templates, one per page type. Pure: pages load the data

@@ -21,7 +21,7 @@ import {
   markPriceAlertsNotified,
   modelIdsFor,
   PRICE_ALERT_COOLDOWN_DAYS,
-} from "@/lib/account/price-alert-check";
+} from "@refnused/database/lib/account/price-alert-check";
 import { exportCustomerData } from "@/lib/account/privacy";
 import { createTestDb, testCipher } from "@refnused/database/test/db";
 

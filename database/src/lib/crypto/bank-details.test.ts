@@ -3,11 +3,7 @@ import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { decryptBankDetails, encryptBankDetails } from "./bank-details";
-import {
-  createFieldCipher,
-  FieldEncryptionError,
-  parseKeyring,
-} from "./field-encryption";
+import { createFieldCipher, FieldEncryptionError, parseKeyring } from "./field-encryption";
 
 const key = () => randomBytes(32).toString("base64");
 const cipherWith = (value: string) => createFieldCipher(parseKeyring(value));

@@ -19,7 +19,7 @@ import {
   listShopCategories,
   listTradeInModels,
   searchProducts,
-} from "./catalogue";
+} from "@refnused/database/lib/shop/catalogue";
 import type { ShopFilters } from "@refnused/database/lib/shop/filters";
 
 /*

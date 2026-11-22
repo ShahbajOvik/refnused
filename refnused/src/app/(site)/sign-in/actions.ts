@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { safeCallbackUrl } from "@/auth/access";
+import { safeCallbackUrl } from "@refnused/database/lib/security/safe-callback";
 import { customerSignIn, customerSignOut } from "@/auth/customer";
 import type { EmailFormState } from "@/components/auth/email-sign-in-form";
 import { magicLinkGuard } from "@refnused/database/lib/security/magic-link-guard";

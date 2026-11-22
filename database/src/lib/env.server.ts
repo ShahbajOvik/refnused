@@ -13,6 +13,8 @@ const serverEnvSchema = z
   .object({
     // pglite:// is for tests and CI builds only (see src/db/client.ts).
     DATABASE_URL: z.url({ protocol: /^(postgres(ql)?|pglite)$/ }),
+    /** Connections per server instance (default 5 in production, 10 otherwise). */
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).optional(),
     AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
     AUTH_GOOGLE_ID: z.string().min(1).optional(),
     AUTH_GOOGLE_SECRET: z.string().min(1).optional(),
@@ -57,6 +59,12 @@ const serverEnvSchema = z
     SANITY_API_READ_TOKEN: z.string().min(1).optional(),
     /** Secret of the Sanity webhook that calls /api/revalidate/sanity. */
     SANITY_REVALIDATE_SECRET: z.string().min(16).optional(),
+    /**
+     * Shared by the website and admin: the admin signs requests to the
+     * website's /api/revalidate/tags with it after changing products,
+     * prices or stores. At least 32 characters: npm run secret:generate
+     */
+    REVALIDATE_SECRET: z.string().min(32).optional(),
     /** VAPID private key for Web Push (base64url, 43 characters). Pair: NEXT_PUBLIC_VAPID_PUBLIC_KEY. */
     VAPID_PRIVATE_KEY: z
       .string()
@@ -77,6 +85,7 @@ const serverEnvSchema = z
 
 export const serverEnv = serverEnvSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_POOL_MAX: process.env.DATABASE_POOL_MAX || undefined,
   AUTH_SECRET: process.env.AUTH_SECRET,
   AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID || undefined,
   AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET || undefined,
@@ -101,6 +110,7 @@ export const serverEnv = serverEnvSchema.parse({
   SANITY_API_VERSION: process.env.SANITY_API_VERSION || undefined,
   SANITY_API_READ_TOKEN: process.env.SANITY_API_READ_TOKEN || undefined,
   SANITY_REVALIDATE_SECRET: process.env.SANITY_REVALIDATE_SECRET || undefined,
+  REVALIDATE_SECRET: process.env.REVALIDATE_SECRET || undefined,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || undefined,
   VAPID_SUBJECT: process.env.VAPID_SUBJECT || undefined,
 });
@@ -137,6 +147,12 @@ if (process.env.VERCEL_ENV === "production") {
   // Secure cookies, HSTS and upgrade-insecure-requests all depend on this.
   if (!publicEnv.NEXT_PUBLIC_SITE_URL.startsWith("https://")) {
     throw new Error("NEXT_PUBLIC_SITE_URL must use https:// in production");
+  }
+  if (!publicEnv.NEXT_PUBLIC_ADMIN_URL.startsWith("https://")) {
+    throw new Error("NEXT_PUBLIC_ADMIN_URL must use https:// in production");
+  }
+  if (!serverEnv.REVALIDATE_SECRET) {
+    throw new Error("REVALIDATE_SECRET is required in production (admin → website cache refresh)");
   }
   if (process.env.EMAIL_OUTBOX_DIR) throw new Error("EMAIL_OUTBOX_DIR is for tests only");
   if (!stripeEnabled || !serverEnv.STRIPE_WEBHOOK_SECRET) {

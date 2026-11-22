@@ -48,7 +48,11 @@ import {
   redactedEmail,
   setMarketingPreferences,
 } from "./privacy";
-import { listCustomerQuotes, quoteTimeline, respondToRevisedOffer } from "@refnused/database/lib/account/quotes";
+import {
+  listCustomerQuotes,
+  quoteTimeline,
+  respondToRevisedOffer,
+} from "@refnused/database/lib/account/quotes";
 import { issueVerificationCode, MAX_CODE_ATTEMPTS, verifyCode } from "./verification";
 
 let db: AppDb;

@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { howItWorks } from "@/content/home";
 import { formatDate, formatPrice } from "@refnused/database/lib/format";
 import type { ModelValueContent } from "@/lib/guides/queries";
-import { guidePath, GRADING_GUIDE_SLUG, WIPE_GUIDE_SLUG } from "@refnused/database/lib/guides/slugs";
+import {
+  guidePath,
+  GRADING_GUIDE_SLUG,
+  WIPE_GUIDE_SLUG,
+} from "@refnused/database/lib/guides/slugs";
 import { sellModelPath } from "@refnused/database/lib/internal-links";
 import { TRADE_IN_GRADES, type TradeInGrade } from "@refnused/database/lib/sell/pricing";
-import { TRADE_IN_CONDITIONS } from "@/lib/shop/product-info";
+import { TRADE_IN_CONDITIONS } from "@refnused/database/lib/shop/product-info";
 import { storageLabel } from "@refnused/database/lib/shop/variant-label";
 
 const CONDITION: Record<TradeInGrade, { label: string; description: string }> = Object.fromEntries(

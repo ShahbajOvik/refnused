@@ -6,8 +6,11 @@ import { useId, useState, useTransition } from "react";
 import { estimateTradeInAction, type TradeInEstimateResult } from "@/app/(site)/shop/actions";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@refnused/database/lib/format";
-import type { TradeInModelOption } from "@/lib/shop/catalogue";
-import { TRADE_IN_CONDITIONS, type TradeInConditionKey } from "@/lib/shop/product-info";
+import type { TradeInModelOption } from "@refnused/database/lib/shop/catalogue";
+import {
+  TRADE_IN_CONDITIONS,
+  type TradeInConditionKey,
+} from "@refnused/database/lib/shop/product-info";
 
 const selectClass =
   "h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";

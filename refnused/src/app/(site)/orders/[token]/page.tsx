@@ -18,7 +18,11 @@ import { db } from "@refnused/database/db";
 import { publicEnv } from "@refnused/database/lib/env";
 import { formatDate, formatPrice, telHref } from "@refnused/database/lib/format";
 import { getOrderByAccessToken, type OrderView } from "@refnused/database/lib/orders/order-service";
-import { RETURN_REASONS, RETURN_WINDOW_DAYS, WARRANTY_FAULTS } from "@refnused/database/lib/orders/requests";
+import {
+  RETURN_REASONS,
+  RETURN_WINDOW_DAYS,
+  WARRANTY_FAULTS,
+} from "@refnused/database/lib/orders/requests";
 
 export const metadata: Metadata = {
   title: "Your order",

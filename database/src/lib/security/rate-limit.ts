@@ -22,6 +22,8 @@ export async function consumeRateLimit(
 ): Promise<RateLimitResult> {
   const now = input.now ?? new Date();
   const windowStartCutoff = new Date(now.getTime() - input.windowSeconds * 1000);
+  const cutoffIso = windowStartCutoff.toISOString();
+  const nowIso = now.toISOString();
 
   const [row] = await db
     .insert(rateLimits)
@@ -30,8 +32,10 @@ export async function consumeRateLimit(
       target: rateLimits.key,
       set: {
         // Start a new window if the old one has expired, otherwise count up.
-        count: sql`case when ${rateLimits.windowStart} <= ${windowStartCutoff} then 1 else ${rateLimits.count} + 1 end`,
-        windowStart: sql`case when ${rateLimits.windowStart} <= ${windowStartCutoff} then ${now} else ${rateLimits.windowStart} end`,
+        // Raw sql params bypass Drizzle's column mapping, and its postgres.js
+        // driver doesn't serialise Date objects: pass ISO strings with casts.
+        count: sql`case when ${rateLimits.windowStart} <= ${cutoffIso}::timestamptz then 1 else ${rateLimits.count} + 1 end`,
+        windowStart: sql`case when ${rateLimits.windowStart} <= ${cutoffIso}::timestamptz then ${nowIso}::timestamptz else ${rateLimits.windowStart} end`,
       },
     })
     .returning({ count: rateLimits.count, windowStart: rateLimits.windowStart });

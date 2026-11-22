@@ -6,7 +6,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
+import { THEME_INIT_SCRIPT } from "@refnused/database/lib/security/theme-script";
 
 import {
   baseSecurityHeaders,
@@ -16,7 +16,7 @@ import {
   PERMISSIONS_POLICY,
   SENSITIVE_PREFIXES,
   THEME_SCRIPT_HASH,
-} from "./csp";
+} from "@refnused/database/lib/security/csp";
 
 const PROD = { isDev: false, siteUrl: "https://www.example.co.uk" };
 
@@ -41,8 +41,6 @@ describe("isSensitivePath", () => {
       "/sell/track/abc/label",
       "/sign-in",
       "/sign-in/check-email",
-      "/admin",
-      "/admin/quotes/1",
     ]) {
       expect(isSensitivePath(path), path).toBe(true);
     }
@@ -53,6 +51,8 @@ describe("isSensitivePath", () => {
       "/sell/apple/iphone-15",
       "/shop",
       "/basketball",
+      // The admin is a separate app with its own strict policy.
+      "/admin",
     ]) {
       expect(isSensitivePath(path), path).toBe(false);
     }
@@ -158,8 +158,7 @@ describe("sensitive routes are wired up", () => {
   for (const prefix of SENSITIVE_PREFIXES) {
     it(`${prefix}: proxy sets the nonce CSP and the layout renders per request`, () => {
       expect(matcher).toContain(`"${prefix}"`.replace(/"$/, ""));
-      const layout =
-        prefix === "/admin" ? "src/app/admin/layout.tsx" : `src/app/(site)${prefix}/layout.tsx`;
+      const layout = `src/app/(site)${prefix}/layout.tsx`;
       const source = readFileSync(layout, "utf8");
       expect(source).toMatch(/export const instant = false/);
       expect(source).toMatch(/await renderPerRequest\(\)/);

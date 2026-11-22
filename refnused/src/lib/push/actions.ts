@@ -18,7 +18,11 @@ import {
   savePushTopic,
   type PushTarget,
 } from "@refnused/database/lib/push/service";
-import { pushSubscriptionSchema, pushTopicInputSchema, type PushTopicInput } from "@refnused/database/lib/push/subscription";
+import {
+  pushSubscriptionSchema,
+  pushTopicInputSchema,
+  type PushTopicInput,
+} from "@refnused/database/lib/push/subscription";
 
 /*
  * Turning push updates on and off for a quote, an order or price alerts.

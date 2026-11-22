@@ -2,7 +2,11 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
-import { baseSecurityHeaders, buildCsp, SENSITIVE_PREFIXES } from "./src/lib/security/csp";
+import {
+  baseSecurityHeaders,
+  buildCsp,
+  SENSITIVE_PREFIXES,
+} from "../database/src/lib/security/csp";
 
 // One .env.local at the repo root is shared by all apps (Next.js only
 // reads the app's own folder). Values already set (e.g. on Vercel) win.
@@ -17,7 +21,6 @@ const mediaBase = process.env.NEXT_PUBLIC_MEDIA_BASE_URL?.replace(/\/+$/, "");
  * stop crawlers seeing this noindex, and linked URLs could still be indexed.
  */
 const NOINDEX_PATHS = [
-  "/admin/:path*",
   "/account/:path*",
   "/basket",
   "/checkout",
@@ -29,7 +32,7 @@ const NOINDEX_PATHS = [
 ];
 
 /*
- * Security headers (src/lib/security/csp.ts). Every response gets HSTS,
+ * Security headers (database/src/lib/security/csp.ts). Every response gets HSTS,
  * Referrer-Policy, Permissions-Policy and framing protection. Public pages
  * get the static CSP here; sensitive routes get a per-request nonce CSP from
  * src/proxy.ts instead, so they're left out of this one.

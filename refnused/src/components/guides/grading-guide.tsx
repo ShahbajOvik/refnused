@@ -5,7 +5,7 @@ import { GradeBadge } from "@/components/ui/badge";
 import { gradingGuide } from "@/content/guides";
 import { GRADE_INFO, GRADES } from "@refnused/database/lib/grades";
 import { EMPTY_FILTERS, shopHref } from "@refnused/database/lib/shop/filters";
-import { batteryRating, TRADE_IN_CONDITIONS } from "@/lib/shop/product-info";
+import { batteryRating, TRADE_IN_CONDITIONS } from "@refnused/database/lib/shop/product-info";
 
 const linkClass = "font-medium text-primary underline underline-offset-4";
 
