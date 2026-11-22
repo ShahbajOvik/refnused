@@ -48,7 +48,7 @@
     "eslint-config-prettier": "^10.1.8",
     "mysql-memory-server": "1.18.0",
     "tsx": "^4.23.15",
-    "typescript": "^5",
+    "typescript": "^7",
     "vitest": "^5.1.0"
   },
   "engines": {
