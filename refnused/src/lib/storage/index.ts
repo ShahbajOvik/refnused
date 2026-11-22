@@ -125,7 +125,8 @@ export function getStorage(): ObjectStorage {
   } else {
     if (process.env.VERCEL_ENV === "production")
       throw new Error("R2 storage is required in production");
-    storage = localStorage(serverEnv.MEDIA_LOCAL_DIR ?? join(process.cwd(), ".media"));
+    // Default: .media at the repo root (apps run from their own folders).
+    storage = localStorage(serverEnv.MEDIA_LOCAL_DIR ?? join(process.cwd(), "..", ".media"));
   }
   return storage;
 }

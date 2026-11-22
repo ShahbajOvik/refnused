@@ -52,7 +52,7 @@ export default defineConfig({
   ],
   webServer: {
     // Test against a production build so results reflect what ships.
-    command: `npm run db:test-snapshot && npm run build && npm run start -- --port ${PORT}`,
+    command: `npm run db:test-snapshot -w refnused && npm run build -w refnused && npm run start -w refnused -- --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 420_000,

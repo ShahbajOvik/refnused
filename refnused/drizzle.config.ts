@@ -2,7 +2,7 @@ import { defineConfig } from "drizzle-kit";
 
 // drizzle-kit runs outside Next.js, so load .env.local ourselves.
 try {
-  process.loadEnvFile(".env.local");
+  process.loadEnvFile("../.env.local");
 } catch {
   // No .env.local (e.g. CI): rely on the environment.
 }

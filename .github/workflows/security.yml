@@ -43,5 +43,5 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
-      - run: npm run security:secrets
+      - run: npm run build --workspaces --if-present
+      - run: npm run security:secrets --workspaces --if-present

@@ -5,5 +5,8 @@ playwright-report
 test-results
 package-lock.json
 next-env.d.ts
-drizzle/meta
-public/sw.js
+**/drizzle/meta
+**/public/sw.js
+**/.next
+.test-db
+.media
