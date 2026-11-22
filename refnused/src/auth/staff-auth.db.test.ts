@@ -22,9 +22,9 @@ import {
 } from "@/auth/staff-service";
 import { evaluateStaffSession, STAFF_MFA_MAX_ATTEMPTS } from "@/auth/staff-session";
 import { generateTotp } from "@/auth/totp";
-import { auditLog, customers, staffSessions, staffUsers } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { createTestDb, testCipher } from "@/test/db";
+import { auditLog, customers, staffSessions, staffUsers } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { createTestDb, testCipher } from "@refnused/database/test/db";
 
 let db: AppDb;
 let close: () => Promise<void>;

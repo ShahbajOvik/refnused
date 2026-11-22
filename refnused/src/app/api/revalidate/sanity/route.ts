@@ -1,6 +1,6 @@
 import { revalidateTag } from "next/cache";
 
-import { serverEnv } from "@/lib/env.server";
+import { serverEnv } from "@refnused/database/lib/env.server";
 import {
   SANITY_SIGNATURE_HEADER,
   sanityWebhookBodySchema,

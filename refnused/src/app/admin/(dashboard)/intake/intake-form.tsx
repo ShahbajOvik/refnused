@@ -9,8 +9,8 @@ import { ImeiScanner } from "@/app/admin/_components/imei-scanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ImeiLookup } from "@/lib/admin/intake";
-import { variantLabel } from "@/lib/shop/variant-label";
-import { isValidImei } from "@/lib/validation/uk";
+import { variantLabel } from "@refnused/database/lib/shop/variant-label";
+import { isValidImei } from "@refnused/database/lib/validation/uk";
 
 import { createProductAction, lookupImeiAction } from "./actions";
 

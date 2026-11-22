@@ -1,6 +1,6 @@
-import { formatPrice } from "@/lib/format";
-import type { FaqItem } from "@/lib/seo";
-import { storeName } from "@/lib/stores";
+import { formatPrice } from "@refnused/database/lib/format";
+import type { FaqItem } from "@refnused/database/lib/seo";
+import { storeName } from "@refnused/database/lib/stores";
 
 /*
  * Questions for a sell model page. Pure. The page shows them and emits the

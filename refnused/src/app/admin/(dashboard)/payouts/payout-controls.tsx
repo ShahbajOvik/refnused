@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { useAdminAction } from "@/app/admin/_components/action-button";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 import { exportPayoutsAction, markFailedAction, markPaidAction } from "./actions";
 

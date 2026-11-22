@@ -4,10 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { HERO_POSTER } from "@/components/home/hero/config";
+import { HERO_POSTER } from "@refnused/database/config/hero";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 import { sellBrandMetadata } from "@/lib/metadata-templates";
 import { cachedBrand, cachedBrandModels, cachedSellBrands } from "@/lib/sell/queries";
 

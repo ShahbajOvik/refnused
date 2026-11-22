@@ -6,8 +6,8 @@ import path from "node:path";
 import { cacheLife } from "next/cache";
 import sharp from "sharp";
 
-import { publicEnv } from "@/lib/env";
-import { getStorage } from "@/lib/storage";
+import { publicEnv } from "@refnused/database/lib/env";
+import { getStorage } from "@refnused/database/lib/storage";
 
 /*
  * Loads a picture for an Open Graph card as a PNG data URI. next/og can't

@@ -23,8 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDate, formatPrice } from "@/lib/format";
-import type { PublicQuestion } from "@/lib/sell/offer-service";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
+import type { PublicQuestion } from "@refnused/database/lib/sell/offer-service";
 import { cn } from "@/lib/utils";
 
 import { ConditionIllustration } from "./condition-illustration";

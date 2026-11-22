@@ -1,10 +1,10 @@
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { StoreCard } from "@/components/stores/store-card";
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 import { storesIndexMetadata } from "@/lib/metadata-templates";
-import { absoluteUrl, storesJsonLd } from "@/lib/seo";
-import { storeName, storePath } from "@/lib/stores";
+import { absoluteUrl, storesJsonLd } from "@refnused/database/lib/seo";
+import { storeName, storePath } from "@refnused/database/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 export const metadata = storesIndexMetadata();

@@ -4,10 +4,10 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { PrintButton } from "@/components/sell/print-button";
-import { RECEIVING_STORE_SLUG, siteConfig } from "@/config/site";
+import { RECEIVING_STORE_SLUG, siteConfig } from "@refnused/database/config/site";
 import { loadPublicStores } from "@/lib/stores-cache";
-import { db } from "@/db";
-import { getQuoteByTrackingToken } from "@/lib/sell/quote-service";
+import { db } from "@refnused/database/db";
+import { getQuoteByTrackingToken } from "@refnused/database/lib/sell/quote-service";
 
 export const metadata: Metadata = {
   title: "Print your label",

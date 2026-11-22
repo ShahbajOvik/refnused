@@ -10,10 +10,10 @@ import { AddPasskeyButton } from "@/components/auth/customer-passkey-buttons";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { listPriceAlerts } from "@/lib/account/alerts";
-import { isQuoteInProgress, listCustomerQuotes } from "@/lib/account/quotes";
-import { listCustomerOrders } from "@/lib/orders/order-service";
+import { isQuoteInProgress, listCustomerQuotes } from "@refnused/database/lib/account/quotes";
+import { listCustomerOrders } from "@refnused/database/lib/orders/order-service";
 
 export const metadata: Metadata = {
   title: "Your account",

@@ -6,7 +6,7 @@ import { Logo } from "@/components/layout/logo";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NavLink } from "@/components/layout/nav-link";
 import { Button } from "@/components/ui/button";
-import { mainNav } from "@/config/site";
+import { mainNav } from "@refnused/database/config/site";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 export async function SiteHeader() {

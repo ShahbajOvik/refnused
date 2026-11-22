@@ -1,5 +1,5 @@
-import { HERO_POSTER } from "@/components/home/hero/config";
-import { formatDate, formatPrice } from "@/lib/format";
+import { HERO_POSTER } from "@refnused/database/config/hero";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
 import { cachedGuide } from "@/lib/guides/queries";
 import { OG_IMAGE_SIZE } from "@/lib/metadata";
 import { OG_PICTURE_BOX, ogCard } from "@/lib/og/card";

@@ -1,5 +1,5 @@
 import type { PreviewView } from "@/app/(site)/checkout/actions";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 import { cn } from "@/lib/utils";
 
 /** The full price, as worked out by the server, shown before payment. */

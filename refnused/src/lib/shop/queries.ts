@@ -2,7 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 
 import {
   getBrandBySlug,
@@ -20,7 +20,7 @@ import {
   listTradeInModels,
   searchProducts,
 } from "./catalogue";
-import type { ShopFilters } from "./filters";
+import type { ShopFilters } from "@refnused/database/lib/shop/filters";
 
 /*
  * Cached shop reads. Stock changes often, so entries live for minutes and

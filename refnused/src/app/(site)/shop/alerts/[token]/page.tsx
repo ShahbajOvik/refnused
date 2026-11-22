@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { getStockAlertByToken } from "@/lib/shop/stock-alerts";
 
 import { unsubscribeStockAlertAction } from "../../actions";

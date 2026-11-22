@@ -2,11 +2,11 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { products, stockAlerts } from "@/db/schema";
-import { seed } from "@/db/seed";
-import { sampleTradeInPence, seedModels, seedProducts } from "@/db/seed/catalogue";
-import type { AppDb } from "@/db/types";
-import { createTestDb } from "@/test/db";
+import { products, stockAlerts } from "@refnused/database/db/schema";
+import { seed } from "@refnused/database/db/seed";
+import { sampleTradeInPence, seedModels, seedProducts } from "@refnused/database/db/seed/catalogue";
+import type { AppDb } from "@refnused/database/db/types";
+import { createTestDb } from "@refnused/database/test/db";
 
 import {
   estimateTradeIn,
@@ -19,7 +19,7 @@ import {
   listTradeInModels,
   searchProducts,
 } from "./catalogue";
-import { EMPTY_FILTERS, parseShopFilters, type ShopFilters } from "./filters";
+import { EMPTY_FILTERS, parseShopFilters, type ShopFilters } from "@refnused/database/lib/shop/filters";
 import {
   createStockAlert,
   getStockAlertByToken,

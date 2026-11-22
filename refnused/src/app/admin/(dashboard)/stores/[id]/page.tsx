@@ -8,9 +8,9 @@ import { Suspense } from "react";
 import { PageHeader, Section } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { stores } from "@/db/schema";
-import { mediaUrl } from "@/lib/media";
+import { db } from "@refnused/database/db";
+import { stores } from "@refnused/database/db/schema";
+import { mediaUrl } from "@refnused/database/lib/media";
 
 import { StoreForm } from "../store-form";
 

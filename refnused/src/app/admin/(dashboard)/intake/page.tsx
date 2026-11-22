@@ -6,8 +6,8 @@ import { Suspense } from "react";
 import { PageHeader, Section } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { stores } from "@/db/schema";
+import { db } from "@refnused/database/db";
+import { stores } from "@refnused/database/db/schema";
 import { listCategoriesForIntake, listVariantsForIntake } from "@/lib/admin/intake";
 
 import { IntakeForm } from "./intake-form";

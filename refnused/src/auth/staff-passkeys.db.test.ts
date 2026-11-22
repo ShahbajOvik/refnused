@@ -27,10 +27,10 @@ const {
 const { createStaff } = await import("@/auth/staff-admin");
 const { loadStaffSession } = await import("@/auth/staff-service");
 const { evaluateStaffSession } = await import("@/auth/staff-session");
-const { staffPasskeys, staffSessions } = await import("@/db/schema");
-const { createTestDb } = await import("@/test/db");
+const { staffPasskeys, staffSessions } = await import("@refnused/database/db/schema");
+const { createTestDb } = await import("@refnused/database/test/db");
 
-import type { AppDb } from "@/db/types";
+import type { AppDb } from "@refnused/database/db/types";
 
 const rp = { name: "RefurbednUsed admin", id: "localhost", origin: "http://localhost:3000" };
 let db: AppDb;

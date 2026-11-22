@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { RETURN_POLICY } from "@/config/shop";
+import { RETURN_POLICY } from "@refnused/database/config/shop";
 
 import {
   EMPTY_FILTERS,
@@ -10,11 +10,11 @@ import {
   shopHref,
   withFilters,
   withoutValue,
-} from "./filters";
+} from "@refnused/database/lib/shop/filters";
 import { penceToDecimal, productJsonLd, type ProductJsonLdInput } from "./json-ld";
 import { batteryRating, tradeInSaving } from "./product-info";
 import { parseCompareItems } from "./compare";
-import { productSlug, slugify } from "./slug";
+import { productSlug, slugify } from "@refnused/database/lib/shop/slug";
 
 describe("slugify / productSlug", () => {
   it("makes URL-safe slugs from colour names", () => {

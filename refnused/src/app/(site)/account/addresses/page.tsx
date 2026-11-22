@@ -5,7 +5,7 @@ import { ActionForm, SubmitButton } from "@/components/account/action-form";
 import { AccountPage } from "@/components/account/account-page";
 import { AddressForm } from "@/components/account/forms";
 import { Badge } from "@/components/ui/badge";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { listAddresses, MAX_ADDRESSES } from "@/lib/account/addresses";
 
 import { deleteAddressAction, setDefaultAddressAction } from "../actions";

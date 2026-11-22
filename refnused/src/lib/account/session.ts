@@ -3,8 +3,8 @@ import "server-only";
 import { eq } from "drizzle-orm";
 
 import { customerAuth } from "@/auth/customer";
-import { db } from "@/db";
-import { customers } from "@/db/schema";
+import { db } from "@refnused/database/db";
+import { customers } from "@refnused/database/db/schema";
 
 /** The signed-in customer for server actions, or null (actions then refuse). */
 export async function currentCustomer(): Promise<{

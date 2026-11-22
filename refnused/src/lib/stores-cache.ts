@@ -2,12 +2,12 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { stores as configStores } from "@/config/site";
-import { db } from "@/db";
-import { EMPTY_FILTERS } from "@/lib/shop/filters";
+import { stores as configStores } from "@refnused/database/config/site";
+import { db } from "@refnused/database/db";
+import { EMPTY_FILTERS } from "@refnused/database/lib/shop/filters";
 import { searchProducts } from "@/lib/shop/catalogue";
 
-import type { PublicStore } from "./stores";
+import type { PublicStore } from "@refnused/database/lib/stores";
 import { listPublicStores, listStoreReviews, type StoreReviews } from "./stores.server";
 
 async function cachedStores(): Promise<PublicStore[]> {

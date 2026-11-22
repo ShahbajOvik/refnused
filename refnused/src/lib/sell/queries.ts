@@ -2,7 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 
 import {
   getBrand,
@@ -11,8 +11,8 @@ import {
   listDropOffStores,
   listSellBrands,
   listSellModelParams,
-} from "./catalogue";
-import { loadQuestionConfig, publicQuestions } from "./offer-service";
+} from "@refnused/database/lib/sell/catalogue";
+import { loadQuestionConfig, publicQuestions } from "@refnused/database/lib/sell/offer-service";
 
 /*
  * Cached catalogue reads for the statically generated sell pages.

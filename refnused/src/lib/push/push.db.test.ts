@@ -12,10 +12,10 @@ import {
   pushTopics,
   quotes,
   tradeInPrices,
-} from "@/db/schema";
-import { seed } from "@/db/seed";
-import { DEMO, seedDemoAccounts } from "@/db/seed/demo";
-import type { AppDb } from "@/db/types";
+} from "@refnused/database/db/schema";
+import { seed } from "@refnused/database/db/seed";
+import { DEMO, seedDemoAccounts } from "@refnused/database/db/seed/demo";
+import type { AppDb } from "@refnused/database/db/types";
 import {
   findTriggeredPriceAlerts,
   markPriceAlertsNotified,
@@ -23,7 +23,7 @@ import {
   PRICE_ALERT_COOLDOWN_DAYS,
 } from "@/lib/account/price-alert-check";
 import { exportCustomerData } from "@/lib/account/privacy";
-import { createTestDb, testCipher } from "@/test/db";
+import { createTestDb, testCipher } from "@refnused/database/test/db";
 
 import {
   deleteIdlePushSubscriptions,
@@ -35,7 +35,7 @@ import {
   replacePushEndpoint,
   savePushTopic,
   type PushTarget,
-} from "./service";
+} from "@refnused/database/lib/push/service";
 
 let db: AppDb;
 let close: () => Promise<void>;

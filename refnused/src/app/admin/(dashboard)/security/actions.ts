@@ -10,8 +10,8 @@ import {
   changePasswordSchema,
   StaffPasswordError,
 } from "@/auth/staff-password";
-import { db } from "@/db";
-import { serverEnv } from "@/lib/env.server";
+import { db } from "@refnused/database/db";
+import { serverEnv } from "@refnused/database/lib/env.server";
 
 export const changeOwnPasswordAction = staffAction(
   "admin.access",

@@ -7,8 +7,8 @@ import {
   sellModelMetadata,
   storeMetadata,
 } from "@/lib/metadata-templates";
-import type { Guide } from "@/lib/guides/types";
-import { stores } from "@/config/site";
+import type { Guide } from "@refnused/database/lib/guides/types";
+import { stores } from "@refnused/database/config/site";
 
 describe("pageMetadata", () => {
   const meta = pageMetadata({ title: "Sell your phone", description: "Quotes.", path: "/sell" });

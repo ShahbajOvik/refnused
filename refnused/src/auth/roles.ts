@@ -1,4 +1,4 @@
-import type { staffRole } from "@/db/schema/_shared";
+import type { staffRole } from "@refnused/database/db/schema/_shared";
 
 /*
  * A plain list, not staffRole.enumValues: this module is used by client

@@ -13,12 +13,12 @@ import { OpeningHoursTable } from "@/components/stores/opening-hours";
 import { StoreActions, StoreAddress } from "@/components/stores/store-actions";
 import { StoreMap } from "@/components/stores/store-map";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "@/lib/format";
-import { mediaUrl } from "@/lib/media";
+import { formatDate } from "@refnused/database/lib/format";
+import { mediaUrl } from "@refnused/database/lib/media";
 import { storeMetadata } from "@/lib/metadata-templates";
-import { storeJsonLd } from "@/lib/seo";
-import { EMPTY_FILTERS, shopHref } from "@/lib/shop/filters";
-import { type PublicStore, storeAddress, storeName, storePath } from "@/lib/stores";
+import { storeJsonLd } from "@refnused/database/lib/seo";
+import { EMPTY_FILTERS, shopHref } from "@refnused/database/lib/shop/filters";
+import { type PublicStore, storeAddress, storeName, storePath } from "@refnused/database/lib/stores";
 import {
   loadPublicStore,
   loadPublicStores,

@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
 
-import { HERO_BASE_ROTATION, HERO_CAMERA, HERO_MODEL_URL } from "./config";
+import { HERO_BASE_ROTATION, HERO_CAMERA, HERO_MODEL_URL } from "@refnused/database/config/hero";
 import { applyHeroLighting, normaliseModel } from "./scene-setup";
 import { easeInOut, type HeroMotionState } from "./types";
 

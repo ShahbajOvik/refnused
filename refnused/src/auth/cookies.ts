@@ -1,4 +1,4 @@
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@refnused/database/lib/env";
 
 /**
  * Cookie names for the two Auth.js instances. They must not overlap, so a

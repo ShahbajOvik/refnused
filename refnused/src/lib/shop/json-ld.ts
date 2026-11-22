@@ -1,6 +1,6 @@
-import { DELIVERY_OPTIONS, RETURN_POLICY } from "@/config/shop";
-import { GRADE_INFO, type Grade } from "@/lib/grades";
-import { absoluteUrl } from "@/lib/seo";
+import { DELIVERY_OPTIONS, RETURN_POLICY } from "@refnused/database/config/shop";
+import { GRADE_INFO, type Grade } from "@refnused/database/lib/grades";
+import { absoluteUrl } from "@refnused/database/lib/seo";
 
 export type ProductAvailability = "in_stock" | "reserved" | "sold";
 

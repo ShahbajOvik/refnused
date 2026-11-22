@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { sitemapEntry } from "@/lib/sitemaps";
-import { storePath } from "@/lib/stores";
+import { storePath } from "@refnused/database/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

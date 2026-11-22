@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { calculateMargin } from "@/lib/admin/margin";
 import type { ImportPreview, PriceGrade, PriceRow } from "@/lib/admin/prices";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 import { applyImportAction, previewImportAction, savePricesAction } from "./actions";
 

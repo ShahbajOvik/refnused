@@ -9,11 +9,11 @@ import {
   PARAM,
   parseShopFilters,
   serializeShopFilters,
-} from "@/lib/shop/filters";
+} from "@refnused/database/lib/shop/filters";
 import { pageMetadata } from "@/lib/metadata";
 import { orFallback } from "@/lib/shop/load";
 import { cachedBrand, cachedFacets, cachedSearch, cachedShopBrands } from "@/lib/shop/queries";
-import { listingNoun } from "@/lib/shop/variant-label";
+import { listingNoun } from "@refnused/database/lib/shop/variant-label";
 
 export async function generateStaticParams() {
   const brands = await cachedShopBrands();

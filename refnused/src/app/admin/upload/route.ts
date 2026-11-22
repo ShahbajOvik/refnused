@@ -1,10 +1,10 @@
 import { authorizeStaff } from "@/auth/access";
 import { getStaffSession } from "@/auth/guards";
 import type { Permission } from "@/auth/roles";
-import { publicEnv } from "@/lib/env";
-import { mediaUrl } from "@/lib/media";
+import { publicEnv } from "@refnused/database/lib/env";
+import { mediaUrl } from "@refnused/database/lib/media";
 import { isSameOriginRequest } from "@/lib/security/same-origin";
-import { getStorage } from "@/lib/storage";
+import { getStorage } from "@refnused/database/lib/storage";
 import {
   MAX_UPLOAD_BYTES,
   preparePdf,

@@ -3,9 +3,9 @@ import QRCode from "qrcode";
 import { StartTotpSetupButton, TotpConfirmForm } from "@/app/admin/_components/two-factor-forms";
 import { getPendingTotpSecret } from "@/auth/staff-service";
 import { totpUri } from "@/auth/totp";
-import { siteConfig } from "@/config/site";
-import { db } from "@/db";
-import { getFieldCipher } from "@/lib/crypto/field-encryption";
+import { siteConfig } from "@refnused/database/config/site";
+import { db } from "@refnused/database/db";
+import { getFieldCipher } from "@refnused/database/lib/crypto/field-encryption";
 
 /** Authenticator app setup: start button, or QR code + confirm form. */
 export async function TotpSetupPanel({

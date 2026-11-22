@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import { BASKET_COOKIE, BASKET_EVENT, parseBasket } from "@/lib/orders/basket";
+import { BASKET_COOKIE, BASKET_EVENT, parseBasket } from "@refnused/database/lib/orders/basket";
 
 /*
  * The basket's product ids, read from its cookie in the browser (for the

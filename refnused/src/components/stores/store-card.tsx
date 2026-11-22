@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { type PublicStore, storeAddress, storeName, storePath } from "@/lib/stores";
+import { type PublicStore, storeAddress, storeName, storePath } from "@refnused/database/lib/stores";
 
 import { OpenNow } from "./open-now";
 import { OpeningHoursSummary } from "./opening-hours";

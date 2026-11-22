@@ -1,10 +1,10 @@
 import { and, asc, count, desc, eq, max, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { brands, deviceModels, modelVariants, reviews, stores, tradeInPrices } from "@/db/schema";
-import type { AppDb } from "@/db/types";
+import { brands, deviceModels, modelVariants, reviews, stores, tradeInPrices } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
 import { searchProducts, type ShopProduct } from "@/lib/shop/catalogue";
-import { EMPTY_FILTERS } from "@/lib/shop/filters";
+import { EMPTY_FILTERS } from "@refnused/database/lib/shop/filters";
 
 /*
  * Read-only queries for the home page and quick-quote search. Prices are

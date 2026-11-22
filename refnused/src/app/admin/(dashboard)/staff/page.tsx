@@ -7,8 +7,8 @@ import { listStaff } from "@/auth/staff-admin";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { formatDate } from "@/lib/format";
+import { db } from "@refnused/database/db";
+import { formatDate } from "@refnused/database/lib/format";
 
 import { CreateStaffForm, StaffRowControls } from "./staff-controls";
 

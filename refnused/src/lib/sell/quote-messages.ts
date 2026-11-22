@@ -1,5 +1,5 @@
-import { siteConfig } from "@/config/site";
-import { formatDate, formatPrice } from "@/lib/format";
+import { siteConfig } from "@refnused/database/config/site";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
 
 export type QuoteMessageInput = {
   name: string;

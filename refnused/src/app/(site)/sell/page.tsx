@@ -8,8 +8,8 @@ import { MotionProvider } from "@/components/motion/motion-provider";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { modelSearchQuerySchema } from "@/lib/catalogue/home-data";
 import { loadModelSearch } from "@/lib/catalogue/queries";
-import { formatPrice } from "@/lib/format";
-import { guidePath, WIPE_GUIDE_SLUG } from "@/lib/guides/slugs";
+import { formatPrice } from "@refnused/database/lib/format";
+import { guidePath, WIPE_GUIDE_SLUG } from "@refnused/database/lib/guides/slugs";
 import { pageMetadata } from "@/lib/metadata";
 import { cachedSellBrands } from "@/lib/sell/queries";
 

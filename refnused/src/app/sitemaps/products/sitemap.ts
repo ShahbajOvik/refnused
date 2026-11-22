@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
 
-import { mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@refnused/database/lib/media";
 import { orFallback } from "@/lib/shop/load";
-import { productPath } from "@/lib/shop/paths";
+import { productPath } from "@refnused/database/lib/shop/paths";
 import { cachedProductSitemap } from "@/lib/shop/queries";
 import { sitemapEntry } from "@/lib/sitemaps";
 

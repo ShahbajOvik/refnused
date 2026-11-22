@@ -1,5 +1,5 @@
-import type { CheckoutPreview, TradeInCheck } from "@/lib/orders/checkout-service";
-import type { OrderTotals } from "@/lib/orders/totals";
+import type { CheckoutPreview, TradeInCheck } from "@refnused/database/lib/orders/checkout-service";
+import type { OrderTotals } from "@refnused/database/lib/orders/totals";
 
 /** What the browser may see of a preview (no internal ids beyond product ids). */
 export type PreviewView = {

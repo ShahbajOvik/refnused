@@ -1,4 +1,4 @@
-import { getStorage, r2Enabled } from "@/lib/storage";
+import { getStorage, r2Enabled } from "@refnused/database/lib/storage";
 
 /**
  * Serves uploaded photos in development and tests (no R2). With R2 they

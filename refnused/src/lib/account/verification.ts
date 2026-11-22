@@ -2,8 +2,8 @@ import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 
 import { and, desc, eq, isNull } from "drizzle-orm";
 
-import { customerVerificationCodes } from "@/db/schema";
-import type { AppDb } from "@/db/types";
+import { customerVerificationCodes } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
 
 /*
  * Emailed one-time codes that confirm sensitive changes (payout details,

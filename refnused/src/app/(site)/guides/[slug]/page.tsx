@@ -13,10 +13,10 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { ModelLinks } from "@/components/seo/model-links";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cachedGuide, cachedGuideSummaries, cachedQuoteQuestionTitles } from "@/lib/guides/queries";
-import { guidePath, isGuideSlug } from "@/lib/guides/slugs";
+import { guidePath, isGuideSlug } from "@refnused/database/lib/guides/slugs";
 import { DEFAULT_OG_IMAGE } from "@/lib/metadata";
 import { guideMetadata } from "@/lib/metadata-templates";
-import { articleJsonLd } from "@/lib/seo";
+import { articleJsonLd } from "@refnused/database/lib/seo";
 import { orFallback } from "@/lib/shop/load";
 
 export async function generateStaticParams() {

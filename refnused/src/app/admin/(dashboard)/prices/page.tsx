@@ -7,9 +7,9 @@ import { DataTable, PageHeader, Section } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { getPriceTable, listModelsForPrices, priceHistory } from "@/lib/admin/prices";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 import { CsvImport, MarginCalculator, PriceTable } from "./price-tools";
 

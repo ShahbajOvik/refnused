@@ -13,7 +13,7 @@ import {
   parseShopFilters,
   serializeShopFilters,
   type ShopFilters,
-} from "@/lib/shop/filters";
+} from "@refnused/database/lib/shop/filters";
 import { pageMetadata } from "@/lib/metadata";
 import { orFallback } from "@/lib/shop/load";
 import {
@@ -22,7 +22,7 @@ import {
   cachedShopBrands,
   cachedShopCategories,
 } from "@/lib/shop/queries";
-import { listingNoun } from "@/lib/shop/variant-label";
+import { listingNoun } from "@refnused/database/lib/shop/variant-label";
 
 export async function generateMetadata({ searchParams }: PageProps<"/shop">): Promise<Metadata> {
   const filters = parseShopFilters(await searchParams);

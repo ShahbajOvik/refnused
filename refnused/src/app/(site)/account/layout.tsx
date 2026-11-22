@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { Announcer } from "@/components/account/announcer";
 import { NavLink } from "@/components/layout/nav-link";
-import { renderPerRequest } from "@/lib/security/per-request";
+import { renderPerRequest } from "@refnused/database/lib/security/per-request";
 
 const ACCOUNT_NAV = [
   { href: "/account", label: "Overview", exact: true },

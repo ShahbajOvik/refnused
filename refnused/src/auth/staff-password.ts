@@ -8,14 +8,14 @@ import {
   newPasswordSchema,
   PASSWORD_MAX_LENGTH,
   verifyPassword,
-} from "@/auth/password";
+} from "@refnused/database/auth/password";
 import { logSignIn } from "@/auth/sign-in-rules";
 import { STAFF_SESSION_MAX_AGE_SECONDS } from "@/auth/staff-session";
-import { staffSessions, staffUsers } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { ActionError } from "@/lib/action-error";
-import { recordAudit, type RequestMeta } from "@/lib/audit";
-import { consumeRateLimit, rateLimitKey } from "@/lib/security/rate-limit";
+import { staffSessions, staffUsers } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { ActionError } from "@refnused/database/lib/action-error";
+import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
+import { consumeRateLimit, rateLimitKey } from "@refnused/database/lib/security/rate-limit";
 
 /*
  * Password sign-in for staff. A password is a first factor only: the session

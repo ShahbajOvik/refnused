@@ -6,10 +6,10 @@ import { AccountPage } from "@/components/account/account-page";
 import { PriceAlertForm } from "@/components/account/forms";
 import { PushOptIn } from "@/components/pwa/push-opt-in";
 import { Badge } from "@/components/ui/badge";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { listAlertModels, listPriceAlerts, listStockAlerts } from "@/lib/account/alerts";
-import { publicEnv } from "@/lib/env";
-import { formatDate, formatPrice } from "@/lib/format";
+import { publicEnv } from "@refnused/database/lib/env";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
 
 import { stopStockAlertAction, updatePriceAlertAction } from "../actions";
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 import { cn } from "@/lib/utils";
 
 export function LogoMark({ className }: { className?: string }) {

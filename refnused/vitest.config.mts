@@ -5,7 +5,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "server-only": fileURLToPath(new URL("./src/test/server-only-stub.ts", import.meta.url)),
+      "server-only": fileURLToPath(
+        new URL("../database/src/test/server-only-stub.ts", import.meta.url),
+      ),
     },
   },
   oxc: {
@@ -13,7 +15,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["./vitest.setup.ts"],
+    setupFiles: ["./vitest.setup"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
     // DB tests each start an in-memory Postgres and run every migration;

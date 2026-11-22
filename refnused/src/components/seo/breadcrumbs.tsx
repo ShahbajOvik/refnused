@@ -2,7 +2,7 @@ import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
 
 import { JsonLd } from "@/components/seo/json-ld";
-import { breadcrumbJsonLd, type BreadcrumbItem } from "@/lib/seo";
+import { breadcrumbJsonLd, type BreadcrumbItem } from "@refnused/database/lib/seo";
 import { cn } from "@/lib/utils";
 
 type BreadcrumbsProps = {

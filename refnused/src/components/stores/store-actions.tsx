@@ -1,8 +1,8 @@
 import { NavigationIcon, PhoneIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { telHref } from "@/lib/format";
-import { type PublicStore, storeAddressLines, storeDirectionsUrl, storeName } from "@/lib/stores";
+import { telHref } from "@refnused/database/lib/format";
+import { type PublicStore, storeAddressLines, storeDirectionsUrl, storeName } from "@refnused/database/lib/stores";
 
 /** Tap-to-call and directions, with names that say which store. */
 export function StoreActions({ store }: { store: PublicStore }) {

@@ -8,11 +8,11 @@ import { DataTable, PageHeader, Section, StatusPill } from "@/app/admin/_compone
 import { requireStaff } from "@/auth/guards";
 import { can } from "@/auth/roles";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { listCustomerQuotes } from "@/lib/account/quotes";
+import { db } from "@refnused/database/db";
+import { listCustomerQuotes } from "@refnused/database/lib/account/quotes";
 import { getCustomerAdmin, listAudit } from "@/lib/admin/people";
-import { formatDate, formatPrice } from "@/lib/format";
-import { listCustomerOrders } from "@/lib/orders/order-service";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
+import { listCustomerOrders } from "@refnused/database/lib/orders/order-service";
 
 export const metadata: Metadata = { title: "Customer" };
 

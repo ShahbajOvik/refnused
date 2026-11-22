@@ -2,7 +2,7 @@ import { BookOpenIcon, ChevronRightIcon, PoundSterlingIcon, ShoppingBagIcon } fr
 import Link from "next/link";
 
 import { cachedGuideSummaries, cachedModelLinkTargets } from "@/lib/guides/queries";
-import { type InternalLink, modelLinks } from "@/lib/internal-links";
+import { type InternalLink, modelLinks } from "@refnused/database/lib/internal-links";
 import { orFallback } from "@/lib/shop/load";
 import { cn } from "@/lib/utils";
 

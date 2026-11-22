@@ -6,7 +6,7 @@ import { useAdminAction } from "@/app/admin/_components/action-button";
 import { FileUploader, type UploadedFile } from "@/app/admin/_components/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 import { recordInspectionAction } from "../actions";
 

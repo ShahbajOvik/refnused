@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { modelSearchQuerySchema } from "@/lib/catalogue/home-data";
 import { loadModelSearch } from "@/lib/catalogue/queries";
-import { serverEnv } from "@/lib/env.server";
-import { consumeRateLimit, rateLimitKey } from "@/lib/security/rate-limit";
+import { serverEnv } from "@refnused/database/lib/env.server";
+import { consumeRateLimit, rateLimitKey } from "@refnused/database/lib/security/rate-limit";
 
 /** Quick-quote search: GET /api/models/search?q=iphone 15 */
 export async function GET(request: NextRequest) {

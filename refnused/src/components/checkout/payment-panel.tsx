@@ -5,7 +5,7 @@ import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 const stripePromises = new Map<string, Promise<Stripe | null>>();
 function getStripe(key: string) {

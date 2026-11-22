@@ -3,8 +3,8 @@ import Link from "next/link";
 
 import { GradeBadge } from "@/components/ui/badge";
 import { gradingGuide } from "@/content/guides";
-import { GRADE_INFO, GRADES } from "@/lib/grades";
-import { EMPTY_FILTERS, shopHref } from "@/lib/shop/filters";
+import { GRADE_INFO, GRADES } from "@refnused/database/lib/grades";
+import { EMPTY_FILTERS, shopHref } from "@refnused/database/lib/shop/filters";
 import { batteryRating, TRADE_IN_CONDITIONS } from "@/lib/shop/product-info";
 
 const linkClass = "font-medium text-primary underline underline-offset-4";

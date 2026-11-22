@@ -1,15 +1,15 @@
 import "server-only";
 
-import { db } from "@/db";
-import { recordAudit } from "@/lib/audit";
-import { getFieldCipher } from "@/lib/crypto/field-encryption";
-import { sendEmail } from "@/lib/notify/email";
-import { sendSms } from "@/lib/notify/sms";
-import { absoluteUrl } from "@/lib/seo";
-import { isUkMobile } from "@/lib/validation/uk";
+import { db } from "@refnused/database/db";
+import { recordAudit } from "@refnused/database/lib/audit";
+import { getFieldCipher } from "@refnused/database/lib/crypto/field-encryption";
+import { sendEmail } from "@refnused/database/lib/notify/email";
+import { sendSms } from "@refnused/database/lib/notify/sms";
+import { absoluteUrl } from "@refnused/database/lib/seo";
+import { isUkMobile } from "@refnused/database/lib/validation/uk";
 
-import { orderConfirmationEmail, orderConfirmationSms } from "./messages";
-import { getOrderForMessages } from "./order-service";
+import { orderConfirmationEmail, orderConfirmationSms } from "@refnused/database/lib/orders/messages";
+import { getOrderForMessages } from "@refnused/database/lib/orders/order-service";
 
 /** Order confirmation by email and (UK mobiles) SMS. Failures are audited, never thrown. */
 export async function sendOrderConfirmation(orderId: string) {

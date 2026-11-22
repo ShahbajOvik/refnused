@@ -2,7 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import {
   getFeaturedProducts,
   getPublishedReviews,

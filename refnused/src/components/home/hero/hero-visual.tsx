@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 import { chooseHeroMode, readDeviceSignals, type HeroMode } from "./capability";
-import { HERO_POSTER } from "./config";
+import { HERO_POSTER } from "@refnused/database/config/hero";
 import type { HeroMotionState } from "./types";
 
 // three.js, R3F and the model load only when 3D is actually used.

@@ -1,6 +1,6 @@
 import { CheckIcon, CircleIcon, XIcon } from "lucide-react";
 
-import { formatDate } from "@/lib/format";
+import { formatDate } from "@refnused/database/lib/format";
 import { cn } from "@/lib/utils";
 
 export type TimelineItem = {

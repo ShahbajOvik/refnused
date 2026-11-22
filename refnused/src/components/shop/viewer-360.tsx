@@ -7,7 +7,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-import { HERO_CAMERA } from "@/components/home/hero/config";
+import { HERO_CAMERA } from "@refnused/database/config/hero";
 import { applyHeroLighting, normaliseModel } from "@/components/home/hero/scene-setup";
 
 /** Turn per button press (45°). */

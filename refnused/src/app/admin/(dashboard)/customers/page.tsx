@@ -6,9 +6,9 @@ import { Suspense } from "react";
 import { DataTable, Empty, PageHeader, SearchForm } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { searchCustomers } from "@/lib/admin/people";
-import { formatDate } from "@/lib/format";
+import { formatDate } from "@refnused/database/lib/format";
 
 export const metadata: Metadata = { title: "Customers" };
 

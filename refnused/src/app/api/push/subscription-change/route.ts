@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { db } from "@/db";
-import { replacePushEndpoint } from "@/lib/push/service";
-import { pushSubscriptionSchema } from "@/lib/push/subscription";
-import { isRateLimited } from "@/lib/security/guards";
+import { db } from "@refnused/database/db";
+import { replacePushEndpoint } from "@refnused/database/lib/push/service";
+import { pushSubscriptionSchema } from "@refnused/database/lib/push/subscription";
+import { isRateLimited } from "@refnused/database/lib/security/guards";
 
 const bodySchema = z.object({
   oldEndpoint: pushSubscriptionSchema.shape.endpoint,

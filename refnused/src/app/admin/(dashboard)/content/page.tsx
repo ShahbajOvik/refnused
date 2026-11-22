@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { PageHeader, Section } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { serverEnv } from "@/lib/env.server";
+import { serverEnv } from "@refnused/database/lib/env.server";
 
 export const metadata: Metadata = { title: "Content" };
 

@@ -5,7 +5,7 @@ import { useId, useState, useTransition } from "react";
 
 import { estimateTradeInAction, type TradeInEstimateResult } from "@/app/(site)/shop/actions";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 import type { TradeInModelOption } from "@/lib/shop/catalogue";
 import { TRADE_IN_CONDITIONS, type TradeInConditionKey } from "@/lib/shop/product-info";
 

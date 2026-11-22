@@ -1,6 +1,6 @@
-import type { OrderView } from "@/lib/orders/order-service";
+import type { OrderView } from "@refnused/database/lib/orders/order-service";
 
-import type { TimelineStep } from "./quotes";
+import type { TimelineStep } from "@refnused/database/lib/account/quotes";
 
 /** Delivery or collection progress for an order. Pure. */
 export function orderTimeline(order: OrderView): TimelineStep[] {

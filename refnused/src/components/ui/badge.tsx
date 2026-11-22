@@ -2,7 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 
-import { GRADE_INFO, type Grade } from "@/lib/grades";
+import { GRADE_INFO, type Grade } from "@refnused/database/lib/grades";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(

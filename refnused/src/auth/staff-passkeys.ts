@@ -14,9 +14,9 @@ import { and, eq, gt } from "drizzle-orm";
 
 import { canEnrolFactor, completeStaffMfa, recordMfaFailure } from "@/auth/staff-service";
 import { evaluateStaffSession, type StaffSessionRecord } from "@/auth/staff-session";
-import { staffPasskeys, staffSessions } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { recordAudit, type RequestMeta } from "@/lib/audit";
+import { staffPasskeys, staffSessions } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
 
 /** Relying party: who the passkey belongs to. Derived from the site URL. */
 export type RelyingParty = { name: string; id: string; origin: string };

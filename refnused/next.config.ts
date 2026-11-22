@@ -45,6 +45,8 @@ const publicCsp = buildCsp({
 const nextConfig: NextConfig = {
   cacheComponents: true,
   poweredByHeader: false,
+  // Shared schema and business logic, shipped as TypeScript source.
+  transpilePackages: ["@refnused/database"],
   async headers() {
     return [
       { source: "/:path*", headers: baseSecurityHeaders() },

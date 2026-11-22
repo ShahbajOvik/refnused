@@ -9,10 +9,10 @@ import { PageHeader, Section, StatusPill } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { can } from "@/auth/roles";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { getQuoteDetail } from "@/lib/admin/quotes";
-import { formatDate, formatPrice } from "@/lib/format";
-import { mediaUrl } from "@/lib/media";
+import { db } from "@refnused/database/db";
+import { getQuoteDetail } from "@refnused/database/lib/admin/quotes";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
+import { mediaUrl } from "@refnused/database/lib/media";
 
 import { markReceivedAction, markReturnedAction } from "../actions";
 import { InspectionForm } from "./inspection-form";

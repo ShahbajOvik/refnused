@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { trackingUrl, type OrderView } from "@/lib/orders/order-service";
+import { trackingUrl, type OrderView } from "@refnused/database/lib/orders/order-service";
 
 import { orderTimeline } from "./orders";
 

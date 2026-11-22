@@ -8,7 +8,7 @@ import { parseArgs } from "node:util";
 
 import { STAFF_ROLES } from "@/auth/roles";
 import { createStaff, StaffAdminError } from "@/auth/staff-admin";
-import { createDatabase } from "@/db/client";
+import { createDatabase } from "@refnused/database/db/client";
 
 const { values } = parseArgs({
   options: {

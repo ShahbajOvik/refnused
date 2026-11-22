@@ -9,8 +9,8 @@ const deleteStaffSession = vi.fn();
 const recordStaffActivity = vi.fn();
 const recordAudit = vi.fn();
 
-vi.mock("@/db", () => ({ db: {} }));
-vi.mock("@/lib/audit", () => ({ recordAudit: (...a: unknown[]) => recordAudit(...a) }));
+vi.mock("@refnused/database/db", () => ({ db: {} }));
+vi.mock("@refnused/database/lib/audit", () => ({ recordAudit: (...a: unknown[]) => recordAudit(...a) }));
 vi.mock("@/auth/staff-service", () => ({
   loadStaffSession: (...a: unknown[]) => loadStaffSession(...a),
   deleteStaffSession: (...a: unknown[]) => deleteStaffSession(...a),

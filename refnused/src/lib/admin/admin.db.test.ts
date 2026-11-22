@@ -14,15 +14,15 @@ import {
   quotes,
   staffUsers,
   stores,
-} from "@/db/schema";
-import { seed } from "@/db/seed";
-import { DEMO, seedDemoAccounts } from "@/db/seed/demo";
-import type { AppDb } from "@/db/types";
-import { ActionError } from "@/lib/action-error";
+} from "@refnused/database/db/schema";
+import { seed } from "@refnused/database/db/seed";
+import { DEMO, seedDemoAccounts } from "@refnused/database/db/seed/demo";
+import type { AppDb } from "@refnused/database/db/types";
+import { ActionError } from "@refnused/database/lib/action-error";
 import { parseCsv } from "@/lib/csv";
-import type { PaymentGateway } from "@/lib/payments/gateway";
-import { createTestDb, testCipher } from "@/test/db";
-import { withImeiCheckDigit } from "@/lib/validation/uk";
+import type { PaymentGateway } from "@refnused/database/lib/payments/gateway";
+import { createTestDb, testCipher } from "@refnused/database/test/db";
+import { withImeiCheckDigit } from "@refnused/database/lib/validation/uk";
 
 import { getDashboard } from "./dashboard";
 import { createProductFromIntake, intakeSchema, lookupImei, updateProductAdmin } from "./intake";
@@ -37,7 +37,7 @@ import {
   pricesToCsv,
   updatePrices,
 } from "./prices";
-import { inspectionSchema, markQuoteReceived, recordInspection } from "./quotes";
+import { inspectionSchema, markQuoteReceived, recordInspection } from "@refnused/database/lib/admin/quotes";
 
 let db: AppDb;
 let close: () => Promise<void>;

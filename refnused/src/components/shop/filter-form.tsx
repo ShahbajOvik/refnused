@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
-import { parseShopFilters, serializeShopFilters } from "@/lib/shop/filters";
+import { parseShopFilters, serializeShopFilters } from "@refnused/database/lib/shop/filters";
 
 /**
  * Progressive enhancement for the shop's GET form. Without JavaScript it

@@ -10,7 +10,7 @@ import {
   type Page,
 } from "@playwright/test";
 
-import { generateTotp } from "../src/auth/totp";
+import { generateTotp } from "../refnused/src/auth/totp";
 
 /*
  * Admin, with the demo staff and customer "Sam" from src/db/seed/demo.ts

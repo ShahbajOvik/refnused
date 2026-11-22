@@ -1,6 +1,6 @@
 import { authorizeStaff } from "@/auth/access";
 import { getStaffSession } from "@/auth/guards";
-import { getStorage } from "@/lib/storage";
+import { getStorage } from "@refnused/database/lib/storage";
 
 /** Private files (data-wipe certificates), for signed-in staff only. */
 export async function GET(_request: Request, { params }: RouteContext<"/admin/files/[...path]">) {

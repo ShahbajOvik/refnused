@@ -1,5 +1,5 @@
-import type { OpeningHours } from "@/db/schema/stores";
-import { DAYS, formatOpeningHours, formatTimeRange } from "@/lib/stores";
+import type { OpeningHours } from "@refnused/database/db/schema/stores";
+import { DAYS, formatOpeningHours, formatTimeRange } from "@refnused/database/lib/stores";
 
 /** Grouped hours for cards: "Mon–Fri 9am–5:30pm". */
 export function OpeningHoursSummary({ hours }: { hours: OpeningHours | null }) {

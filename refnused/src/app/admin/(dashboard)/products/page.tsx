@@ -14,9 +14,9 @@ import {
 import { requireStaff } from "@/auth/guards";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { listProductsAdmin } from "@/lib/admin/intake";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 import { ProductEditor } from "./product-editor";
 

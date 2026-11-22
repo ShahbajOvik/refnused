@@ -2,6 +2,7 @@
   "name": "refnused-monorepo",
   "private": true,
   "workspaces": [
+    "database",
     "refnused"
   ],
   "scripts": {
@@ -16,7 +17,15 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "test:e2e": "playwright test",
     "audit": "npm audit --omit=dev --audit-level=high",
-    "audit:all": "npm audit --audit-level=high"
+    "audit:all": "npm audit --audit-level=high",
+    "db:generate": "npm run db:generate -w @refnused/database",
+    "db:migrate": "npm run db:migrate -w @refnused/database",
+    "db:seed": "npm run db:seed -w @refnused/database",
+    "db:studio": "npm run db:studio -w @refnused/database",
+    "db:test-snapshot": "npm run db:test-snapshot -w @refnused/database",
+    "key:generate": "npm run key:generate -w @refnused/database",
+    "secret:generate": "npm run secret:generate -w @refnused/database",
+    "push:keys": "npm run push:keys -w @refnused/database"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

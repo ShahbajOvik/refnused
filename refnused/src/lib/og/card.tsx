@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 import { OG_IMAGE_SIZE } from "@/lib/metadata";
 
 /*

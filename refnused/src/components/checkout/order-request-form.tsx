@@ -5,7 +5,7 @@ import { useId, useRef, useState, useTransition } from "react";
 import type { OrderRequestActionResult } from "@/app/(site)/orders/actions";
 import { TurnstileWidget } from "@/components/sell/turnstile-widget";
 import { Button } from "@/components/ui/button";
-import { RETURN_REASONS, WARRANTY_FAULTS } from "@/lib/orders/requests";
+import { RETURN_REASONS, WARRANTY_FAULTS } from "@refnused/database/lib/orders/requests";
 
 const selectClass =
   "h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";

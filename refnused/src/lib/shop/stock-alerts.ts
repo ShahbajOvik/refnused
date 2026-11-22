@@ -3,8 +3,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { deviceModels, modelVariants, products, stockAlerts } from "@/db/schema";
-import type { AppDb } from "@/db/types";
+import { deviceModels, modelVariants, products, stockAlerts } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
 
 /*
  * "Notify me" alerts from sold units' pages. Signing up twice for the same

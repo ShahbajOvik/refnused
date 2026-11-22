@@ -2,10 +2,10 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { cachedPublicQuestions } from "@/lib/sell/queries";
 
-import { getModelLinkTargets, getModelValueData, listTradeInModels } from "./catalogue";
+import { getModelLinkTargets, getModelValueData, listTradeInModels } from "@refnused/database/lib/guides/catalogue";
 import {
   articleGuide,
   fixedGuide,
@@ -13,10 +13,10 @@ import {
   isArticleSlug,
   modelValueGuide,
 } from "./compose";
-import { buildModelValueTable, type ModelValueTable } from "./model-value";
+import { buildModelValueTable, type ModelValueTable } from "@refnused/database/lib/guides/model-value";
 import { fetchSanityGuide, fetchSanityGuides } from "./sanity.server";
-import { FIXED_GUIDE_SLUGS, parseModelValueSlug } from "./slugs";
-import type { Guide, GuideSummary } from "./types";
+import { FIXED_GUIDE_SLUGS, parseModelValueSlug } from "@refnused/database/lib/guides/slugs";
+import type { Guide, GuideSummary } from "@refnused/database/lib/guides/types";
 
 /*
  * Cached guide reads. Tags: "guides" (revalidated by the Sanity webhook),

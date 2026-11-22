@@ -3,9 +3,9 @@ import Link from "next/link";
 
 import { JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPrice } from "@/lib/format";
-import { GRADE_INFO, type Grade } from "@/lib/grades";
-import { absoluteUrl } from "@/lib/seo";
+import { formatPrice } from "@refnused/database/lib/format";
+import { GRADE_INFO, type Grade } from "@refnused/database/lib/grades";
+import { absoluteUrl } from "@refnused/database/lib/seo";
 import type { FacetOption, ShopFacets, ShopSearchResult } from "@/lib/shop/catalogue";
 import {
   hasActiveFilters,
@@ -17,8 +17,8 @@ import {
   withoutValue,
   type ListFacet,
   type ShopFilters,
-} from "@/lib/shop/filters";
-import { productPath, productTitle } from "@/lib/shop/paths";
+} from "@refnused/database/lib/shop/filters";
+import { productPath, productTitle } from "@refnused/database/lib/shop/paths";
 import { cn } from "@/lib/utils";
 
 import { FilterForm } from "./filter-form";

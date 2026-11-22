@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { cachedGuideSummaries } from "@/lib/guides/queries";
-import { guidePath } from "@/lib/guides/slugs";
+import { guidePath } from "@refnused/database/lib/guides/slugs";
 import { orFallback } from "@/lib/shop/load";
 import { sitemapEntry } from "@/lib/sitemaps";
 

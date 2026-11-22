@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { z } from "zod";
 
 import { staffAction } from "@/auth/guards";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { quoteApprovedEmail, quoteRejectedEmail, revisedOfferEmail } from "@/lib/admin/messages";
 import {
   inspectionSchema,
@@ -13,10 +13,10 @@ import {
   markQuoteReturned,
   quoteContact,
   recordInspection,
-} from "@/lib/admin/quotes";
-import { sendEmail } from "@/lib/notify/email";
-import { pushQuoteUpdate } from "@/lib/push/notify";
-import { absoluteUrl } from "@/lib/seo";
+} from "@refnused/database/lib/admin/quotes";
+import { sendEmail } from "@refnused/database/lib/notify/email";
+import { pushQuoteUpdate } from "@refnused/database/lib/push/notify";
+import { absoluteUrl } from "@refnused/database/lib/seo";
 
 const quoteId = z.object({ quoteId: z.uuid() });
 

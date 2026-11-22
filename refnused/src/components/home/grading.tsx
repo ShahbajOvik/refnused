@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/motion/reveal";
 import { GradeBadge } from "@/components/ui/badge";
-import { GRADE_INFO, GRADES } from "@/lib/grades";
+import { GRADE_INFO, GRADES } from "@refnused/database/lib/grades";
 import { cn } from "@/lib/utils";
 
 import { SectionHeading } from "./section-heading";

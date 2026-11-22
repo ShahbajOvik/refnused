@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { pushStatusAction, subscribePushAction, unsubscribePushAction } from "@/lib/push/actions";
-import type { PushTopicInput } from "@/lib/push/subscription";
+import type { PushTopicInput } from "@refnused/database/lib/push/subscription";
 
 import { isIos, isStandalone } from "./install-store";
 

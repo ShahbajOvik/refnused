@@ -1,10 +1,10 @@
-import { formatPrice } from "@/lib/format";
-import { GRADE_INFO } from "@/lib/grades";
-import { mediaUrl } from "@/lib/media";
+import { formatPrice } from "@refnused/database/lib/format";
+import { GRADE_INFO } from "@refnused/database/lib/grades";
+import { mediaUrl } from "@refnused/database/lib/media";
 import { OG_IMAGE_SIZE } from "@/lib/metadata";
 import { OG_PICTURE_BOX, ogCard } from "@/lib/og/card";
 import { cachedOgPicture } from "@/lib/og/image-source";
-import { productImageSrc, productTitle } from "@/lib/shop/paths";
+import { productImageSrc, productTitle } from "@refnused/database/lib/shop/paths";
 import { cachedProduct } from "@/lib/shop/queries";
 
 export const alt = "Refurbished phone at RefurbednUsed";

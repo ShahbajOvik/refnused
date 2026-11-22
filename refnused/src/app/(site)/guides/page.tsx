@@ -5,12 +5,12 @@ import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
-import { siteConfig } from "@/config/site";
-import { formatPrice } from "@/lib/format";
+import { siteConfig } from "@refnused/database/config/site";
+import { formatPrice } from "@refnused/database/lib/format";
 import { cachedGuideSummaries, cachedSellableModels } from "@/lib/guides/queries";
-import { guidePath, modelValueSlug } from "@/lib/guides/slugs";
+import { guidePath, modelValueSlug } from "@refnused/database/lib/guides/slugs";
 import { guidesIndexMetadata } from "@/lib/metadata-templates";
-import { absoluteUrl, WEBSITE_ID } from "@/lib/seo";
+import { absoluteUrl, WEBSITE_ID } from "@refnused/database/lib/seo";
 import { orFallback } from "@/lib/shop/load";
 
 export const metadata = guidesIndexMetadata();

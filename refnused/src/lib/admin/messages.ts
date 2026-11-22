@@ -1,5 +1,5 @@
-import { siteConfig } from "@/config/site";
-import { formatPrice } from "@/lib/format";
+import { siteConfig } from "@refnused/database/config/site";
+import { formatPrice } from "@refnused/database/lib/format";
 
 /* Customer emails sent from admin actions. Plain text plus simple HTML. */
 

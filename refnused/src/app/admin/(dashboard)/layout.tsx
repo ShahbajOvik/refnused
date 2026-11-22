@@ -9,7 +9,7 @@ import { LogoMark } from "@/components/layout/logo";
 import { NavLink } from "@/components/layout/nav-link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 
 /** Admin sections, in menu order, with the permission each needs. */
 const SECTIONS: { href: string; label: string; permission: Permission; exact?: boolean }[] = [

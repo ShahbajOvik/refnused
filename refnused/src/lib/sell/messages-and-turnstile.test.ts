@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { verifyTurnstile } from "@/lib/security/turnstile";
+import { verifyTurnstile } from "@refnused/database/lib/security/turnstile";
 
 import {
   quoteConfirmationEmail,

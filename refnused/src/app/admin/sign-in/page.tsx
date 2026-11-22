@@ -8,8 +8,8 @@ import { AuthCard, AuthCardSkeleton, Divider, FormMessage } from "@/components/a
 import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
 import { GoogleIcon } from "@/components/auth/google-icon";
 import { Button } from "@/components/ui/button";
-import { publicEnv } from "@/lib/env";
-import { isGoogleSignInEnabled } from "@/lib/env.server";
+import { publicEnv } from "@refnused/database/lib/env";
+import { isGoogleSignInEnabled } from "@refnused/database/lib/env.server";
 
 import {
   signInStaffWithEmail,

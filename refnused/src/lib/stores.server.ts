@@ -2,10 +2,10 @@ import "server-only";
 
 import { and, asc, avg, count, desc, eq } from "drizzle-orm";
 
-import { reviews, stores } from "@/db/schema";
-import type { AppDb } from "@/db/types";
+import { reviews, stores } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
 
-import { type PublicStore, ukPhoneDisplay } from "./stores";
+import { type PublicStore, ukPhoneDisplay } from "@refnused/database/lib/stores";
 
 /** Active stores from the database. Kept apart from ./stores so client components can use its helpers. */
 export async function listPublicStores(db: AppDb): Promise<PublicStore[]> {

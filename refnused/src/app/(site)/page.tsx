@@ -10,7 +10,7 @@ import { StoresSection } from "@/components/home/stores-section";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { JsonLd } from "@/components/seo/json-ld";
 import { homeMetadata } from "@/lib/metadata-templates";
-import { organizationJsonLd, storesJsonLd, websiteJsonLd } from "@/lib/seo";
+import { organizationJsonLd, storesJsonLd, websiteJsonLd } from "@refnused/database/lib/seo";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 export const metadata = homeMetadata();

@@ -16,9 +16,9 @@ import {
   verifyPasskeyRegistration,
 } from "@/auth/staff-passkeys";
 import { confirmTotpSetup, startTotpSetup, verifyStaffTotp } from "@/auth/staff-service";
-import { db } from "@/db";
-import { getFieldCipher } from "@/lib/crypto/field-encryption";
-import { getRequestMeta } from "@/lib/request-meta";
+import { db } from "@refnused/database/db";
+import { getFieldCipher } from "@refnused/database/lib/crypto/field-encryption";
+import { getRequestMeta } from "@refnused/database/lib/request-meta";
 
 /*
  * Second-factor actions. These run before the session is fully signed in,

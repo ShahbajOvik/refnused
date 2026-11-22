@@ -2,7 +2,7 @@ import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import Image from "next/image";
 import Link from "next/link";
 
-import type { GuideBlocks } from "@/lib/guides/types";
+import type { GuideBlocks } from "@refnused/database/lib/guides/types";
 
 /*
  * Renders guide copy from Sanity. Headings start at h2 (the page has the h1).

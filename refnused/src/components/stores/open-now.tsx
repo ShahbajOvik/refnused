@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
-import type { OpeningHours } from "@/db/schema/stores";
-import { openStatus } from "@/lib/stores";
+import type { OpeningHours } from "@refnused/database/db/schema/stores";
+import { openStatus } from "@refnused/database/lib/stores";
 import { cn } from "@/lib/utils";
 
 const MINUTE = 60_000;

@@ -6,9 +6,9 @@ import { AccountPage } from "@/components/account/account-page";
 import { Timeline } from "@/components/account/timeline";
 import { Badge } from "@/components/ui/badge";
 import { requireCustomer } from "@/auth/guards";
-import { db } from "@/db";
-import { listCustomerQuotes, quoteTimeline, type QuoteSummary } from "@/lib/account/quotes";
-import { formatDate, formatPrice } from "@/lib/format";
+import { db } from "@refnused/database/db";
+import { listCustomerQuotes, quoteTimeline, type QuoteSummary } from "@refnused/database/lib/account/quotes";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
 
 import { respondToOfferAction } from "../actions";
 

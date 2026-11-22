@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 
 /*
  * Web app manifest (/manifest.webmanifest). Icons and screenshots are made

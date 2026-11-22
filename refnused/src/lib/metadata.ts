@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 
 /*
  * Metadata templates. Every public page builds its metadata with

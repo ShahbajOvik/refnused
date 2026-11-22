@@ -1,4 +1,4 @@
-import { HERO_POSTER } from "@/components/home/hero/config";
+import { HERO_POSTER } from "@refnused/database/config/hero";
 import { DEFAULT_OG_IMAGE, OG_IMAGE_SIZE } from "@/lib/metadata";
 import { OG_PICTURE_BOX, ogCard } from "@/lib/og/card";
 import { cachedOgPicture } from "@/lib/og/image-source";

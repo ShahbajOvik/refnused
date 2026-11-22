@@ -1,6 +1,6 @@
 import { FaqList } from "@/components/seo/faq-list";
 import { faqs } from "@/content/home";
-import { faqPageJsonLd } from "@/lib/seo";
+import { faqPageJsonLd } from "@refnused/database/lib/seo";
 
 import { SectionHeading } from "./section-heading";
 

@@ -1,8 +1,8 @@
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 import { OG_IMAGE_SIZE } from "@/lib/metadata";
 import { OG_PICTURE_BOX, ogCard } from "@/lib/og/card";
 import { cachedOgPicture } from "@/lib/og/image-source";
-import { PRICE_LOCK_DAYS } from "@/lib/sell/offer-service";
+import { PRICE_LOCK_DAYS } from "@refnused/database/lib/sell/offer-service";
 import { cachedSellModel } from "@/lib/sell/queries";
 
 export const alt = "Sell your phone for cash at RefurbednUsed";

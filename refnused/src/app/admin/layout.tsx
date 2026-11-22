@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { renderPerRequest } from "@/lib/security/per-request";
+import { renderPerRequest } from "@refnused/database/lib/security/per-request";
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s | RefurbednUsed admin" },

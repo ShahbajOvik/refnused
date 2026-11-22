@@ -33,8 +33,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GRADE_INFO, GRADES } from "@/lib/grades";
-import { formatDate, formatPrice } from "@/lib/format";
+import { GRADE_INFO, GRADES } from "@refnused/database/lib/grades";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
 
 export const metadata: Metadata = {
   title: "Styleguide",

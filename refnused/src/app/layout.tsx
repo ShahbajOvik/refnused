@@ -6,8 +6,8 @@ import { PwaRegister } from "@/components/pwa/pwa-register";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
 import { LazyToaster } from "@/components/ui/lazy-toaster";
-import { siteConfig } from "@/config/site";
-import { publicEnv } from "@/lib/env";
+import { siteConfig } from "@refnused/database/config/site";
+import { publicEnv } from "@refnused/database/lib/env";
 
 import "./globals.css";
 

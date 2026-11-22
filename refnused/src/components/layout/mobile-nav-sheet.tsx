@@ -13,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { mainNav } from "@/config/site";
+import { mainNav } from "@refnused/database/config/site";
 
 export type MobileNavStore = {
   slug: string;
@@ -22,8 +22,8 @@ export type MobileNavStore = {
   phone: string;
   phoneDisplay: string;
 };
-import { telHref } from "@/lib/format";
-import { storeName } from "@/lib/stores";
+import { telHref } from "@refnused/database/lib/format";
+import { storeName } from "@refnused/database/lib/stores";
 
 const itemClass =
   "flex min-h-12 items-center gap-3 rounded-lg px-3 text-base font-medium hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none data-active:bg-accent data-active:text-primary";

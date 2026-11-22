@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { DataTable, Empty, PageHeader } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { listAudit } from "@/lib/admin/people";
 
 export const metadata: Metadata = { title: "Audit log" };

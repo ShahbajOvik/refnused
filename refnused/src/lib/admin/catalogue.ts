@@ -1,11 +1,11 @@
 import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
-import { brands, categories, deviceModels, modelVariants, products } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { ActionError } from "@/lib/action-error";
-import { recordAudit, type RequestMeta } from "@/lib/audit";
-import { slugify } from "@/lib/shop/slug";
+import { brands, categories, deviceModels, modelVariants, products } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { ActionError } from "@refnused/database/lib/action-error";
+import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
+import { slugify } from "@refnused/database/lib/shop/slug";
 
 /*
  * The catalogue: categories, brands, models and their options. Slugs are

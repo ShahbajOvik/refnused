@@ -7,11 +7,11 @@ import { AccountPage } from "@/components/account/account-page";
 import { Timeline } from "@/components/account/timeline";
 import { OrderRequestForm } from "@/components/checkout/order-request-form";
 import { Badge } from "@/components/ui/badge";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { orderTimeline } from "@/lib/account/orders";
-import { formatDate, formatPrice } from "@/lib/format";
-import { listCustomerOrders, type OrderView } from "@/lib/orders/order-service";
-import { RETURN_REASONS, WARRANTY_FAULTS } from "@/lib/orders/requests";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
+import { listCustomerOrders, type OrderView } from "@refnused/database/lib/orders/order-service";
+import { RETURN_REASONS, WARRANTY_FAULTS } from "@refnused/database/lib/orders/requests";
 
 import { createAccountOrderRequestAction } from "../actions";
 

@@ -4,14 +4,14 @@ import { Suspense } from "react";
 import { TotpSetupPanel } from "@/app/admin/_components/totp-setup-panel";
 import { PasskeyRegisterForm } from "@/app/admin/_components/two-factor-forms";
 import { requireStaff } from "@/auth/guards";
-import { PASSWORD_MIN_LENGTH } from "@/auth/password";
+import { PASSWORD_MIN_LENGTH } from "@refnused/database/auth/password";
 import { staffHasPassword } from "@/auth/staff-password";
 import { listStaffPasskeys } from "@/auth/staff-passkeys";
 import { FormMessage } from "@/components/auth/auth-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { formatDate } from "@/lib/format";
+import { db } from "@refnused/database/db";
+import { formatDate } from "@refnused/database/lib/format";
 
 import { PasswordForm } from "./password-form";
 

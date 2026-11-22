@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { StoreAddress } from "@/components/stores/store-actions";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { footerExtraNav, legalNav, mainNav, siteConfig, socialLinks } from "@/config/site";
-import { telHref } from "@/lib/format";
-import { storeName, storePath } from "@/lib/stores";
+import { footerExtraNav, legalNav, mainNav, siteConfig, socialLinks } from "@refnused/database/config/site";
+import { telHref } from "@refnused/database/lib/format";
+import { storeName, storePath } from "@refnused/database/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 const linkClass =

@@ -7,7 +7,7 @@ import { Empty, FilterTabs, PageHeader, Section, StatusPill } from "@/app/admin/
 import { requireStaff } from "@/auth/guards";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { loadCatalogue, type CatalogueData } from "@/lib/admin/catalogue";
 
 import {

@@ -10,10 +10,10 @@ import { authCookies, STAFF_SESSION_COOKIE, useSecureCookies } from "@/auth/cook
 import { sendMagicLink } from "@/auth/email";
 import { checkStaffSignIn, logSignIn, logSignOut } from "@/auth/sign-in-rules";
 import { STAFF_SESSION_MAX_AGE_SECONDS } from "@/auth/staff-session";
-import { db } from "@/db";
-import { staffAccounts, staffSessions, staffUsers, staffVerificationTokens } from "@/db/schema";
-import { isGoogleSignInEnabled, serverEnv } from "@/lib/env.server";
-import { getRequestMeta } from "@/lib/request-meta";
+import { db } from "@refnused/database/db";
+import { staffAccounts, staffSessions, staffUsers, staffVerificationTokens } from "@refnused/database/db/schema";
+import { isGoogleSignInEnabled, serverEnv } from "@refnused/database/lib/env.server";
+import { getRequestMeta } from "@refnused/database/lib/request-meta";
 
 const MAGIC_LINK_MINUTES = 10;
 

@@ -3,10 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Badge, GradeBadge } from "@/components/ui/badge";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 import type { ShopProduct } from "@/lib/shop/catalogue";
-import { productImageSrc, productPath, productTitle } from "@/lib/shop/paths";
-import { variantLabel } from "@/lib/shop/variant-label";
+import { productImageSrc, productPath, productTitle } from "@refnused/database/lib/shop/paths";
+import { variantLabel } from "@refnused/database/lib/shop/variant-label";
 import { cn } from "@/lib/utils";
 
 import { CompareToggle } from "./compare-toggle";

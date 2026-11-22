@@ -1,5 +1,5 @@
-import { formatDate } from "@/lib/format";
-import type { GuideAuthor } from "@/lib/guides/types";
+import { formatDate } from "@refnused/database/lib/format";
+import type { GuideAuthor } from "@refnused/database/lib/guides/types";
 
 /** Author and dates. Shown on every guide, matching the Article JSON-LD. */
 export function GuideByline({

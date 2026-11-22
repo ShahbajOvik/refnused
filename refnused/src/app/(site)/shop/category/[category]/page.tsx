@@ -14,7 +14,7 @@ import {
   PARAM,
   parseShopFilters,
   serializeShopFilters,
-} from "@/lib/shop/filters";
+} from "@refnused/database/lib/shop/filters";
 import { pageMetadata } from "@/lib/metadata";
 import { orFallback } from "@/lib/shop/load";
 import {
@@ -24,7 +24,7 @@ import {
   cachedSearch,
   cachedShopCategories,
 } from "@/lib/shop/queries";
-import { itemNoun } from "@/lib/shop/variant-label";
+import { itemNoun } from "@refnused/database/lib/shop/variant-label";
 
 export async function generateStaticParams() {
   return cachedCategoryParams();

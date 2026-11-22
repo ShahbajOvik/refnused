@@ -7,9 +7,9 @@ import { requireStaff } from "@/auth/guards";
 import { can } from "@/auth/roles";
 import { FormMessage } from "@/components/auth/auth-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { getDashboard } from "@/lib/admin/dashboard";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 export const metadata: Metadata = { title: "Dashboard" };
 

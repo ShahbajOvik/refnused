@@ -1,4 +1,4 @@
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@refnused/database/config/site";
 
 export type MagicLink = {
   to: string;

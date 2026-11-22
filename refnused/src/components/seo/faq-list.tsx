@@ -1,6 +1,6 @@
 import { ChevronDownIcon } from "lucide-react";
 
-import type { FaqItem } from "@/lib/seo";
+import type { FaqItem } from "@refnused/database/lib/seo";
 import { cn } from "@/lib/utils";
 
 /**

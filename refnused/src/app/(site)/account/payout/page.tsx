@@ -4,9 +4,9 @@ import type { Metadata } from "next";
 import { requireCustomer } from "@/auth/guards";
 import { AccountPage } from "@/components/account/account-page";
 import { PayoutChangeForm } from "@/components/account/forms";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { getPayoutSummary, maskSortCode } from "@/lib/account/payout";
-import { formatDate } from "@/lib/format";
+import { formatDate } from "@refnused/database/lib/format";
 
 export const metadata: Metadata = {
   title: "Payout details",

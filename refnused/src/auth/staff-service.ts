@@ -8,10 +8,10 @@ import {
   type StaffSessionRecord,
 } from "@/auth/staff-session";
 import { generateTotpSecret, verifyTotp } from "@/auth/totp";
-import { staffPasskeys, staffSessions, staffUsers } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { recordAudit, type RequestMeta } from "@/lib/audit";
-import type { FieldCipher } from "@/lib/crypto/field-encryption";
+import { staffPasskeys, staffSessions, staffUsers } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
+import type { FieldCipher } from "@refnused/database/lib/crypto/field-encryption";
 
 /*
  * Staff authentication data access. Every function takes `db` so it runs

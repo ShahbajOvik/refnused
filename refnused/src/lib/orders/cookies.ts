@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { BASKET_COOKIE, parseBasket, serializeBasket } from "./basket";
+import { BASKET_COOKIE, parseBasket, serializeBasket } from "@refnused/database/lib/orders/basket";
 
 /** httpOnly: the token behind this browser's latest checkout attempt. */
 export const CHECKOUT_COOKIE = "ru_checkout";

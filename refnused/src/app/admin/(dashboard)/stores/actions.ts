@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 
 import { staffAction } from "@/auth/guards";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { storeUpdateSchema, updateStore } from "@/lib/admin/people";
 
 export const updateStoreAction = staffAction(

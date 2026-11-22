@@ -3,10 +3,10 @@ import { z } from "zod";
 
 import { STAFF_ROLES, type StaffRole } from "@/auth/roles";
 import { deleteAllStaffSessions, resetStaffMfa } from "@/auth/staff-service";
-import { staffUsers } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { ActionError } from "@/lib/action-error";
-import { recordAudit, type RequestMeta } from "@/lib/audit";
+import { staffUsers } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { ActionError } from "@refnused/database/lib/action-error";
+import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
 
 /** Owner-only staff management. Callers must check `staff.manage` first. */
 

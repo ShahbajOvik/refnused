@@ -9,16 +9,16 @@ import Resend from "next-auth/providers/resend";
 import { authCookies, CUSTOMER_SESSION_COOKIE, useSecureCookies } from "@/auth/cookies";
 import { sendMagicLink } from "@/auth/email";
 import { checkCustomerSignIn, logSignIn, logSignOut } from "@/auth/sign-in-rules";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import {
   customerAccounts,
   customerAuthenticators,
   customers,
   customerSessions,
   customerVerificationTokens,
-} from "@/db/schema";
-import { isGoogleSignInEnabled, serverEnv } from "@/lib/env.server";
-import { getRequestMeta } from "@/lib/request-meta";
+} from "@refnused/database/db/schema";
+import { isGoogleSignInEnabled, serverEnv } from "@refnused/database/lib/env.server";
+import { getRequestMeta } from "@refnused/database/lib/request-meta";
 
 const MAGIC_LINK_MINUTES = 30;
 

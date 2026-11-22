@@ -14,11 +14,11 @@ import { createOrderRequestAction } from "../actions";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
-import { publicEnv } from "@/lib/env";
-import { formatDate, formatPrice, telHref } from "@/lib/format";
-import { getOrderByAccessToken, type OrderView } from "@/lib/orders/order-service";
-import { RETURN_REASONS, RETURN_WINDOW_DAYS, WARRANTY_FAULTS } from "@/lib/orders/requests";
+import { db } from "@refnused/database/db";
+import { publicEnv } from "@refnused/database/lib/env";
+import { formatDate, formatPrice, telHref } from "@refnused/database/lib/format";
+import { getOrderByAccessToken, type OrderView } from "@refnused/database/lib/orders/order-service";
+import { RETURN_REASONS, RETURN_WINDOW_DAYS, WARRANTY_FAULTS } from "@refnused/database/lib/orders/requests";
 
 export const metadata: Metadata = {
   title: "Your order",

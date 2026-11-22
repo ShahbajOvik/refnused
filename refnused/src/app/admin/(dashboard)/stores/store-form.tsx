@@ -6,8 +6,8 @@ import { useAdminAction } from "@/app/admin/_components/action-button";
 import { FileUploader, type UploadedFile } from "@/app/admin/_components/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { OpeningHours } from "@/db/schema/stores";
-import { DAYS } from "@/lib/stores";
+import type { OpeningHours } from "@refnused/database/db/schema/stores";
+import { DAYS } from "@refnused/database/lib/stores";
 
 import { updateStoreAction } from "./actions";
 

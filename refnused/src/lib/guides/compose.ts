@@ -1,5 +1,5 @@
-import { siteConfig } from "@/config/site";
-import { formatPrice } from "@/lib/format";
+import { siteConfig } from "@refnused/database/config/site";
+import { formatPrice } from "@refnused/database/lib/format";
 import { metaDescription } from "@/lib/metadata";
 
 import {
@@ -8,8 +8,8 @@ import {
   modelValueSlug,
   parseModelValueSlug,
   type GuideTemplate,
-} from "./slugs";
-import type { Guide, GuideAuthor, GuideBlocks, GuideSummary, SanityGuide } from "./types";
+} from "@refnused/database/lib/guides/slugs";
+import type { Guide, GuideAuthor, GuideBlocks, GuideSummary, SanityGuide } from "@refnused/database/lib/guides/types";
 
 /*
  * Builds guides from their two sources. Pure.

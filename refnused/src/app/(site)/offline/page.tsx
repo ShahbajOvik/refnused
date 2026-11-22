@@ -8,8 +8,8 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { OpenNow } from "@/components/stores/open-now";
 import { OpeningHoursSummary } from "@/components/stores/opening-hours";
 import { StoreAddress } from "@/components/stores/store-actions";
-import { telHref } from "@/lib/format";
-import { storeName, storePath } from "@/lib/stores";
+import { telHref } from "@refnused/database/lib/format";
+import { storeName, storePath } from "@refnused/database/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
 
 /*

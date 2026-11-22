@@ -9,13 +9,13 @@ import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DELIVERY_OPTIONS } from "@/config/shop";
-import { db } from "@/db";
-import { customers, stores } from "@/db/schema";
+import { DELIVERY_OPTIONS } from "@refnused/database/config/shop";
+import { db } from "@refnused/database/db";
+import { customers, stores } from "@refnused/database/db/schema";
 import { customerAuth } from "@/auth/customer";
 import { listAddresses } from "@/lib/account/addresses";
-import { publicEnv } from "@/lib/env";
-import { previewCheckout } from "@/lib/orders/checkout-service";
+import { publicEnv } from "@refnused/database/lib/env";
+import { previewCheckout } from "@refnused/database/lib/orders/checkout-service";
 import { readBasket, readCheckoutToken } from "@/lib/orders/cookies";
 
 /** +447700900123 → 07700 900123, for the phone field. */

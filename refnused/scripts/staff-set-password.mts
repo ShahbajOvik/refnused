@@ -10,9 +10,9 @@
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
 
-import { PASSWORD_MIN_LENGTH } from "@/auth/password";
+import { PASSWORD_MIN_LENGTH } from "@refnused/database/auth/password";
 import { setStaffPasswordByEmail, StaffPasswordError } from "@/auth/staff-password";
-import { createDatabase } from "@/db/client";
+import { createDatabase } from "@refnused/database/db/client";
 
 const { values } = parseArgs({ options: { email: { type: "string" } } });
 

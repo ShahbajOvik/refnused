@@ -12,7 +12,7 @@ import {
   resetStaffTwoFactor,
   setStaffActive,
 } from "@/auth/staff-admin";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 
 // Every action re-checks the session and `staff.manage` on each call.
 

@@ -4,19 +4,19 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { HERO_POSTER } from "@/components/home/hero/config";
+import { HERO_POSTER } from "@refnused/database/config/hero";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { FaqList } from "@/components/seo/faq-list";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ModelLinks } from "@/components/seo/model-links";
 import { SellWizard } from "@/components/sell/sell-wizard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { publicEnv } from "@/lib/env";
-import { formatPrice } from "@/lib/format";
+import { publicEnv } from "@refnused/database/lib/env";
+import { formatPrice } from "@refnused/database/lib/format";
 import { sellModelMetadata } from "@/lib/metadata-templates";
 import { sellModelFaqs } from "@/lib/sell/model-faqs";
-import { PRICE_LOCK_DAYS } from "@/lib/sell/offer-service";
-import { faqPageJsonLd } from "@/lib/seo";
+import { PRICE_LOCK_DAYS } from "@refnused/database/lib/sell/offer-service";
+import { faqPageJsonLd } from "@refnused/database/lib/seo";
 import {
   cachedDropOffStores,
   cachedModelParams,

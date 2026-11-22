@@ -1,9 +1,9 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { customerAddresses } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { ukPostcodeSchema } from "@/lib/validation/uk";
+import { customerAddresses } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { ukPostcodeSchema } from "@refnused/database/lib/validation/uk";
 
 export const MAX_ADDRESSES = 10;
 

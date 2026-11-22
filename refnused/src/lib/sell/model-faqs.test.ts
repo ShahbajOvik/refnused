@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { faqPageJsonLd } from "@/lib/seo";
+import { faqPageJsonLd } from "@refnused/database/lib/seo";
 
 import { sellModelFaqs } from "./model-faqs";
 

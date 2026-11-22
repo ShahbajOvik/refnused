@@ -17,7 +17,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { AddToBasket } from "@/components/checkout/add-to-basket";
-import { HERO_MODEL_URL } from "@/components/home/hero/config";
+import { HERO_MODEL_URL } from "@refnused/database/config/hero";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ModelLinks } from "@/components/seo/model-links";
@@ -29,19 +29,19 @@ import { TradeInCalculator } from "@/components/shop/trade-in-calculator";
 import { ViewIn3D } from "@/components/shop/view-in-3d";
 import { Badge, GradeBadge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CLICK_AND_COLLECT, DELIVERY_OPTIONS, RETURN_POLICY } from "@/config/shop";
-import { publicEnv } from "@/lib/env";
-import { formatDate, formatPrice, telHref } from "@/lib/format";
-import { GRADE_INFO, GRADES } from "@/lib/grades";
-import { mediaUrl } from "@/lib/media";
-import { GRADING_GUIDE_SLUG, guidePath } from "@/lib/guides/slugs";
+import { CLICK_AND_COLLECT, DELIVERY_OPTIONS, RETURN_POLICY } from "@refnused/database/config/shop";
+import { publicEnv } from "@refnused/database/lib/env";
+import { formatDate, formatPrice, telHref } from "@refnused/database/lib/format";
+import { GRADE_INFO, GRADES } from "@refnused/database/lib/grades";
+import { mediaUrl } from "@refnused/database/lib/media";
+import { GRADING_GUIDE_SLUG, guidePath } from "@refnused/database/lib/guides/slugs";
 import { productMetadata } from "@/lib/metadata-templates";
 import type { ProductDetail } from "@/lib/shop/catalogue";
 import { productJsonLd, type ProductAvailability } from "@/lib/shop/json-ld";
 import { orFallback } from "@/lib/shop/load";
-import { productImageSrc, productPath, productTitle } from "@/lib/shop/paths";
+import { productImageSrc, productPath, productTitle } from "@refnused/database/lib/shop/paths";
 import { batteryRating } from "@/lib/shop/product-info";
-import { itemNoun, variantLabel } from "@/lib/shop/variant-label";
+import { itemNoun, variantLabel } from "@refnused/database/lib/shop/variant-label";
 import {
   cachedProduct,
   cachedProductParams,

@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 
-import { siteConfig } from "@/config/site";
-import { formatPrice } from "@/lib/format";
-import { GRADE_INFO, type Grade } from "@/lib/grades";
-import { guidePath } from "@/lib/guides/slugs";
-import type { Guide } from "@/lib/guides/types";
+import { siteConfig } from "@refnused/database/config/site";
+import { formatPrice } from "@refnused/database/lib/format";
+import { GRADE_INFO, type Grade } from "@refnused/database/lib/grades";
+import { guidePath } from "@refnused/database/lib/guides/slugs";
+import type { Guide } from "@refnused/database/lib/guides/types";
 import { metaDescription, pageMetadata } from "@/lib/metadata";
-import { productPath, productTitle } from "@/lib/shop/paths";
-import type { VariantOptions } from "@/lib/shop/variant-label";
-import { variantLabel } from "@/lib/shop/variant-label";
-import { storeAddress, storeName, storePath, type PublicStore } from "@/lib/stores";
+import { productPath, productTitle } from "@refnused/database/lib/shop/paths";
+import type { VariantOptions } from "@refnused/database/lib/shop/variant-label";
+import { variantLabel } from "@refnused/database/lib/shop/variant-label";
+import { storeAddress, storeName, storePath, type PublicStore } from "@refnused/database/lib/stores";
 
 /*
  * generateMetadata templates, one per page type. Pure: pages load the data

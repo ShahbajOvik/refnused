@@ -5,7 +5,7 @@ import { z } from "zod";
 import { safeCallbackUrl } from "@/auth/access";
 import { customerSignIn, customerSignOut } from "@/auth/customer";
 import type { EmailFormState } from "@/components/auth/email-sign-in-form";
-import { magicLinkGuard } from "@/lib/security/magic-link-guard";
+import { magicLinkGuard } from "@refnused/database/lib/security/magic-link-guard";
 
 const emailSchema = z.object({
   email: z.email().transform((v) => v.trim().toLowerCase()),

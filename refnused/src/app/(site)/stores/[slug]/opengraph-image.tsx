@@ -1,8 +1,8 @@
-import { mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@refnused/database/lib/media";
 import { OG_IMAGE_SIZE } from "@/lib/metadata";
 import { OG_PICTURE_BOX, ogCard } from "@/lib/og/card";
 import { cachedOgPicture } from "@/lib/og/image-source";
-import { storeAddress, storeName } from "@/lib/stores";
+import { storeAddress, storeName } from "@refnused/database/lib/stores";
 import { loadPublicStore } from "@/lib/stores-cache";
 
 export const alt = "RefurbednUsed store";

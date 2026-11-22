@@ -7,10 +7,10 @@ import {
   priceAlerts,
   products,
   tradeInPrices,
-} from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { sellModelPath } from "@/lib/internal-links";
-import { productPath } from "@/lib/shop/paths";
+} from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { sellModelPath } from "@refnused/database/lib/internal-links";
+import { productPath } from "@refnused/database/lib/shop/paths";
 
 /*
  * Which price alerts have been met. Run after units are listed or repriced

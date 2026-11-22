@@ -13,9 +13,9 @@ import {
 } from "@/app/admin/_components/kit";
 import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import { listOrdersAdmin, ORDER_FILTERS, type OrderFilter } from "@/lib/admin/orders";
-import { formatDate, formatPrice } from "@/lib/format";
+import { formatDate, formatPrice } from "@refnused/database/lib/format";
 
 export const metadata: Metadata = { title: "Orders" };
 

@@ -5,7 +5,7 @@ import { useId, useState } from "react";
 import { useAdminAction } from "@/app/admin/_components/action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatPrice } from "@/lib/format";
+import { formatPrice } from "@refnused/database/lib/format";
 
 import { advanceFulfilmentAction, decideRequestAction, refundAction } from "./actions";
 

@@ -1,4 +1,4 @@
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl } from "@refnused/database/lib/seo";
 import { SITEMAPS, sitemapIndexXml, sitemapPath } from "@/lib/sitemaps";
 
 /** Sitemap index: one sitemap per page type (src/app/sitemaps/*). */

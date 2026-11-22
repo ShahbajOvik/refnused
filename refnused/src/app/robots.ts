@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl } from "@refnused/database/lib/seo";
 
 /**
  * Account, basket, checkout and order pages are NOT blocked here: they send

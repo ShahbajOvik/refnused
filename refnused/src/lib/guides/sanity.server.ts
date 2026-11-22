@@ -3,10 +3,10 @@ import "server-only";
 import { createClient, type SanityClient } from "@sanity/client";
 import { z } from "zod";
 
-import { sanityEnabled, serverEnv } from "@/lib/env.server";
+import { sanityEnabled, serverEnv } from "@refnused/database/lib/env.server";
 
-import type { GuideTemplate } from "./slugs";
-import { sanityGuideSchema, type SanityGuide } from "./types";
+import type { GuideTemplate } from "@refnused/database/lib/guides/slugs";
+import { sanityGuideSchema, type SanityGuide } from "@refnused/database/lib/guides/types";
 
 /*
  * Reads guides from Sanity (published documents only). Schema for the Studio:

@@ -5,21 +5,21 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createStaff } from "@/auth/staff-admin";
-import { auditLog, categories, modelVariants, products, stores } from "@/db/schema";
-import { seed } from "@/db/seed";
-import type { AppDb } from "@/db/types";
+import { auditLog, categories, modelVariants, products, stores } from "@refnused/database/db/schema";
+import { seed } from "@refnused/database/db/seed";
+import type { AppDb } from "@refnused/database/db/types";
 import { getPriceTable, listModelsForPrices } from "@/lib/admin/prices";
-import { getBrand, getSellModel, listBrandModels, listSellBrands } from "@/lib/sell/catalogue";
+import { getBrand, getSellModel, listBrandModels, listSellBrands } from "@refnused/database/lib/sell/catalogue";
 import {
   getShopFacets,
   listTradeInModels,
   searchProducts,
   listShopCategories,
 } from "@/lib/shop/catalogue";
-import { EMPTY_FILTERS, parseShopFilters, serializeShopFilters } from "@/lib/shop/filters";
-import { productSlug } from "@/lib/shop/slug";
-import { itemNoun, listingNoun, variantLabel } from "@/lib/shop/variant-label";
-import { createTestDb } from "@/test/db";
+import { EMPTY_FILTERS, parseShopFilters, serializeShopFilters } from "@refnused/database/lib/shop/filters";
+import { productSlug } from "@refnused/database/lib/shop/slug";
+import { itemNoun, listingNoun, variantLabel } from "@refnused/database/lib/shop/variant-label";
+import { createTestDb } from "@refnused/database/test/db";
 
 import {
   addVariants,

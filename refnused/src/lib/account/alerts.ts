@@ -1,8 +1,8 @@
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { brands, deviceModels, priceAlerts, stockAlerts } from "@/db/schema";
-import type { AppDb } from "@/db/types";
+import { brands, deviceModels, priceAlerts, stockAlerts } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
 
 /*
  * Price alerts (signed-in customers) and stock alerts (made by email from

@@ -8,7 +8,7 @@ import { FormMessage } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CatalogueData } from "@/lib/admin/catalogue";
-import { variantLabel } from "@/lib/shop/variant-label";
+import { variantLabel } from "@refnused/database/lib/shop/variant-label";
 
 import {
   addVariantsAction,

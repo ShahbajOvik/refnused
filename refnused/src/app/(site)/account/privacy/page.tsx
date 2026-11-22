@@ -6,10 +6,10 @@ import Link from "next/link";
 import { requireCustomer } from "@/auth/guards";
 import { AccountPage } from "@/components/account/account-page";
 import { DeleteAccountForm, MarketingForm } from "@/components/account/forms";
-import { db } from "@/db";
-import { customers } from "@/db/schema";
+import { db } from "@refnused/database/db";
+import { customers } from "@refnused/database/db/schema";
 import { deletionBlockers, RETENTION_NOTE, type DeletionBlocker } from "@/lib/account/privacy";
-import { formatDate } from "@/lib/format";
+import { formatDate } from "@refnused/database/lib/format";
 
 export const metadata: Metadata = {
   title: "Privacy and your data",

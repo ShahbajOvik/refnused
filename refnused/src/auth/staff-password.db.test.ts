@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { hashPassword, newPasswordSchema, verifyPassword } from "@/auth/password";
+import { hashPassword, newPasswordSchema, verifyPassword } from "@refnused/database/auth/password";
 import { createStaff, listStaff, setStaffActive } from "@/auth/staff-admin";
 import {
   changeOwnStaffPassword,
@@ -19,9 +19,9 @@ import {
 } from "@/auth/staff-password";
 import { loadStaffSession } from "@/auth/staff-service";
 import { evaluateStaffSession } from "@/auth/staff-session";
-import { auditLog, staffSessions, staffUsers } from "@/db/schema";
-import type { AppDb } from "@/db/types";
-import { createTestDb } from "@/test/db";
+import { auditLog, staffSessions, staffUsers } from "@refnused/database/db/schema";
+import type { AppDb } from "@refnused/database/db/types";
+import { createTestDb } from "@refnused/database/test/db";
 
 // Password hashing is deliberately slow, more so when test files run in parallel.
 vi.setConfig({ testTimeout: 60_000 });

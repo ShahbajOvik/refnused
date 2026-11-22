@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { Reveal } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadReviews } from "@/lib/catalogue/queries";
-import { formatDate } from "@/lib/format";
+import { formatDate } from "@refnused/database/lib/format";
 
 import { SectionHeading } from "./section-heading";
 

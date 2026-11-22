@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { z } from "zod";
 
 import { staffAction } from "@/auth/guards";
-import { db } from "@/db";
+import { db } from "@refnused/database/db";
 import {
   createProductFromIntake,
   intakeSchema,
@@ -14,7 +14,7 @@ import {
   updateProductAdmin,
 } from "@/lib/admin/intake";
 import { pushPriceAlerts } from "@/lib/push/price-alerts";
-import { imeiSchema } from "@/lib/validation/uk";
+import { imeiSchema } from "@refnused/database/lib/validation/uk";
 
 export const lookupImeiAction = staffAction(
   "products.manage",

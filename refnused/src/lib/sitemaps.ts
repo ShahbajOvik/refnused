@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { SITE_LANGUAGE } from "@/lib/metadata";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl } from "@refnused/database/lib/seo";
 
 /*
  * Split sitemaps. /sitemap.xml is a sitemap index (src/app/sitemap.xml) that

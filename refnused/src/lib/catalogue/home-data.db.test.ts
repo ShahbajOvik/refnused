@@ -2,10 +2,10 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { customers, reviews } from "@/db/schema";
-import { seed } from "@/db/seed";
-import { sampleTradeInPence } from "@/db/seed/catalogue";
-import type { AppDb } from "@/db/types";
+import { customers, reviews } from "@refnused/database/db/schema";
+import { seed } from "@refnused/database/db/seed";
+import { sampleTradeInPence } from "@refnused/database/db/seed/catalogue";
+import type { AppDb } from "@refnused/database/db/types";
 import {
   getFeaturedProducts,
   getPublishedReviews,
@@ -13,7 +13,7 @@ import {
   modelSearchQuerySchema,
   searchModels,
 } from "@/lib/catalogue/home-data";
-import { createTestDb } from "@/test/db";
+import { createTestDb } from "@refnused/database/test/db";
 
 let db: AppDb;
 let close: () => Promise<void>;

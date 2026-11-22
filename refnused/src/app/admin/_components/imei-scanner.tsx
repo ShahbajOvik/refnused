@@ -4,7 +4,7 @@ import { ScanLineIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
-import { isValidImei } from "@/lib/validation/uk";
+import { isValidImei } from "@refnused/database/lib/validation/uk";
 
 const noopSubscribe = () => () => {};
 

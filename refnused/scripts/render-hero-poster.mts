@@ -15,7 +15,7 @@ import { build } from "esbuild";
 import sharp from "sharp";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const { HERO_POSTER } = await import("../src/components/home/hero/config");
+const { HERO_POSTER } = await import("@refnused/database/config/hero");
 
 const entry = `
   import { ACESFilmicToneMapping, PerspectiveCamera, SRGBColorSpace, Scene, WebGLRenderer } from "three";
