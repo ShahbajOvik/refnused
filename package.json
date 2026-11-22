@@ -7,9 +7,9 @@
     "admin"
   ],
   "scripts": {
-    "dev": "npm run dev -w refnused",
+    "dev": "npm run dev -w refnused --",
     "build": "npm run build --workspaces --if-present",
-    "start": "npm run start -w refnused",
+    "start": "npm run start -w refnused --",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
@@ -26,8 +26,8 @@
     "key:generate": "npm run key:generate -w @refnused/database",
     "secret:generate": "npm run secret:generate -w @refnused/database",
     "push:keys": "npm run push:keys -w @refnused/database",
-    "dev:admin": "npm run dev -w admin",
-    "start:admin": "npm run start -w admin",
+    "dev:admin": "npm run dev -w admin --",
+    "start:admin": "npm run start -w admin --",
     "staff:create": "npm run staff:create -w admin --",
     "staff:set-password": "npm run staff:set-password -w admin --",
     "db:e2e-server": "npm run db:e2e-server -w @refnused/database",
