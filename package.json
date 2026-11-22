@@ -28,8 +28,8 @@
     "push:keys": "npm run push:keys -w @refnused/database",
     "dev:admin": "npm run dev -w admin",
     "start:admin": "npm run start -w admin",
-    "staff:create": "npm run staff:create -w admin",
-    "staff:set-password": "npm run staff:set-password -w admin",
+    "staff:create": "npm run staff:create -w admin --",
+    "staff:set-password": "npm run staff:set-password -w admin --",
     "db:e2e-server": "npm run db:e2e-server -w @refnused/database",
     "db:dev-server": "npm run db:dev-server -w @refnused/database"
   },
