@@ -17,6 +17,12 @@ check them again whenever the infrastructure changes.
 
 ### Before launch
 
+0. **Two Vercel projects** (see README "Deploying"): the website (Root Directory `refnused`) and
+   the admin (Root Directory `admin`) on its own domain, e.g. `admin.<domain>`. Set
+   `NEXT_PUBLIC_ADMIN_URL` (https) and the same `REVALIDATE_SECRET` (`npm run secret:generate`)
+   in both. Consider Vercel's deployment protection or an IP allow-list for the admin project as
+   an extra layer in front of staff sign-in.
+
 1. **Vercel environment variables (Production):** set every variable in
    `.env.example`. Never commit real values. Specifically:
    - `NEXT_PUBLIC_SITE_URL` must be `https://…`. The app refuses to start in
@@ -90,6 +96,21 @@ check them again whenever the infrastructure changes.
 
 ---
 
+## Website and admin are separate apps
+
+The staff admin (`admin/`) is a separate Next.js app and deployment from the public website
+(`refnused/`), sharing only the `database/` package:
+
+- None of the admin's code, routes or staff auth ships with the public site, and the website's
+  code can't reach staff sessions or admin actions.
+- Staff cookies live on the admin's own host, so a bug on the public site can't read or ride
+  them. Staff passkeys are bound to the admin's hostname.
+- Every admin page renders per request with the strict nonce CSP, `X-Robots-Tag: noindex` and
+  `Cache-Control: private, no-store`; anything outside `/admin` redirects there.
+- The admin refreshes the website's cache through `/api/revalidate/tags`, which only accepts
+  requests signed with `REVALIDATE_SECRET` (HMAC-SHA256 with a timestamp, 5-minute window, known
+  cache tags only). Production refuses to start without the secret.
+
 ## What was checked
 
 Status: ✅ in place and verified, 🔧 fixed in this review, ⚠️ accepted risk or
@@ -97,16 +118,16 @@ needs action (see notes).
 
 ### Security headers
 
-| Check                                                                                            | Status | Where                                     |
-| ------------------------------------------------------------------------------------------------ | ------ | ----------------------------------------- |
-| Content-Security-Policy, nonce + `strict-dynamic` on sensitive routes                            | 🔧     | `src/proxy.ts`, `src/lib/security/csp.ts` |
-| CSP on public pages (allow-listed hosts, `frame-ancestors 'none'`, `object-src 'none'`, no eval) | 🔧     | `next.config.ts`                          |
-| Strict-Transport-Security, 2 years, subdomains, preload                                          | 🔧     | `next.config.ts`                          |
-| Referrer-Policy `strict-origin-when-cross-origin`; `no-referrer` on order and tracking links     | 🔧     | `next.config.ts`, `src/proxy.ts`          |
-| Permissions-Policy: only camera (IMEI scanner), payment (Stripe), fullscreen, passkeys           | 🔧     | `src/lib/security/csp.ts`                 |
-| `frame-ancestors 'none'` + `X-Frame-Options: DENY`                                               | 🔧     | both                                      |
-| `X-Content-Type-Options: nosniff`, COOP, CORP                                                    | 🔧     | `next.config.ts`                          |
-| `X-Powered-By` removed                                                                           | 🔧     | `next.config.ts`                          |
+| Check                                                                                            | Status | Where                                                       |
+| ------------------------------------------------------------------------------------------------ | ------ | ----------------------------------------------------------- |
+| Content-Security-Policy, nonce + `strict-dynamic` on sensitive routes                            | 🔧     | `refnused/src/proxy.ts`, `database/src/lib/security/csp.ts` |
+| CSP on public pages (allow-listed hosts, `frame-ancestors 'none'`, `object-src 'none'`, no eval) | 🔧     | `next.config.ts`                                            |
+| Strict-Transport-Security, 2 years, subdomains, preload                                          | 🔧     | `next.config.ts`                                            |
+| Referrer-Policy `strict-origin-when-cross-origin`; `no-referrer` on order and tracking links     | 🔧     | `next.config.ts`, `refnused/src/proxy.ts`                   |
+| Permissions-Policy: only camera (IMEI scanner), payment (Stripe), fullscreen, passkeys           | 🔧     | `database/src/lib/security/csp.ts`                          |
+| `frame-ancestors 'none'` + `X-Frame-Options: DENY`                                               | 🔧     | both                                                        |
+| `X-Content-Type-Options: nosniff`, COOP, CORP                                                    | 🔧     | `next.config.ts`                                            |
+| `X-Powered-By` removed                                                                           | 🔧     | `next.config.ts`                                            |
 
 **Why two CSPs.** A nonce has to be different on every request, so a page
 using one can't be prerendered. The catalogue pages (home, shop, sell,
@@ -118,7 +139,7 @@ in them, and those can't carry a nonce. So:
   nonce policy. Only scripts Next.js marks with that request's nonce run,
   plus the scripts they load (Stripe, Turnstile) through `'strict-dynamic'`.
   The one inline script outside Next.js's control, the theme script in the
-  root layout (`src/components/theme/theme-script.ts`), is allowed by a hash
+  root layout (`database/src/lib/security/theme-script.ts`), is allowed by a hash
   computed from that same constant, so it can't go stale. (next-themes' own
   copy is turned into an inert data block, because its text changes with the
   build's minifier.)
@@ -142,28 +163,28 @@ less dangerous than injecting scripts.
 
 - ✅ Every account page calls `requireCustomer()`, and account actions re-check
   the session and only touch the customer's own rows (tested in
-  `src/lib/account/account.db.test.ts`).
+  `refnused/src/lib/account/account.db.test.ts`).
 - ✅ Every admin page calls `requireStaff(permission)`, and every admin action is
   wrapped in `staffAction(permission, schema, handler)`. Role permissions are
-  in `src/auth/roles.ts` (tested). The proxy is a first check only.
+  in `admin/src/auth/roles.ts` (tested). The proxy is a first check only.
 - ✅ Quote, order and alert links use 128-bit+ random tokens. Only a hash is
   stored, and the pages are `noindex` + `no-referrer`.
 - ✅ Private files (`/admin/files/…`) need a staff session with
   `products.manage` and are served `private, no-store`.
 - 🔧 Open redirect after sign-in: `safeCallbackUrl` accepted `/\t/evil.example`
   (browsers drop tabs, leaving `//evil.example`). It now refuses control and
-  space characters (tested in `src/auth/access.test.ts`).
+  space characters (tested in `admin/src/auth/access.test.ts`).
 
 **A02 Cryptographic failures**
 
 - ✅ Bank details (holder, sort code, account number) and staff TOTP secrets are
   encrypted with AES-256-GCM, with key ids for rotation
-  (`src/lib/crypto/field-encryption.ts`). Only the last digits are kept in
+  (`database/src/lib/crypto/field-encryption.ts`). Only the last digits are kept in
   clear, for display. Decrypted values are never returned to the browser,
   logged or written to `audit_log`.
 - ✅ Order access tokens are stored as a hash plus an encrypted copy for
   emails. Push notification paths are encrypted too.
-- ✅ Passwords (staff) are hashed (`src/auth/password.ts`). Verification codes
+- ✅ Passwords (staff) are hashed (`database/src/auth/password.ts`). Verification codes
   and tokens are stored as hashes.
 - ✅ HTTPS only: HSTS, `Secure` cookies with `__Secure-`/`__Host-` prefixes, and
   production refuses a non-HTTPS site URL (🔧 new check in `env.server.ts`).
@@ -181,7 +202,7 @@ less dangerous than injecting scripts.
 
 - ✅ Prices, totals and trade-in offers are calculated on the server from the
   database only. The browser sends ids and answers, never amounts
-  (`src/lib/sell/pricing.ts`, `src/lib/orders/totals.ts`, both tested). The
+  (`database/src/lib/sell/pricing.ts`, `database/src/lib/orders/totals.ts`, both tested). The
   PaymentIntent amount is the server's total.
 - ✅ Units are held for 15 minutes per checkout, and payment states are respected
   before units are released.
@@ -190,8 +211,8 @@ less dangerous than injecting scripts.
 **A05 Security misconfiguration**
 
 - ✅ Headers as above. Private paths are `noindex` via a header as well as meta.
-- ✅ Environment validated with Zod at start-up (`src/lib/env.ts`,
-  `src/lib/env.server.ts`). Production refuses to start without Stripe live
+- ✅ Environment validated with Zod at start-up (`database/src/lib/env.ts`,
+  `database/src/lib/env.server.ts`). Production refuses to start without Stripe live
   keys, the webhook secret, Turnstile, Twilio and Resend, and refuses test
   helpers (`EMAIL_OUTBOX_DIR`).
 - ✅ Development fallbacks (console emails/SMS, stand-in payment gateway) can't
@@ -222,9 +243,9 @@ less dangerous than injecting scripts.
 - 🔧 Magic-link sign-in (customers and staff) had **no rate limit or bot
   check**, so it could be used to flood someone's inbox. It now has
   Turnstile, plus limits of 10 an hour per IP and 5 an hour per address
-  (`src/lib/security/magic-link-guard.ts`). Auth.js's own
+  (`database/src/lib/security/magic-link-guard.ts`). Auth.js's own
   `POST /api/auth/signin/resend` endpoint, which would bypass those
-  checks, is closed (`src/lib/security/auth-routes.ts`, tested).
+  checks, is closed (`database/src/lib/security/auth-routes.ts`, tested).
 - ✅ Customer passkeys can only be added while signed in. No accounts are
   created from a passkey alone.
 
@@ -256,20 +277,20 @@ less dangerous than injecting scripts.
 
 ### The specific checks you asked for
 
-| Check                                         | Status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| --------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CSRF protection                               | ✅ 🔧  | Server Actions: Next.js compares `Origin` with the host. Auth.js: double-submit CSRF token. Session cookies `SameSite=Lax`. 🔧 The admin upload route (cookie-authenticated `POST`) now also checks `Sec-Fetch-Site`/`Origin` (`src/lib/security/same-origin.ts`, tested). Other route handlers don't use cookies (webhooks are signed; push subscription changes need the old secret endpoint).                                                                          |
-| Secure cookie flags                           | ✅     | `httpOnly`, `Secure`, `SameSite=Lax`, `__Secure-`/`__Host-` prefixes on HTTPS (`src/auth/cookies.ts`). The basket cookie is deliberately readable by JS (for the item count) and holds only unit ids.                                                                                                                                                                                                                                                                     |
-| Zod on every server action and route          | ✅ 🔧  | All 19 action files and 13 route handlers reviewed. Admin actions go through `staffAction(…, schema)`. 🔧 Two gaps fixed: the admin upload form and the marketing-preferences checkboxes now use Zod.                                                                                                                                                                                                                                                                     |
-| Rate limiting: auth, quote, checkout, contact | ✅ 🔧  | Quotes (per IP and email), offers, checkout preview and start, stock alerts, order requests, account actions, staff password and MFA, data export, push. 🔧 Magic-link sign-in added. ⚠️ There is **no contact form** yet (`/help` is linked but has no page). When one is built it must use `isRateLimited` and Turnstile like the quote form.                                                                                                                           |
-| Turnstile on public forms                     | ✅ 🔧  | Quote, checkout, stock alert, order request, staff password sign-in. 🔧 Customer and staff email sign-in added. Push "turn on notifications" buttons are rate limited instead: they take no free text and need the secret link or a session.                                                                                                                                                                                                                              |
-| Private R2 bucket with signed URLs            | ✅ ⚠️  | Certificates go to a separate private bucket. ⚠️ They're served by **streaming through an authenticated route** (`/admin/files/…`, staff session + permission check on every request, `private, no-store`) rather than signed URLs. That's deliberately stricter: no shareable link ever exists, and access ends the moment a session does. Making the bucket private in Cloudflare is a manual step (above).                                                             |
-| EXIF stripping on uploads                     | ✅ 🔧  | Photos are content-sniffed (not trusted by name or type), rotated, resized and re-encoded to WebP, which drops EXIF, GPS, XMP and IPTC. 🔧 Now proven by a test that embeds camera and GPS data (`src/lib/storage/uploads.test.ts`).                                                                                                                                                                                                                                      |
-| Server-side price checks                      | ✅     | See A04.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Webhook signature checks                      | ✅     | See A08.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Encrypted bank fields                         | ✅     | See A02.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| PII scrubbing in Sentry                       | 🔧     | `src/lib/observability/scrub.ts` (tested): drops the user, cookies and all but harmless headers, and local variables. Filters fields named like personal data or secrets. Replaces emails, UK phone numbers and postcodes, IMEIs, card, sort code and account numbers, API keys, JWTs and the tokens in our quote, order and alert links. `sendDefaultPii` off; no tracing or session replay. The browser SDK loads after the page is idle, to stay within the JS budget. |
-| No secrets in the client bundle               | ✅ 🔧  | Server secrets are only read in `server-only` modules (`env.server.ts`). 🔧 `npm run security:secrets` (also in CI) scans every downloadable file for secret values, key patterns and published source maps, and fails if code uses a `NEXT_PUBLIC_` variable that isn't on the allow-list.                                                                                                                                                                               |
+| Check                                         | Status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CSRF protection                               | ✅ 🔧  | Server Actions: Next.js compares `Origin` with the host. Auth.js: double-submit CSRF token. Session cookies `SameSite=Lax`. 🔧 The admin upload route (cookie-authenticated `POST`) now also checks `Sec-Fetch-Site`/`Origin` (`admin/src/lib/security/same-origin.ts`, tested). Other route handlers don't use cookies (webhooks are signed; push subscription changes need the old secret endpoint).                                                                             |
+| Secure cookie flags                           | ✅     | `httpOnly`, `Secure`, `SameSite=Lax`, `__Secure-`/`__Host-` prefixes on HTTPS (`refnused/src/auth/cookies.ts`). The basket cookie is deliberately readable by JS (for the item count) and holds only unit ids.                                                                                                                                                                                                                                                                     |
+| Zod on every server action and route          | ✅ 🔧  | All 19 action files and 13 route handlers reviewed. Admin actions go through `staffAction(…, schema)`. 🔧 Two gaps fixed: the admin upload form and the marketing-preferences checkboxes now use Zod.                                                                                                                                                                                                                                                                              |
+| Rate limiting: auth, quote, checkout, contact | ✅ 🔧  | Quotes (per IP and email), offers, checkout preview and start, stock alerts, order requests, account actions, staff password and MFA, data export, push. 🔧 Magic-link sign-in added. ⚠️ There is **no contact form** yet (`/help` is linked but has no page). When one is built it must use `isRateLimited` and Turnstile like the quote form.                                                                                                                                    |
+| Turnstile on public forms                     | ✅ 🔧  | Quote, checkout, stock alert, order request, staff password sign-in. 🔧 Customer and staff email sign-in added. Push "turn on notifications" buttons are rate limited instead: they take no free text and need the secret link or a session.                                                                                                                                                                                                                                       |
+| Private R2 bucket with signed URLs            | ✅ ⚠️  | Certificates go to a separate private bucket. ⚠️ They're served by **streaming through an authenticated route** (`/admin/files/…`, staff session + permission check on every request, `private, no-store`) rather than signed URLs. That's deliberately stricter: no shareable link ever exists, and access ends the moment a session does. Making the bucket private in Cloudflare is a manual step (above).                                                                      |
+| EXIF stripping on uploads                     | ✅ 🔧  | Photos are content-sniffed (not trusted by name or type), rotated, resized and re-encoded to WebP, which drops EXIF, GPS, XMP and IPTC. 🔧 Now proven by a test that embeds camera and GPS data (`admin/src/lib/storage/uploads.test.ts`).                                                                                                                                                                                                                                         |
+| Server-side price checks                      | ✅     | See A04.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Webhook signature checks                      | ✅     | See A08.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Encrypted bank fields                         | ✅     | See A02.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| PII scrubbing in Sentry                       | 🔧     | `refnused/src/lib/observability/scrub.ts` (tested): drops the user, cookies and all but harmless headers, and local variables. Filters fields named like personal data or secrets. Replaces emails, UK phone numbers and postcodes, IMEIs, card, sort code and account numbers, API keys, JWTs and the tokens in our quote, order and alert links. `sendDefaultPii` off; no tracing or session replay. The browser SDK loads after the page is idle, to stay within the JS budget. |
+| No secrets in the client bundle               | ✅ 🔧  | Server secrets are only read in `server-only` modules (`env.server.ts`). 🔧 `npm run security:secrets` (also in CI) scans every downloadable file for secret values, key patterns and published source maps, and fails if code uses a `NEXT_PUBLIC_` variable that isn't on the allow-list.                                                                                                                                                                                        |
 
 ---
 
@@ -313,5 +334,5 @@ npm run audit             # runtime dependency advisories (fails on high/critica
 npm run audit:all         # including dev tooling
 npm run build             # then:
 npm run security:secrets  # nothing secret in client files
-npx vitest run src/lib/security src/lib/observability src/lib/storage src/auth
+npm test                  # unit tests in database/, refnused/ and admin/
 ```

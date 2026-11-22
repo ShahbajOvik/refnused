@@ -3,57 +3,78 @@
 UK site for selling used phones (instant trade-in quotes), buying graded refurbished phones with
 warranty, and finding our stores. See [CLAUDE.md](CLAUDE.md) for the project rules.
 
+## Repository layout
+
+Three folders in one npm workspace. Run every command from the repo root.
+
+| Folder                 | What it is                                                                  |
+| ---------------------- | --------------------------------------------------------------------------- |
+| [refnused/](refnused/) | The public website (Next.js). Shop, sell, stores, guides, account, PWA.     |
+| [admin/](admin/)       | The staff admin (Next.js), a separate app on its own domain.                |
+| [database/](database/) | `@refnused/database`: schema, migrations, seed, db client and shared logic. |
+
+The website and admin never import from each other: anything both need lives in `database/`
+(imported as `@refnused/database/<path>`). When the admin changes products, prices, the catalogue
+or stores, it asks the website to refresh its cache through a signed request
+(`/api/revalidate/tags`, `REVALIDATE_SECRET`).
+
+```
+refnused/src/   app/ (routes), components/, lib/ (website-only logic), auth/ (customers), proxy.ts
+admin/src/      app/admin/ (routes), components/, lib/admin/ (admin services), auth/ (staff), proxy.ts
+database/       src/db/ (schema, client, seed), src/lib/ (shared logic), drizzle/ (migrations), scripts/
+e2e/            Playwright tests for both apps, including axe WCAG 2.2 AA scans
+```
+
 ## Getting started
 
 Requires Node.js 22 or later.
 
 ```bash
 npm install
-cp .env.example .env.local
-npm run dev
+cp .env.example .env.local     # one env file at the root for both apps
+npm run dev                    # website: http://localhost:3000
+npm run dev:admin              # admin:   http://localhost:3001/admin
 ```
 
-Open http://localhost:3000. The design system lives at http://localhost:3000/styleguide.
+The design system lives at http://localhost:3000/styleguide.
 
 ## Scripts
 
-| Command              | What it does                                                   |
-| -------------------- | -------------------------------------------------------------- |
-| `npm run dev`        | Start the dev server                                           |
-| `npm run build`      | Production build, then the service worker (`build:sw`)         |
-| `npm run check`      | Typecheck, lint, format check and unit tests                   |
-| `npm run typecheck`  | Generate route types and run `tsc`                             |
-| `npm run lint`       | ESLint                                                         |
-| `npm run format`     | Prettier (sorts Tailwind classes too)                          |
-| `npm test`           | Vitest unit tests                                              |
-| `npm run test:e2e`   | Playwright tests (builds and serves the app first)             |
-| `npm run budget`     | Checks initial JS per page is under 200KB (run after a build)  |
-| `npm run push:keys`  | Generates a VAPID key pair for Web Push                        |
-| `npm run pwa:assets` | Renders the PWA icons (add `-- --screenshots` for screenshots) |
+| Command                          | What it does                                                    |
+| -------------------------------- | --------------------------------------------------------------- |
+| `npm run dev` / `dev:admin`      | Start the website / admin dev server                            |
+| `npm run build`                  | Build every app (the website also builds its service worker)    |
+| `npm run check`                  | Typecheck, lint, format check and unit tests, in every package  |
+| `npm run typecheck`              | `tsc` in every package                                          |
+| `npm run lint`                   | ESLint in every package                                         |
+| `npm run format`                 | Prettier (sorts Tailwind classes too)                           |
+| `npm test`                       | Vitest unit tests in every package                              |
+| `npm run test:e2e`               | Playwright: starts a real Postgres, builds and serves both apps |
+| `npm run budget -w refnused`     | Checks initial JS per page is under 200KB (run after a build)   |
+| `npm run push:keys`              | Generates a VAPID key pair for Web Push                         |
+| `npm run pwa:assets -w refnused` | Renders the PWA icons (add `-- --screenshots` for screenshots)  |
+| `npm run staff:create`           | Creates a staff account (admin)                                 |
 
 First time running e2e tests: `npx playwright install chromium`.
 
-## Structure
+## Deploying
 
-```
-src/
-  app/                 Routes (App Router). Server Components by default.
-    styleguide/        Design system reference page (noindex)
-  components/
-    ui/                Base components (shadcn/ui, customised)
-    layout/            Header, footer, mobile menu, logo
-    seo/               JSON-LD and breadcrumbs
-    theme/             Light/dark theme provider and toggle
-  config/site.ts       Brand, navigation, stores and links (single source)
-  lib/                 Formatting, grades, SEO helpers, env validation
-e2e/                   Playwright tests, including axe WCAG 2.2 AA scans
-scripts/               Tooling scripts
-```
+Two Vercel projects from this repo, both in the London region (`lhr1`):
+
+| Project | Root Directory | Domain                     |
+| ------- | -------------- | -------------------------- |
+| Website | `refnused`     | e.g. `www.example.co.uk`   |
+| Admin   | `admin`        | e.g. `admin.example.co.uk` |
+
+Set the shared variables from `.env.example` in both, with the same `REVALIDATE_SECRET`,
+`NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_ADMIN_URL`. Run migrations once
+(`npm run db:migrate`), not per project.
 
 ## Database
 
-PostgreSQL with Drizzle ORM. Schema in [src/db/schema/](src/db/schema/), migrations in
-[drizzle/](drizzle/).
+PostgreSQL with Drizzle ORM, in the `database/` package. Schema in
+[database/src/db/schema/](database/src/db/schema/), migrations in
+[database/drizzle/](database/drizzle/).
 
 1. Get a Postgres database: [Postgres.app](https://postgresapp.com) or `brew install postgresql@17`
    locally, or a free [Neon](https://neon.tech) database (pick the London region).
@@ -71,7 +92,9 @@ PostgreSQL with Drizzle ORM. Schema in [src/db/schema/](src/db/schema/), migrati
 
 The seed is safe to re-run. It never overwrites trade-in prices that already exist, and it
 refuses to run against production. Tests apply the migrations to an in-memory Postgres
-(PGlite), so `npm test` needs no database.
+(PGlite), so `npm test` needs no database. The e2e tests start a real PostgreSQL
+(`npm run db:e2e-server`, via `embedded-postgres`: no Docker needed), migrate and seed it, and
+run both apps against it with the production driver.
 
 Bank details on payouts are encrypted with AES-256-GCM before they reach the database. Only the
 last 4 digits of the account number are stored in clear. To rotate keys, put a new key first in
@@ -85,7 +108,7 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
 
 - **Pricing** is configured in the database: base prices per variant and grade in
   `trade_in_prices`; questions, answers, grade caps and deductions in `quote_questions` and
-  `quote_answer_options`. The engine is `src/lib/sell/pricing.ts`.
+  `quote_answer_options`. The engine is `database/src/lib/sell/pricing.ts`.
 - **Protection**: Zod validation (IMEI Luhn check, UK postcode, phone, sort code and account
   number), Postgres-backed rate limits, Cloudflare Turnstile, and bank details encrypted at rest.
 - **Builds need a database**, because the sell pages are generated from it. Without Postgres you can
@@ -104,13 +127,13 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
 `/shop/[brand]/[slug]`, and `/compare?items=a,b,c` compares up to three.
 
 - **Filters live in the URL** (`?brand=apple,samsung&grade=A&storage=128&min=200&max=500&battery=90&store=…&sort=price-asc&page=2`),
-  so any filtered page can be shared. Parsing (`src/lib/shop/filters.ts`) drops bad values instead
+  so any filtered page can be shared. Parsing (`database/src/lib/shop/filters.ts`) drops bad values instead
   of erroring, and filtering, facet counts, sorting and pagination all run in the database
-  (`src/lib/shop/catalogue.ts`). Only the plain listings are indexed; filtered pages are `noindex`.
+  (`database/src/lib/shop/catalogue.ts`). Only the plain listings are indexed; filtered pages are `noindex`.
 - **Product pages** show photos of the actual unit, a lazy-loaded 3D viewer (`View in 3D`), grade,
   battery health, warranty, delivery and click-and-collect, stock per store, a trade-in-and-save
   estimate and similar phones, with `Product` + `Offer` JSON-LD. Delivery, collection and returns
-  terms are in `src/config/shop.ts` (sample values).
+  terms are in `database/src/config/shop.ts` (sample values).
 - **Sold and reserved units** keep their page, with a "notify me" form (`stock_alerts`) and similar
   phones in stock. Only `draft`, `withdrawn` and `returned` units are hidden.
 - **Photos** are R2 object keys in `products.photos`, served from `NEXT_PUBLIC_MEDIA_BASE_URL`.
@@ -121,8 +144,8 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
 `/basket` → `/checkout` → Stripe Payment Element → `/orders/[token]` (private order page).
 
 - **Basket**: a cookie of unit ids only. Prices, delivery and trade-in credit are always worked
-  out on the server (`src/lib/orders/totals.ts`), and the full total is shown before payment.
-- **Fulfilment**: home delivery (options in `src/config/shop.ts`) or reserve and collect in store
+  out on the server (`database/src/lib/orders/totals.ts`), and the full total is shown before payment.
+- **Fulfilment**: home delivery (options in `database/src/config/shop.ts`) or reserve and collect in store
   (paid online, collected with photo ID).
 - **Trade-in credit**: enter an open quote's reference (same email as the quote). Its value comes
   off the order; any part that would take the card payment below Stripe's minimum is paid to the
@@ -168,7 +191,7 @@ and privacy.
   trade-in records that must be kept for 6 years.
 - Checkout fills in a signed-in customer's details and default address.
 
-**Testing**: the test snapshot includes demo customers (`src/db/seed/demo.ts`). With
+**Testing**: the test snapshot includes demo customers (`database/src/db/seed/demo.ts`). With
 `EMAIL_OUTBOX_DIR` set (never in production), emails such as sign-in links and codes are also
 written there as JSON; the e2e tests sign in by reading them.
 
@@ -187,7 +210,7 @@ written there as JSON; the e2e tests sign in by reading them.
   shown but not added as `aggregateRating`, because Google ignores ratings a business publishes about
   itself.
 - Name, address and phone are written by the same helpers (`storeName`, `storeAddressLines` in
-  `src/lib/stores.ts`) on store pages, cards, the footer, the mobile menu and JSON-LD.
+  `database/src/lib/stores.ts`) on store pages, cards, the footer, the mobile menu and JSON-LD.
 
 The seed only fills empty values: coordinates (postcode centres from postcodes.io: move them to the
 shop front in admin) and Metro text. Opening hours and parking are left for staff to enter, and a
@@ -196,26 +219,26 @@ store without hours shows "Call the store for opening hours". The stores sitemap
 
 ## SEO
 
-- **Metadata.** Every public page builds its metadata with `pageMetadata()` (`src/lib/metadata.ts`)
-  or a page-type template in `src/lib/metadata-templates.ts` (home, sell brand/model, product,
+- **Metadata.** Every public page builds its metadata with `pageMetadata()` (`refnused/src/lib/metadata.ts`)
+  or a page-type template in `refnused/src/lib/metadata-templates.ts` (home, sell brand/model, product,
   stores, guides). That gives each page a canonical URL, `en-GB` and `x-default` hreflang pointing
   at itself, Open Graph and Twitter tags. Filtered listings pass `noindex: true` (noindex, follow).
 - **Private pages** (account, basket, checkout, orders, trade-in tracking, sign-in, admin, API) set
   `robots: noindex` and also get `X-Robots-Tag: noindex, nofollow` from `next.config.ts`. robots.txt
   only blocks `/admin` and `/api/`: blocking the others would hide the noindex from crawlers.
-- **Open Graph images** are drawn with `next/og` from one layout (`src/lib/og/card.tsx`): a
-  site-wide one (`src/app/opengraph-image.tsx`, used by pages without their own) and one per sell
+- **Open Graph images** are drawn with `next/og` from one layout (`refnused/src/lib/og/card.tsx`): a
+  site-wide one (`refnused/src/app/opengraph-image.tsx`, used by pages without their own) and one per sell
   model, product, store and guide (`opengraph-image.tsx` next to each page, with live prices).
   Photos go through sharp first because `next/og` can't read WebP; only our media bucket and
   Sanity's CDN are fetched.
 - **Sitemaps.** `/sitemap.xml` is a sitemap index of `/sitemaps/{pages,models,products,stores,guides}/sitemap.xml`
-  (`src/app/sitemaps/*`). Model `lastmod` is the latest trade-in price change; products include
+  (`refnused/src/app/sitemaps/*`). Model `lastmod` is the latest trade-in price change; products include
   their photos.
-- **JSON-LD.** Builders live in `src/lib/seo.ts`: Organization + WebSite (home), ElectronicsStore
+- **JSON-LD.** Builders live in `database/src/lib/seo.ts`: Organization + WebSite (home), ElectronicsStore
   (stores), Product/Offer (products), FAQPage (home and sell model pages), Article (guides) and
   BreadcrumbList (the `Breadcrumbs` component, on every page). FAQ JSON-LD is always built from the
   same items as the visible `FaqList`.
-- **Internal links.** `ModelLinks` (`src/components/seo/model-links.tsx`) links a model's sell page,
+- **Internal links.** `ModelLinks` (`refnused/src/components/seo/model-links.tsx`) links a model's sell page,
   shop listing and guides to each other, only where the target has something on it (we buy it, or
   units are in stock). It's on sell model pages, product pages and guides.
 
@@ -225,13 +248,13 @@ Uses [Serwist](https://serwist.pages.dev). `@serwist/next` and `@serwist/turbopa
 app (Turbopack + `cacheComponents`), so the worker is built after `next build` by
 `scripts/build-sw.mts` (esbuild + `@serwist/build`) into `public/sw.js`, which is not committed.
 
-- **Manifest** (`src/app/manifest.ts`): icons, maskable icons, screenshots and shortcuts (Sell,
+- **Manifest** (`refnused/src/app/manifest.ts`): icons, maskable icons, screenshots and shortcuts (Sell,
   Shop, Stores, Account). Images live in `public/icons` and `public/screenshots`. Re-render them
   with `npm run pwa:assets`. For screenshots, serve a production build on port 3100 and add
   `-- --screenshots`.
-- **Service worker** (`src/sw/sw.ts`, type-checked with `src/sw/tsconfig.json`): it precaches the
+- **Service worker** (`refnused/src/sw/sw.ts`, type-checked with `refnused/src/sw/tsconfig.json`): it precaches the
   app shell, meaning `/offline` plus the CSS, fonts and scripts its HTML loads, and the icons.
-  Runtime rules are in `src/lib/pwa/cache-rules.ts` (unit-tested):
+  Runtime rules are in `refnused/src/lib/pwa/cache-rules.ts` (unit-tested):
   - Stale-while-revalidate: product and model pages, and images.
   - Network-only: basket, checkout, account, orders, tracking, sign-in, admin and `/api`.
     Non-GET requests (Server Actions, mutating API calls) are never handled by the worker.
@@ -242,28 +265,28 @@ app (Turbopack + `cacheComponents`), so the worker is built after `next build` b
 - **Install banner** (`InstallBanner`): shown on the tracking page after a quote and on the order
   page once paid. It uses the browser's install prompt where there is one, and step-by-step
   instructions on iPhone and iPad. Dismissing it hides it for 30 days.
-- **Web Push** (`src/lib/push/`): customers turn it on per quote, order or for their price alerts
+- **Web Push** (`database/src/lib/push/`): customers turn it on per quote, order or for their price alerts
   (`PushOptIn`). Permission is only requested when they press the button. Subscriptions are in
   `push_subscriptions` / `push_topics`, and only known browser push services are accepted.
   Quote and order links are secret, so the path a notification opens is stored encrypted.
   Pushes are sent alongside emails from admin quote/inspection/payout actions, order
   fulfilment and request decisions, and the Stripe webhook (order paid). Price alerts are
   checked when units are listed or repriced and when trade-in prices change
-  (`src/lib/account/price-alert-check.ts`, at most once a week per alert). Without VAPID keys,
+  (`database/src/lib/account/price-alert-check.ts`, at most once a week per alert). Without VAPID keys,
   the buttons are hidden and pushes are printed to the console. Generate keys with
   `npm run push:keys`.
 - Push data is included in the account data export and deleted with the account.
 
 ## Guides and Sanity
 
-`/guides` mixes built-in guides with articles from Sanity (`src/lib/guides/`):
+`/guides` mixes built-in guides with articles from Sanity (`database/src/lib/guides/`):
 
-| Template      | URL                                    | Content                                                              |
-| ------------- | -------------------------------------- | -------------------------------------------------------------------- |
-| `model-value` | `/guides/how-much-is-my-<model>-worth` | One per model we buy. Live prices from `trade_in_prices`.            |
-| `wipe`        | `/guides/how-to-wipe-a-phone`          | Steps in `src/content/guides.ts`.                                    |
-| `grading`     | `/guides/phone-grading-explained`      | Grades from `src/lib/grades.ts`, battery bands from `batteryRating`. |
-| `article`     | `/guides/<slug>`                       | Written in Sanity.                                                   |
+| Template      | URL                                    | Content                                                                       |
+| ------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `model-value` | `/guides/how-much-is-my-<model>-worth` | One per model we buy. Live prices from `trade_in_prices`.                     |
+| `wipe`        | `/guides/how-to-wipe-a-phone`          | Steps in `refnused/src/content/guides.ts`.                                    |
+| `grading`     | `/guides/phone-grading-explained`      | Grades from `database/src/lib/grades.ts`, battery bands from `batteryRating`. |
+| `article`     | `/guides/<slug>`                       | Written in Sanity.                                                            |
 
 A Sanity document with template `model-value` (and a model slug), `wipe` or `grading` adds an
 author, dates and body copy to that built-in guide; the URL and live content stay. Price guides
@@ -287,7 +310,7 @@ Portable Text links are limited to relative, http(s), mailto and tel URLs.
 
 `/admin` is for staff (separate sign-in plus passkey or TOTP). It works on phones and tablets: a
 sidebar on large screens, a sideways-scrolling section bar on smaller ones. Each role sees only the
-sections it can use (`src/auth/roles.ts`), and every page and action checks permission on the server.
+sections it can use (`admin/src/auth/roles.ts`), and every page and action checks permission on the server.
 
 | Section            | What it does                                                                                             |
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
@@ -320,7 +343,7 @@ IMEI scanning uses the browser's BarcodeDetector (Chrome on Android); elsewhere 
 Refunds are requested from Stripe and the order updates when the webhook confirms them.
 
 **Testing**: the test snapshot has demo staff (`demo.owner@` and `demo.staff@example.co.uk`, TOTP
-secret in `src/db/seed/demo.ts`, test data only).
+secret in `database/src/db/seed/demo.ts`, test data only).
 
 ## Authentication
 
@@ -332,7 +355,7 @@ Auth.js v5, with two separate instances so customer and staff sessions can never
 | Second factor | Not required                            | Passkey or authenticator app (TOTP), every sign-in         |
 | Session       | 30 days, rolling                        | 30 minutes idle, 12 hours maximum                          |
 | Accounts      | Created on first sign-in                | Created by an owner only                                   |
-| Protected     | `/account`                              | `/admin`, by role (see `src/auth/roles.ts`)                |
+| Protected     | `/account`                              | `/admin`, by role (see `admin/src/auth/roles.ts`)          |
 
 **First owner.** After migrating, create the first owner:
 
@@ -358,7 +381,7 @@ permission denials and staff changes are written to `audit_log`.
 
 ## Design system
 
-- **Colour:** tokens in [src/app/globals.css](src/app/globals.css). One brand accent
+- **Colour:** tokens in [refnused/src/app/globals.css](refnused/src/app/globals.css). One brand accent
   (`primary`) for actions; everything else neutral. Grade A/B/C have their own semantic tokens.
   All text pairs meet WCAG AA in light and dark.
 - **Type:** Geist via `next/font`.
