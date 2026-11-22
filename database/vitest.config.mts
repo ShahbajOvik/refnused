@@ -8,6 +8,8 @@ export default defineConfig({
     },
   },
   test: {
+    // One real MySQL server for the run (createTestDb() gives each file a database).
+    globalSetup: ["./src/test/global-setup.ts"],
     environment: "node",
     include: ["src/**/*.test.ts"],
     // DB tests each start an in-memory Postgres and run every migration.

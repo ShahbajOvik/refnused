@@ -35,6 +35,7 @@ import {
   replacePushEndpoint,
   savePushTopic,
   type PushTarget,
+  endpointHash,
 } from "@refnused/database/lib/push/service";
 
 let db: AppDb;
@@ -143,7 +144,7 @@ describe("push topics", () => {
           email: `push-limit-${i}@example.com`,
         })),
       )
-      .returning({ id: customers.id });
+      .$returningId();
     for (const person of people) {
       expect(
         await savePushTopic(db, {
@@ -291,9 +292,12 @@ describe("push topics", () => {
 
   it("cleans up subscriptions with nothing left to follow", async () => {
     const s = sub();
-    await db
-      .insert(pushSubscriptions)
-      .values({ endpoint: s.endpoint, p256dh: KEYS.p256dh, auth: KEYS.auth });
+    await db.insert(pushSubscriptions).values({
+      endpoint: s.endpoint,
+      endpointHash: endpointHash(s.endpoint),
+      p256dh: KEYS.p256dh,
+      auth: KEYS.auth,
+    });
     await deleteIdlePushSubscriptions(db);
     expect(
       await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint)),
@@ -370,7 +374,7 @@ describe("price alerts", () => {
     const [row] = await db
       .insert(priceAlerts)
       .values({ customerId: alex, ...values })
-      .returning({ id: priceAlerts.id });
+      .$returningId();
     return row!.id;
   }
 

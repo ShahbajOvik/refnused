@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { deviceModels, modelVariants, products, stockAlerts } from "@refnused/database/db/schema";
+import { affectedRows, isUniqueViolation } from "@refnused/database/db/results";
 import type { AppDb } from "@refnused/database/db/types";
 
 /*
@@ -67,9 +68,9 @@ export async function createStockAlert(
 
   const storageGb = input.scope === "storage" ? product.storageGb : null;
   const token = randomBytes(24).toString("base64url");
-  const inserted = await db
-    .insert(stockAlerts)
-    .values({
+  let created = true;
+  try {
+    await db.insert(stockAlerts).values({
       email: input.email,
       customerId: input.customerId ?? null,
       modelId: product.modelId,
@@ -77,13 +78,13 @@ export async function createStockAlert(
       sourceProductId: product.id,
       unsubscribeTokenHash: hashAlertToken(token),
       consentedAt: options.now ?? new Date(),
-    })
+    });
+  } catch (error) {
     // stock_alerts_active_unique: an active alert for the same email, model
-    // and storage already exists. (Drizzle can't target expression indexes.)
-    .onConflictDoNothing()
-    .returning({ id: stockAlerts.id });
-
-  const created = inserted.length > 0;
+    // and storage already exists.
+    if (!isUniqueViolation(error, "stock_alerts_active_unique")) throw error;
+    created = false;
+  }
   return {
     ok: true,
     created,
@@ -104,9 +105,8 @@ export async function unsubscribeStockAlert(db: AppDb, token: string): Promise<b
         eq(stockAlerts.unsubscribeTokenHash, hashAlertToken(token)),
         eq(stockAlerts.isActive, true),
       ),
-    )
-    .returning({ id: stockAlerts.id });
-  return rows.length > 0;
+    );
+  return affectedRows(rows) > 0;
 }
 
 /** The alert behind an unsubscribe link, for the confirmation page. */

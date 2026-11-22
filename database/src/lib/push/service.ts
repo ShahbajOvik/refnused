@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { and, count, eq, inArray, notExists, sql } from "drizzle-orm";
 
 import { pushSubscriptions, pushTopics } from "../../db/schema";
@@ -7,8 +9,16 @@ import type { PushSubscriptionInput } from "./subscription";
 
 /*
  * Push subscriptions and what each one asked to hear about. Pure database
- * code (takes `db`), so it is tested against a real Postgres.
+ * code (takes `db`), so it is tested against a real MySQL.
  */
+
+/**
+ * Endpoints can be 2048 characters, too long for a MySQL index, so they're
+ * looked up (and kept unique) by their SHA-256.
+ */
+export function endpointHash(endpoint: string): string {
+  return createHash("sha256").update(endpoint).digest("hex");
+}
 
 export type PushTarget =
   | { kind: "quote"; quoteId: string }
@@ -53,17 +63,26 @@ export async function savePushTopic(
     pathEncrypted: string | null;
   },
 ): Promise<SavePushTopicResult> {
+  // The database can't CHECK these (MySQL forbids CHECKs on columns with
+  // cascading foreign keys), so enforce them here: quote and order topics
+  // need the path to open.
+  if (input.target.kind !== "price_alerts" && !input.pathEncrypted) {
+    throw new Error("Quote and order push topics need the path to open");
+  }
   return db.transaction(async (transaction) => {
     const tx = transaction as unknown as AppDb;
     const { endpoint, keys } = input.subscription;
-    const [sub] = await tx
+    const hash = endpointHash(endpoint);
+    await tx
       .insert(pushSubscriptions)
-      .values({ endpoint, p256dh: keys.p256dh, auth: keys.auth })
-      .onConflictDoUpdate({
-        target: pushSubscriptions.endpoint,
+      .values({ endpoint, endpointHash: hash, p256dh: keys.p256dh, auth: keys.auth })
+      .onDuplicateKeyUpdate({
         set: { p256dh: keys.p256dh, auth: keys.auth, updatedAt: new Date() },
-      })
-      .returning({ id: pushSubscriptions.id });
+      });
+    const [sub] = await tx
+      .select({ id: pushSubscriptions.id })
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.endpointHash, hash));
     const subscriptionId = sub!.id;
 
     const [existing] = await tx
@@ -104,7 +123,12 @@ export async function hasPushTopic(
     .select({ id: pushTopics.id })
     .from(pushTopics)
     .innerJoin(pushSubscriptions, eq(pushTopics.subscriptionId, pushSubscriptions.id))
-    .where(and(eq(pushSubscriptions.endpoint, input.endpoint), targetWhere(input.target)));
+    .where(
+      and(
+        eq(pushSubscriptions.endpointHash, endpointHash(input.endpoint)),
+        targetWhere(input.target),
+      ),
+    );
   return Boolean(row);
 }
 
@@ -121,7 +145,7 @@ export async function removePushTopic(
     const [sub] = await tx
       .select({ id: pushSubscriptions.id })
       .from(pushSubscriptions)
-      .where(eq(pushSubscriptions.endpoint, input.endpoint));
+      .where(eq(pushSubscriptions.endpointHash, endpointHash(input.endpoint)));
     if (!sub) return { remaining: 0 };
     await tx
       .delete(pushTopics)
@@ -189,20 +213,20 @@ export async function replacePushEndpoint(
     const [old] = await tx
       .select({ id: pushSubscriptions.id })
       .from(pushSubscriptions)
-      .where(eq(pushSubscriptions.endpoint, input.oldEndpoint));
+      .where(eq(pushSubscriptions.endpointHash, endpointHash(input.oldEndpoint)));
     if (!old) return false;
     if (input.oldEndpoint !== endpoint) {
       // If the new endpoint is already stored, merge into it.
       const [current] = await tx
         .select({ id: pushSubscriptions.id })
         .from(pushSubscriptions)
-        .where(eq(pushSubscriptions.endpoint, endpoint));
+        .where(eq(pushSubscriptions.endpointHash, endpointHash(endpoint)));
       if (current) {
+        // IGNORE skips topics the new subscription already has (unique key).
         await tx.execute(sql`
-          insert into push_topics (subscription_id, kind, quote_id, order_id, customer_id, path_encrypted, created_at)
-          select ${current.id}, kind, quote_id, order_id, customer_id, path_encrypted, created_at
-          from push_topics where subscription_id = ${old.id}
-          on conflict do nothing`);
+          insert ignore into push_topics (id, subscription_id, kind, quote_id, order_id, customer_id, path_encrypted, created_at)
+          select uuid(), ${current.id}, kind, quote_id, order_id, customer_id, path_encrypted, created_at
+          from push_topics where subscription_id = ${old.id}`);
         await tx.delete(pushSubscriptions).where(eq(pushSubscriptions.id, old.id));
         await tx
           .update(pushSubscriptions)
@@ -213,7 +237,13 @@ export async function replacePushEndpoint(
     }
     await tx
       .update(pushSubscriptions)
-      .set({ endpoint, p256dh: keys.p256dh, auth: keys.auth, updatedAt: new Date() })
+      .set({
+        endpoint,
+        endpointHash: endpointHash(endpoint),
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        updatedAt: new Date(),
+      })
       .where(eq(pushSubscriptions.id, old.id));
     return true;
   });

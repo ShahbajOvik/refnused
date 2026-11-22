@@ -9,6 +9,7 @@ import {
   quotes,
   stripeEvents,
 } from "@refnused/database/db/schema";
+import { isUniqueViolation } from "@refnused/database/db/results";
 import type { AppDb } from "@refnused/database/db/types";
 import { recordAudit } from "@refnused/database/lib/audit";
 import type {
@@ -42,12 +43,15 @@ type Tx = AppDb;
 class DuplicateEvent extends Error {}
 
 async function claimEvent(tx: Tx, event: StripeEvent) {
-  const [row] = await tx
-    .insert(stripeEvents)
-    .values({ id: event.id, type: event.type, livemode: event.livemode })
-    .onConflictDoNothing()
-    .returning({ id: stripeEvents.id });
-  if (!row) throw new DuplicateEvent();
+  try {
+    await tx
+      .insert(stripeEvents)
+      .values({ id: event.id, type: event.type, livemode: event.livemode });
+  } catch (error) {
+    // Already processed (the event id is the primary key): a redelivery.
+    if (isUniqueViolation(error)) throw new DuplicateEvent();
+    throw error;
+  }
 }
 
 async function findPayment(tx: Tx, paymentIntentId: string) {
@@ -66,7 +70,7 @@ async function findPayment(tx: Tx, paymentIntentId: string) {
     .from(payments)
     .innerJoin(orders, eq(payments.orderId, orders.id))
     .where(eq(payments.stripePaymentIntentId, paymentIntentId))
-    .for("update", { of: orders })
+    .for("update") // MySQL: locks the joined rows too
     .limit(1);
   return row;
 }
@@ -229,7 +233,7 @@ async function applyTradeInCredit(
     .from(payouts)
     .innerJoin(quotes, eq(payouts.quoteId, quotes.id))
     .where(eq(quotes.id, order.tradeInQuoteId!))
-    .for("update", { of: payouts });
+    .for("update"); // MySQL: locks the joined rows too
   if (!payout || payout.status !== "pending") return;
   const remaining = payout.amountPence - order.tradeInCreditPence;
   await tx

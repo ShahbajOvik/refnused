@@ -187,10 +187,10 @@ describe("product pages", () => {
     expect(await getProductDetail(db, "samsung", "iphone-15-128gb-black-k3x9q2")).toBeNull();
 
     const [unit] = await db
-      .update(products)
-      .set({ status: "withdrawn" })
-      .where(eq(products.slug, "galaxy-a55-128gb-awesome-navy-w4f7yh"))
-      .returning();
+      .select()
+      .from(products)
+      .where(eq(products.slug, "galaxy-a55-128gb-awesome-navy-w4f7yh"));
+    await db.update(products).set({ status: "withdrawn" }).where(eq(products.id, unit!.id));
     expect(await getProductDetail(db, "samsung", unit!.slug)).toBeNull();
     await db.update(products).set({ status: "listed" }).where(eq(products.id, unit!.id));
   });

@@ -1,6 +1,7 @@
 import { and, count, eq } from "drizzle-orm";
 
 import { customerPayoutAccounts, payouts } from "@refnused/database/db/schema";
+import { affectedRows } from "@refnused/database/db/results";
 import type { AppDb } from "@refnused/database/db/types";
 import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
 import {
@@ -81,10 +82,7 @@ export async function changePayoutDetails(
     await tx
       .insert(customerPayoutAccounts)
       .values({ customerId: input.customerId, ...encrypted, sortCodeLast2, verifiedAt: now })
-      .onConflictDoUpdate({
-        target: customerPayoutAccounts.customerId,
-        set: { ...encrypted, sortCodeLast2, verifiedAt: now },
-      });
+      .onDuplicateKeyUpdate({ set: { ...encrypted, sortCodeLast2, verifiedAt: now } });
     let applied = 0;
     if (input.applyToPending) {
       const rows = await tx
@@ -96,9 +94,8 @@ export async function changePayoutDetails(
             eq(payouts.status, "pending"),
             eq(payouts.method, "bank_transfer"),
           ),
-        )
-        .returning({ id: payouts.id });
-      applied = rows.length;
+        );
+      applied = affectedRows(rows);
     }
     // Only the last 4 digits ever go in the audit log.
     await recordAudit(

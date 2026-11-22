@@ -14,6 +14,8 @@ export default defineConfig({
     jsx: { runtime: "automatic" },
   },
   test: {
+    // One real MySQL server for the run (createTestDb() gives each file a database).
+    globalSetup: ["../database/src/test/global-setup.ts"],
     environment: "jsdom",
     setupFiles: ["./vitest.setup"],
     include: ["src/**/*.test.{ts,tsx}"],

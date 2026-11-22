@@ -1,25 +1,24 @@
 import { sql } from "drizzle-orm";
 import {
-  type AnyPgColumn,
+  type AnyMySqlColumn,
   boolean,
   char,
   check,
   index,
-  integer,
-  jsonb,
-  pgTable,
+  int,
+  json,
+  mysqlTable,
   smallint,
   text,
-  timestamp,
   unique,
   uniqueIndex,
-  uuid,
   varchar,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/mysql-core";
 
 import { deviceModels, modelVariants } from "./catalogue";
 import {
   fulfilmentMethod,
+  id,
   IMEI_PATTERN,
   orderStatus,
   paymentStatus,
@@ -28,6 +27,8 @@ import {
   productStatus,
   reviewStatus,
   timestamps,
+  ts,
+  uuidRef,
 } from "./_shared";
 import { customers, staffUsers } from "./people";
 import { stores } from "./stores";
@@ -50,16 +51,16 @@ export type PostalAddress = {
 };
 
 /** A single refurbished unit for sale. Each physical item is one row. */
-export const products = pgTable(
+export const products = mysqlTable(
   "products",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: id(),
     /**
      * URL slug for /shop/[brand]/[slug], e.g. "iphone-15-128gb-black-k3x9q2"
      * (src/lib/shop/slug.ts). Never changes, so shared links keep working.
      */
-    slug: text().notNull().unique("products_slug_unique"),
-    variantId: uuid()
+    slug: varchar({ length: 191 }).notNull().unique("products_slug_unique"),
+    variantId: uuidRef()
       .notNull()
       .references(() => modelVariants.id, { onDelete: "restrict" }),
     /** Set for IMEI categories; every other unit has a serialNumber instead. */
@@ -69,10 +70,13 @@ export const products = pgTable(
     grade: productGrade().notNull(),
     /** Null for items without a battery. */
     batteryHealthPercent: smallint(),
-    photos: jsonb().$type<ProductPhoto[]>().notNull().default([]),
-    pricePence: integer().notNull(),
+    photos: json()
+      .$type<ProductPhoto[]>()
+      .notNull()
+      .default(sql`(JSON_ARRAY())`),
+    pricePence: int().notNull(),
     /** Where the unit physically is (for click and collect and stock). */
-    storeId: uuid()
+    storeId: uuidRef()
       .notNull()
       .references(() => stores.id, { onDelete: "restrict" }),
     status: productStatus().notNull().default("draft"),
@@ -82,18 +86,21 @@ export const products = pgTable(
     dataWipeCertificateKey: text(),
     warrantyMonths: smallint().notNull().default(12),
     /** The trade-in this unit came from, if bought from the public. */
-    sourceQuoteId: uuid().references(() => quotes.id, { onDelete: "set null" }),
-    listedAt: timestamp({ withTimezone: true }),
-    soldAt: timestamp({ withTimezone: true }),
+    sourceQuoteId: uuidRef().references(() => quotes.id, { onDelete: "set null" }),
+    listedAt: ts(),
+    soldAt: ts(),
     /**
      * Checkout hold: the unit is kept for this pending order until
      * checkoutHoldUntil (15 minutes, longer while a payment is processing).
      * Expired holds can be taken over by another checkout.
      */
-    checkoutHoldOrderId: uuid().references((): AnyPgColumn => orders.id, {
-      onDelete: "set null",
+    // RESTRICT, not SET NULL: MySQL can't CHECK a column used by a
+    // referential action, and products_hold_check needs this one. Orders are
+    // never deleted (accounts are anonymised instead).
+    checkoutHoldOrderId: uuidRef().references((): AnyMySqlColumn => orders.id, {
+      onDelete: "restrict",
     }),
-    checkoutHoldUntil: timestamp({ withTimezone: true }),
+    checkoutHoldUntil: ts(),
     ...timestamps,
   },
   (t) => [
@@ -101,12 +108,13 @@ export const products = pgTable(
     index("products_store_idx").on(t.storeId),
     index("products_status_grade_idx").on(t.status, t.grade),
     index("products_status_listed_idx").on(t.status, t.listedAt),
-    check("products_slug_check", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
-    check("products_imei_check", sql`${t.imei} ~ '${sql.raw(IMEI_PATTERN)}'`),
+    // 'c': case-sensitive regexes, despite the case-insensitive collation.
+    check("products_slug_check", sql`regexp_like(${t.slug}, '^[a-z0-9]+(-[a-z0-9]+)*$', 'c')`),
+    check("products_imei_check", sql`regexp_like(${t.imei}, '${sql.raw(IMEI_PATTERN)}')`),
     check("products_identifier_check", sql`(${t.imei} is null) <> (${t.serialNumber} is null)`),
     check(
       "products_serial_check",
-      sql`${t.serialNumber} is null or ${t.serialNumber} ~ '^[A-Z0-9][A-Z0-9._/-]{2,63}$'`,
+      sql`${t.serialNumber} is null or regexp_like(${t.serialNumber}, '^[A-Z0-9][A-Z0-9._/-]{2,63}$', 'c')`,
     ),
     check("products_battery_check", sql`${t.batteryHealthPercent} between 0 and 100`),
     check("products_price_check", sql`${t.pricePence} > 0`),
@@ -122,59 +130,61 @@ export const products = pgTable(
   ],
 );
 
-export const orders = pgTable(
+export const orders = mysqlTable(
   "orders",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: id(),
     /** Customer-facing number, e.g. RU-100245. */
-    orderNumber: text().notNull().unique("orders_order_number_unique"),
+    orderNumber: varchar({ length: 32 }).notNull().unique("orders_order_number_unique"),
     /** Null for guest checkout. */
-    customerId: uuid().references(() => customers.id, { onDelete: "restrict" }),
-    email: text().notNull(),
+    customerId: uuidRef().references(() => customers.id, { onDelete: "restrict" }),
+    email: varchar({ length: 254 }).notNull(),
     contactName: text(),
     /** E.164, e.g. +447700900123. */
-    contactPhone: text(),
+    contactPhone: varchar({ length: 32 }),
     status: orderStatus().notNull().default("pending_payment"),
     fulfilmentMethod: fulfilmentMethod().notNull(),
     /** Key from DELIVERY_OPTIONS in src/config/shop.ts (delivery orders only). */
-    deliveryOptionKey: text(),
-    collectionStoreId: uuid().references(() => stores.id, { onDelete: "restrict" }),
-    shippingAddress: jsonb().$type<PostalAddress>(),
-    subtotalPence: integer().notNull(),
-    deliveryPence: integer().notNull().default(0),
-    discountPence: integer().notNull().default(0),
+    deliveryOptionKey: varchar({ length: 64 }),
+    collectionStoreId: uuidRef().references(() => stores.id, { onDelete: "restrict" }),
+    shippingAddress: json().$type<PostalAddress>(),
+    subtotalPence: int().notNull(),
+    deliveryPence: int().notNull().default(0),
+    discountPence: int().notNull().default(0),
     /** Trade-in quote whose value is taken off this order. */
-    tradeInQuoteId: uuid().references(() => quotes.id, { onDelete: "restrict" }),
-    tradeInCreditPence: integer().notNull().default(0),
-    totalPence: integer().notNull(),
+    tradeInQuoteId: uuidRef().references(() => quotes.id, { onDelete: "restrict" }),
+    tradeInCreditPence: int().notNull().default(0),
+    totalPence: int().notNull(),
     currency: char({ length: 3 }).notNull().default("GBP"),
-    stripeCheckoutSessionId: text().unique("orders_stripe_checkout_session_id_unique"),
+    stripeCheckoutSessionId: varchar({ length: 255 }).unique(
+      "orders_stripe_checkout_session_id_unique",
+    ),
     /** SHA-256 of the secret token in the customer's order link. */
-    accessTokenHash: text().unique("orders_access_token_hash_unique"),
+    accessTokenHash: varchar({ length: 128 }).unique("orders_access_token_hash_unique"),
     /** The same token, encrypted (src/lib/crypto), so confirmation emails can link to the order. */
     accessTokenEncrypted: text(),
     /** End of the 15-minute checkout hold on the units. */
-    expiresAt: timestamp({ withTimezone: true }),
+    expiresAt: ts(),
     /** When the payment succeeded (set from the Stripe webhook only). */
-    placedAt: timestamp({ withTimezone: true }),
+    placedAt: ts(),
     /** Dispatched or collected; the returns window starts from here. */
-    fulfilledAt: timestamp({ withTimezone: true }),
+    fulfilledAt: ts(),
     /** Delivery tracking, set when dispatched. */
-    trackingCarrier: text(),
-    trackingNumber: text(),
+    trackingCarrier: varchar({ length: 64 }),
+    trackingNumber: varchar({ length: 100 }),
     /** Click and collect: when it was ready at the store. */
-    readyForCollectionAt: timestamp({ withTimezone: true }),
+    readyForCollectionAt: ts(),
     /** Delivered (or collected) and finished. */
-    completedAt: timestamp({ withTimezone: true }),
+    completedAt: ts(),
     ...timestamps,
   },
   (t) => [
     index("orders_customer_idx").on(t.customerId),
     index("orders_status_idx").on(t.status),
     // A trade-in can be credited to one live order (cancelled ones free it).
-    uniqueIndex("orders_trade_in_quote_unique")
-      .on(t.tradeInQuoteId)
-      .where(sql`${t.status} <> 'cancelled'`),
+    uniqueIndex("orders_trade_in_quote_unique").on(
+      sql`(case when ${t.status} <> 'cancelled' then ${t.tradeInQuoteId} end)`,
+    ),
     check(
       "orders_amounts_check",
       sql`${t.subtotalPence} >= 0 and ${t.deliveryPence} >= 0 and ${t.discountPence} >= 0 and ${t.tradeInCreditPence} >= 0 and ${t.totalPence} >= 0`,
@@ -194,19 +204,19 @@ export const orders = pgTable(
   ],
 );
 
-export const orderItems = pgTable(
+export const orderItems = mysqlTable(
   "order_items",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    orderId: uuid()
+    id: id(),
+    orderId: uuidRef()
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    productId: uuid()
+    productId: uuidRef()
       .notNull()
       .references(() => products.id, { onDelete: "restrict" }),
     /** Snapshot at purchase, e.g. "iPhone 15, 128GB, Black, Grade A". */
     description: text().notNull(),
-    unitPricePence: integer().notNull(),
+    unitPricePence: int().notNull(),
     ...timestamps,
   },
   (t) => [
@@ -216,17 +226,19 @@ export const orderItems = pgTable(
   ],
 );
 
-export const payments = pgTable(
+export const payments = mysqlTable(
   "payments",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    orderId: uuid()
+    id: id(),
+    orderId: uuidRef()
       .notNull()
       .references(() => orders.id, { onDelete: "restrict" }),
-    provider: text().notNull().default("stripe"),
-    stripePaymentIntentId: text().unique("payments_stripe_payment_intent_id_unique"),
-    amountPence: integer().notNull(),
-    amountRefundedPence: integer().notNull().default(0),
+    provider: varchar({ length: 32 }).notNull().default("stripe"),
+    stripePaymentIntentId: varchar({ length: 255 }).unique(
+      "payments_stripe_payment_intent_id_unique",
+    ),
+    amountPence: int().notNull(),
+    amountRefundedPence: int().notNull().default(0),
     currency: char({ length: 3 }).notNull().default("GBP"),
     status: paymentStatus().notNull().default("requires_payment"),
     failureReason: text(),
@@ -242,54 +254,52 @@ export const payments = pgTable(
 );
 
 /** Notify a customer when a price crosses their target. */
-export const priceAlerts = pgTable(
+export const priceAlerts = mysqlTable(
   "price_alerts",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    customerId: uuid()
+    id: id(),
+    customerId: uuidRef()
       .notNull()
       .references(() => customers.id, { onDelete: "cascade" }),
     /** shop: tell me when a unit drops to the target. trade_in: when our offer rises to it. */
     type: priceAlertType().notNull(),
-    modelId: uuid()
+    modelId: uuidRef()
       .notNull()
       .references(() => deviceModels.id, { onDelete: "cascade" }),
     /** Optional: narrow to one storage/colour. */
-    variantId: uuid().references(() => modelVariants.id, { onDelete: "cascade" }),
+    variantId: uuidRef().references(() => modelVariants.id, { onDelete: "cascade" }),
     /** Optional for shop alerts: only this grade. */
     grade: productGrade(),
-    targetPricePence: integer().notNull(),
+    targetPricePence: int().notNull(),
     isActive: boolean().notNull().default(true),
-    lastNotifiedAt: timestamp({ withTimezone: true }),
+    lastNotifiedAt: ts(),
     ...timestamps,
   },
   (t) => [
     index("price_alerts_customer_idx").on(t.customerId),
-    index("price_alerts_active_model_idx")
-      .on(t.modelId)
-      .where(sql`${t.isActive}`),
+    index("price_alerts_active_model_idx").on(t.modelId, t.isActive),
     check("price_alerts_target_check", sql`${t.targetPricePence} > 0`),
   ],
 );
 
-export const reviews = pgTable(
+export const reviews = mysqlTable(
   "reviews",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    customerId: uuid().references(() => customers.id, { onDelete: "set null" }),
-    displayName: text().notNull(),
-    orderId: uuid().references(() => orders.id, { onDelete: "set null" }),
-    quoteId: uuid().references(() => quotes.id, { onDelete: "set null" }),
-    modelId: uuid().references(() => deviceModels.id, { onDelete: "set null" }),
-    storeId: uuid().references(() => stores.id, { onDelete: "set null" }),
+    id: id(),
+    customerId: uuidRef().references(() => customers.id, { onDelete: "set null" }),
+    displayName: varchar({ length: 100 }).notNull(),
+    orderId: uuidRef().references(() => orders.id, { onDelete: "set null" }),
+    quoteId: uuidRef().references(() => quotes.id, { onDelete: "set null" }),
+    modelId: uuidRef().references(() => deviceModels.id, { onDelete: "set null" }),
+    storeId: uuidRef().references(() => stores.id, { onDelete: "set null" }),
     rating: smallint().notNull(),
     title: text(),
     body: text().notNull(),
     status: reviewStatus().notNull().default("pending"),
     /** True when linked to a completed order or paid trade-in. */
     isVerified: boolean().notNull().default(false),
-    moderatedBy: uuid().references(() => staffUsers.id, { onDelete: "set null" }),
-    publishedAt: timestamp({ withTimezone: true }),
+    moderatedBy: uuidRef().references(() => staffUsers.id, { onDelete: "set null" }),
+    publishedAt: ts(),
     ...timestamps,
   },
   (t) => [
@@ -305,35 +315,43 @@ export const reviews = pgTable(
  * Guests can sign up with just an email; each alert has its own
  * unsubscribe link (only the token's hash is stored).
  */
-export const stockAlerts = pgTable(
+export const stockAlerts = mysqlTable(
   "stock_alerts",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: id(),
     /** Stored lower-case. */
-    email: text().notNull(),
-    customerId: uuid().references(() => customers.id, { onDelete: "set null" }),
-    modelId: uuid()
+    email: varchar({ length: 254 }).notNull(),
+    customerId: uuidRef().references(() => customers.id, { onDelete: "set null" }),
+    modelId: uuidRef()
       .notNull()
       .references(() => deviceModels.id, { onDelete: "cascade" }),
     /** Null: any storage. */
-    storageGb: integer(),
+    storageGb: int(),
     /** The sold unit the customer signed up from. */
-    sourceProductId: uuid().references(() => products.id, { onDelete: "set null" }),
+    sourceProductId: uuidRef().references(() => products.id, { onDelete: "set null" }),
     /** sha256 of the unsubscribe token. */
-    unsubscribeTokenHash: text().notNull().unique("stock_alerts_unsubscribe_token_hash_unique"),
+    unsubscribeTokenHash: varchar({ length: 128 })
+      .notNull()
+      .unique("stock_alerts_unsubscribe_token_hash_unique"),
     isActive: boolean().notNull().default(true),
-    consentedAt: timestamp({ withTimezone: true }).notNull(),
-    lastNotifiedAt: timestamp({ withTimezone: true }),
+    consentedAt: ts().notNull(),
+    lastNotifiedAt: ts(),
     ...timestamps,
   },
   (t) => [
-    uniqueIndex("stock_alerts_active_unique")
-      .on(sql`lower(${t.email})`, t.modelId, sql`coalesce(${t.storageGb}, 0)`)
-      .where(sql`${t.isActive}`),
-    index("stock_alerts_active_model_idx")
-      .on(t.modelId)
-      .where(sql`${t.isActive}`),
-    check("stock_alerts_email_check", sql`${t.email} = lower(${t.email})`),
+    // One active alert per email, model and storage (inactive ones are NULL
+    // in the first part, so they never clash; the collation ignores case).
+    uniqueIndex("stock_alerts_active_unique").on(
+      sql`(case when ${t.isActive} then ${t.email} end)`,
+      t.modelId,
+      sql`(coalesce(${t.storageGb}, 0))`,
+    ),
+    index("stock_alerts_active_model_idx").on(t.modelId, t.isActive),
+    // Binary comparison: the collation would treat "A" and "a" as equal.
+    check(
+      "stock_alerts_email_check",
+      sql`cast(${t.email} as binary) = cast(lower(${t.email}) as binary)`,
+    ),
     check("stock_alerts_storage_check", sql`${t.storageGb} is null or ${t.storageGb} > 0`),
   ],
 );

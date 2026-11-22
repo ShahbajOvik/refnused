@@ -28,8 +28,8 @@ export async function listStaff(db: AppDb) {
       email: staffUsers.email,
       role: staffUsers.role,
       isActive: staffUsers.isActive,
-      hasTotp: sql<boolean>`${staffUsers.totpEnabledAt} is not null`,
-      passkeys: sql<number>`(select count(*)::int from staff_passkeys where staff_passkeys.staff_id = ${staffUsers.id})`,
+      hasTotp: sql<boolean>`${staffUsers.totpEnabledAt} is not null`.mapWith(Boolean),
+      passkeys: sql<number>`(select count(*) from staff_passkeys where staff_passkeys.staff_id = ${staffUsers.id})`,
       lastLoginAt: staffUsers.lastLoginAt,
     })
     .from(staffUsers)
@@ -50,7 +50,7 @@ export async function createStaff(
   if (existing.length > 0)
     throw new StaffAdminError("A staff account with that email already exists");
 
-  const [created] = await db.insert(staffUsers).values(data).returning({ id: staffUsers.id });
+  const [created] = await db.insert(staffUsers).values(data).$returningId();
   await recordAudit(
     db,
     {

@@ -85,7 +85,7 @@ describe("home page data", () => {
   });
 
   it("only shows published reviews", async () => {
-    const [customer] = await db.insert(customers).values({ email: "r@example.com" }).returning();
+    const [customer] = await db.insert(customers).values({ email: "r@example.com" }).$returningId();
     await db.insert(reviews).values([
       {
         customerId: customer!.id,

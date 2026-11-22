@@ -81,7 +81,7 @@ export async function getPriceTable(db: AppDb, modelSlug?: string): Promise<Pric
       .select({
         variantId: products.variantId,
         grade: products.grade,
-        avg: sql<number>`round(avg(${products.pricePence}))::int`,
+        avg: sql<number>`cast(round(avg(${products.pricePence})) as signed)`,
       })
       .from(products)
       .where(and(inArray(products.variantId, ids), eq(products.status, "listed")))
@@ -128,8 +128,7 @@ export async function updatePrices(
       await tx
         .insert(tradeInPrices)
         .values({ ...change, updatedBy: actor.staffId })
-        .onConflictDoUpdate({
-          target: [tradeInPrices.variantId, tradeInPrices.grade],
+        .onDuplicateKeyUpdate({
           set: { pricePence: change.pricePence, updatedBy: actor.staffId, updatedAt: new Date() },
         });
       await recordAudit(
@@ -268,7 +267,7 @@ export async function previewPriceImport(db: AppDb, text: string): Promise<Impor
     db
       .select({
         id: modelVariants.id,
-        label: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${modelVariants.storageGb} || 'GB, ' || ${modelVariants.colour}`,
+        label: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name}, ', ', ${modelVariants.storageGb}, 'GB, ', ${modelVariants.colour})`,
       })
       .from(modelVariants)
       .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
@@ -340,7 +339,7 @@ export async function priceHistory(
     ? await db
         .select({
           id: modelVariants.id,
-          label: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${modelVariants.storageGb} || 'GB, ' || ${modelVariants.colour}`,
+          label: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name}, ', ', ${modelVariants.storageGb}, 'GB, ', ${modelVariants.colour})`,
         })
         .from(modelVariants)
         .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))

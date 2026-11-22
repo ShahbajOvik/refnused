@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -14,6 +14,7 @@ import {
   tradeInGrade,
   tradeInPrices,
 } from "../../db/schema";
+import { mysqlDatetime } from "../../db/datetime";
 import type { AppDb } from "../../db/types";
 import { ActionError } from "../action-error";
 import { recordAudit, type RequestMeta } from "../audit";
@@ -50,7 +51,7 @@ export type QueueRow = {
   declinedRevision: boolean;
 };
 
-const device = sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${modelVariants.storageGb} || 'GB, ' || ${modelVariants.colour}`;
+const device = sql<string>`concat(${brands.name}, ' ', ${deviceModels.name}, ', ', ${modelVariants.storageGb}, 'GB, ', ${modelVariants.colour})`;
 
 export async function listQuoteQueue(
   db: AppDb,
@@ -69,11 +70,14 @@ export async function listQuoteQueue(
       customerEmail: quotes.contactEmail,
       offeredPricePence: quotes.offeredPricePence,
       deliveryMethod: quotes.deliveryMethod,
-      dropOffStore: sql<string | null>`${stores.name} || ', ' || ${stores.town}`,
+      dropOffStore: sql<string | null>`concat(${stores.name}, ', ', ${stores.town})`,
       acceptedAt: quotes.acceptedAt,
       receivedAt: quotes.receivedAt,
       priceLockedUntil: quotes.priceLockedUntil,
-      declinedRevision: sql<boolean>`exists (select 1 from ${inspections} where ${inspections.quoteId} = ${quotes.id} and ${inspections.revisedOfferStatus} = 'declined')`,
+      declinedRevision:
+        sql<boolean>`exists (select 1 from ${inspections} where ${inspections.quoteId} = ${quotes.id} and ${inspections.revisedOfferStatus} = 'declined')`.mapWith(
+          Boolean,
+        ),
     })
     .from(quotes)
     .innerJoin(modelVariants, eq(quotes.variantId, modelVariants.id))
@@ -85,9 +89,9 @@ export async function listQuoteQueue(
         inArray(quotes.status, [...QUEUE_FILTERS[filter].statuses]),
         q
           ? or(
-              ilike(quotes.reference, `%${q}%`),
-              ilike(quotes.contactEmail, `%${q}%`),
-              ilike(quotes.contactName, `%${q}%`),
+              like(quotes.reference, `%${q}%`),
+              like(quotes.contactEmail, `%${q}%`),
+              like(quotes.contactName, `%${q}%`),
               eq(quotes.imei, q),
             )
           : undefined,
@@ -298,7 +302,7 @@ export async function recordInspection(
       .update(quotes)
       .set({
         status: status[outcome],
-        receivedAt: sql`coalesce(${quotes.receivedAt}, ${now.toISOString()})`,
+        receivedAt: sql`coalesce(${quotes.receivedAt}, cast(${mysqlDatetime(now)} as datetime(3)))`,
       })
       .where(eq(quotes.id, quote.id));
     if (outcome === "rejected") {

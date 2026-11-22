@@ -1,1 +1,0 @@
-ALTER TABLE "staff_users" DROP COLUMN "password_hash";

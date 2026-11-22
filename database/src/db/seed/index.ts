@@ -1,4 +1,6 @@
-import { eq, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+
+import { eq, inArray, sql } from "drizzle-orm";
 import type { AppDb } from "../types";
 import { withImeiCheckDigit } from "../../lib/validation/uk";
 
@@ -29,9 +31,11 @@ const TRADE_IN_GRADES = schema.tradeInGrade.enumValues;
  *   staff are never overwritten.
  */
 export async function seed(db: SeedDb) {
-  return db.transaction(async (tx) => {
+  return db.transaction(async (transaction) => {
+    const tx = transaction as unknown as SeedDb;
     // Starting store list from src/config/site.ts. After that the database is
-    // the source of truth (edited in /admin/stores).
+    // the source of truth (edited in /admin/stores), so existing stores are
+    // left alone (a no-op update on a duplicate slug).
     await tx
       .insert(schema.stores)
       .values(
@@ -44,8 +48,7 @@ export async function seed(db: SeedDb) {
           phone: s.phone,
         })),
       )
-      // Only adds missing stores: details and opening hours are edited in /admin/stores.
-      .onConflictDoNothing({ target: schema.stores.slug });
+      .onDuplicateKeyUpdate({ set: { slug: sql`${schema.stores.slug}` } });
     // Fill starting coordinates and Metro text only where they're still empty.
     for (const [slug, d] of Object.entries(storeSeedDetails)) {
       await tx
@@ -65,27 +68,34 @@ export async function seed(db: SeedDb) {
     await tx
       .insert(schema.categories)
       .values([...seedCategories])
-      .onConflictDoNothing({ target: schema.categories.slug });
+      .onDuplicateKeyUpdate({ set: { slug: sql`${schema.categories.slug}` } });
     const [phones] = await tx
       .select({ id: schema.categories.id })
       .from(schema.categories)
       .where(eq(schema.categories.slug, "phones"));
 
-    const brandRows = await tx
+    await tx
       .insert(schema.brands)
       .values([...seedBrands])
-      .onConflictDoUpdate({
-        target: schema.brands.slug,
+      .onDuplicateKeyUpdate({
         set: {
-          name: sql`excluded.name`,
-          sortOrder: sql`excluded.sort_order`,
-          updatedAt: sql`now()`,
+          name: sql`values(${schema.brands.name})`,
+          sortOrder: sql`values(${schema.brands.sortOrder})`,
+          updatedAt: sql`now(3)`,
         },
-      })
-      .returning({ id: schema.brands.id, slug: schema.brands.slug });
+      });
+    const brandRows = await tx
+      .select({ id: schema.brands.id, slug: schema.brands.slug })
+      .from(schema.brands)
+      .where(
+        inArray(
+          schema.brands.slug,
+          seedBrands.map((b) => b.slug),
+        ),
+      );
     const brandId = new Map(brandRows.map((b) => [b.slug, b.id]));
 
-    const modelRows = await tx
+    await tx
       .insert(schema.deviceModels)
       .values(
         seedModels.map((m) => ({
@@ -96,19 +106,26 @@ export async function seed(db: SeedDb) {
           releaseYear: m.releaseYear,
         })),
       )
-      .onConflictDoUpdate({
-        target: schema.deviceModels.slug,
+      .onDuplicateKeyUpdate({
         set: {
-          brandId: sql`excluded.brand_id`,
-          name: sql`excluded.name`,
-          releaseYear: sql`excluded.release_year`,
-          updatedAt: sql`now()`,
+          brandId: sql`values(${schema.deviceModels.brandId})`,
+          name: sql`values(${schema.deviceModels.name})`,
+          releaseYear: sql`values(${schema.deviceModels.releaseYear})`,
+          updatedAt: sql`now(3)`,
         },
-      })
-      .returning({ id: schema.deviceModels.id, slug: schema.deviceModels.slug });
+      });
+    const modelRows = await tx
+      .select({ id: schema.deviceModels.id, slug: schema.deviceModels.slug })
+      .from(schema.deviceModels)
+      .where(
+        inArray(
+          schema.deviceModels.slug,
+          seedModels.map((m) => m.slug),
+        ),
+      );
     const modelId = new Map(modelRows.map((m) => [m.slug, m.id]));
 
-    const variantRows = await tx
+    await tx
       .insert(schema.modelVariants)
       .values(
         seedModels.flatMap((m) =>
@@ -122,44 +139,62 @@ export async function seed(db: SeedDb) {
           ),
         ),
       )
-      .onConflictDoUpdate({
-        target: [
-          schema.modelVariants.modelId,
-          schema.modelVariants.storageGb,
-          schema.modelVariants.configuration,
-          schema.modelVariants.colour,
-        ],
+      .onDuplicateKeyUpdate({
         set: {
           isActive: true,
-          colourHex: sql`coalesce(${schema.modelVariants.colourHex}, excluded.colour_hex)`,
-          updatedAt: sql`now()`,
+          colourHex: sql`coalesce(${schema.modelVariants.colourHex}, values(${schema.modelVariants.colourHex}))`,
+          updatedAt: sql`now(3)`,
         },
-      })
-      .returning({
-        id: schema.modelVariants.id,
-        modelId: schema.modelVariants.modelId,
-        storageGb: schema.modelVariants.storageGb,
-        colour: schema.modelVariants.colour,
       });
+    const seededKeys = new Set(
+      seedModels.flatMap((m) =>
+        m.storageGb.flatMap((storageGb) =>
+          m.colours.map((colour) => `${modelId.get(m.slug)}|${storageGb}|${colour}`),
+        ),
+      ),
+    );
+    const variantRows = (
+      await tx
+        .select({
+          id: schema.modelVariants.id,
+          modelId: schema.modelVariants.modelId,
+          storageGb: schema.modelVariants.storageGb,
+          colour: schema.modelVariants.colour,
+          configuration: schema.modelVariants.configuration,
+        })
+        .from(schema.modelVariants)
+        .where(inArray(schema.modelVariants.modelId, [...modelId.values()]))
+    ).filter(
+      (v) => v.configuration === "" && seededKeys.has(`${v.modelId}|${v.storageGb}|${v.colour}`),
+    );
 
     const modelById = new Map(seedModels.map((m) => [modelId.get(m.slug)!, m]));
+    // Prices: only insert the missing ones, so staff-edited prices survive.
+    const existingPrices = new Set(
+      (
+        await tx
+          .select({ variantId: schema.tradeInPrices.variantId, grade: schema.tradeInPrices.grade })
+          .from(schema.tradeInPrices)
+          .where(
+            inArray(
+              schema.tradeInPrices.variantId,
+              variantRows.map((v) => v.id),
+            ),
+          )
+      ).map((p) => `${p.variantId}|${p.grade}`),
+    );
     const priceValues = variantRows.flatMap((v) => {
       const model = modelById.get(v.modelId)!;
       const storageIndex = model.storageGb.indexOf(v.storageGb!);
-      return TRADE_IN_GRADES.map((grade) => ({
-        variantId: v.id,
-        grade,
-        pricePence: sampleTradeInPence(model.baseTradeInPence, storageIndex, grade),
-      }));
+      return TRADE_IN_GRADES.filter((grade) => !existingPrices.has(`${v.id}|${grade}`)).map(
+        (grade) => ({
+          variantId: v.id,
+          grade,
+          pricePence: sampleTradeInPence(model.baseTradeInPence, storageIndex, grade),
+        }),
+      );
     });
-
-    const insertedPrices = await tx
-      .insert(schema.tradeInPrices)
-      .values(priceValues)
-      .onConflictDoNothing({
-        target: [schema.tradeInPrices.variantId, schema.tradeInPrices.grade],
-      })
-      .returning({ id: schema.tradeInPrices.id });
+    if (priceValues.length) await tx.insert(schema.tradeInPrices).values(priceValues);
 
     // Sample refurbished stock (only inserted if the IMEI isn't there yet).
     const storeId = new Map(storeRows.map((s) => [s.slug, s.id]));
@@ -201,26 +236,40 @@ export async function seed(db: SeedDb) {
         listedAt,
       };
     });
-    const insertedProducts = await tx
-      .insert(schema.products)
-      .values(productValues)
-      .onConflictDoNothing({ target: schema.products.imei })
-      .returning({ id: schema.products.id });
+    const existingImeis = new Set(
+      (
+        await tx
+          .select({ imei: schema.products.imei })
+          .from(schema.products)
+          .where(
+            inArray(
+              schema.products.imei,
+              productValues.map((p) => p.imei),
+            ),
+          )
+      ).map((p) => p.imei),
+    );
+    const newProducts = productValues.filter((p) => !existingImeis.has(p.imei));
+    if (newProducts.length) await tx.insert(schema.products).values(newProducts);
 
     // Trade-in questions and options (only when missing).
-    const questionRows = await tx
-      .insert(schema.quoteQuestions)
-      .values(
-        seedQuoteQuestions.map((q, index) => ({
-          key: q.key,
-          section: q.section,
-          title: q.title,
-          help: q.help ?? null,
-          sortOrder: index,
-        })),
-      )
-      .onConflictDoNothing({ target: schema.quoteQuestions.key })
-      .returning({ id: schema.quoteQuestions.id, key: schema.quoteQuestions.key });
+    const existingQuestions = new Set(
+      (await tx.select({ key: schema.quoteQuestions.key }).from(schema.quoteQuestions)).map(
+        (q) => q.key,
+      ),
+    );
+    const questionRows = seedQuoteQuestions
+      .map((q, index) => ({ q, index }))
+      .filter(({ q }) => !existingQuestions.has(q.key))
+      .map(({ q, index }) => ({
+        id: randomUUID(),
+        key: q.key,
+        section: q.section,
+        title: q.title,
+        help: q.help ?? null,
+        sortOrder: index,
+      }));
+    if (questionRows.length) await tx.insert(schema.quoteQuestions).values(questionRows);
     const optionValues = questionRows.flatMap((row) =>
       seedQuoteQuestions
         .find((q) => q.key === row.key)!
@@ -248,8 +297,8 @@ export async function seed(db: SeedDb) {
           stores: storeRows.length,
           models: modelRows.length,
           variants: variantRows.length,
-          tradeInPricesInserted: insertedPrices.length,
-          productsInserted: insertedProducts.length,
+          tradeInPricesInserted: priceValues.length,
+          productsInserted: newProducts.length,
           quoteQuestionsInserted: questionRows.length,
         },
       },
@@ -260,8 +309,8 @@ export async function seed(db: SeedDb) {
       brands: brandRows.length,
       models: modelRows.length,
       variants: variantRows.length,
-      tradeInPricesInserted: insertedPrices.length,
-      productsInserted: insertedProducts.length,
+      tradeInPricesInserted: priceValues.length,
+      productsInserted: newProducts.length,
       quoteQuestionsInserted: questionRows.length,
     };
   });

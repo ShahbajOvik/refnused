@@ -1,43 +1,40 @@
 // @vitest-environment node
 /**
- * Applies the real migrations to an in-memory Postgres (PGlite), runs the
- * seed and checks the constraints that protect money and stock.
+ * Applies the real migrations to a MySQL 8 database, runs the seed and
+ * checks the constraints that protect money and stock.
  */
 import { randomBytes } from "node:crypto";
 
-import { PGlite } from "@electric-sql/pglite";
-import { count, eq } from "drizzle-orm";
-import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
-import { migrate } from "drizzle-orm/pglite/migrator";
+import { count, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { stores as storeConfig } from "../config/site";
+import { createTestDb } from "../test/db";
+import { dbError } from "./results";
 import * as schema from "./schema";
+import type { AppDb } from "./types";
 import { seed } from "./seed";
 import { sampleTradeInPence, seedModels, seedProducts } from "./seed/catalogue";
 import { decryptBankDetails, encryptBankDetails } from "../lib/crypto/bank-details";
 import { createFieldCipher, parseKeyring } from "../lib/crypto/field-encryption";
 
-let client: PGlite;
-let db: PgliteDatabase<typeof schema>;
+let db: AppDb;
+let close: () => Promise<void>;
 
 beforeAll(async () => {
-  client = new PGlite();
-  db = drizzle({ client, schema, casing: "snake_case" });
-  await migrate(db, { migrationsFolder: "./drizzle" });
+  ({ db, close } = await createTestDb());
 });
 
 afterAll(async () => {
-  await client?.close();
+  await close?.();
 });
 
-/** Postgres error code/constraint from a failed query (Drizzle wraps the driver error). */
-async function pgError(promise: Promise<unknown>) {
+/** MySQL error code/constraint from a failed query. */
+async function queryError(promise: Promise<unknown>) {
   try {
     await promise;
   } catch (error) {
-    const cause = (error as { cause?: { code?: string; constraint?: string } }).cause ?? error;
-    return cause as { code?: string; constraint?: string };
+    return dbError(error);
   }
   throw new Error("Expected the query to fail");
 }
@@ -100,17 +97,20 @@ describe("constraints", () => {
   async function fixtures() {
     const [store] = await db.select().from(schema.stores).limit(1);
     const [variant] = await db.select().from(schema.modelVariants).limit(1);
-    const [customer] = await db
+    const [{ id }] = await db
       .insert(schema.customers)
       .values({ email: `test-${randomBytes(4).toString("hex")}@example.com` })
-      .returning();
+      .$returningId();
+    const [customer] = await db.select().from(schema.customers).where(eq(schema.customers.id, id!));
     return { store: store!, variant: variant!, customer: customer! };
   }
 
   it("rejects duplicate customer emails regardless of case", async () => {
     await db.insert(schema.customers).values({ email: "Jane@Example.com" });
-    const error = await pgError(db.insert(schema.customers).values({ email: "jane@example.com" }));
-    expect(error.code).toBe("23505");
+    const error = await queryError(
+      db.insert(schema.customers).values({ email: "jane@example.com" }),
+    );
+    expect(error.code).toBe("ER_DUP_ENTRY");
   });
 
   it("will not list a product without a data-wipe certificate", async () => {
@@ -123,7 +123,7 @@ describe("constraints", () => {
       pricePence: 45900,
       storeId: store.id,
     };
-    const error = await pgError(
+    const error = await queryError(
       db.insert(schema.products).values({ ...base, imei: "356938035643809", status: "listed" }),
     );
     expect(error.constraint).toBe("products_wipe_certificate_check");
@@ -147,14 +147,14 @@ describe("constraints", () => {
     };
     expect(
       (
-        await pgError(
+        await queryError(
           db.insert(schema.products).values({ ...base, imei: "12345", batteryHealthPercent: 90 }),
         )
       ).constraint,
     ).toBe("products_imei_check");
     expect(
       (
-        await pgError(
+        await queryError(
           db
             .insert(schema.products)
             .values({ ...base, imei: "490154203237518", batteryHealthPercent: 101 }),
@@ -165,7 +165,7 @@ describe("constraints", () => {
 
   it("rejects product slugs that aren't URL-safe", async () => {
     const { store, variant } = await fixtures();
-    const error = await pgError(
+    const error = await queryError(
       db.insert(schema.products).values({
         slug: "iPhone 15/../x",
         variantId: variant.id,
@@ -181,7 +181,7 @@ describe("constraints", () => {
 
   it("requires order totals to add up", async () => {
     const { store } = await fixtures();
-    const error = await pgError(
+    const error = await queryError(
       db.insert(schema.orders).values({
         orderNumber: "RU-TEST-1",
         email: "buyer@example.com",
@@ -198,7 +198,7 @@ describe("constraints", () => {
 
   it("requires a customer and delivery method once a quote is accepted", async () => {
     const { variant } = await fixtures();
-    const error = await pgError(
+    const error = await queryError(
       db.insert(schema.quotes).values({
         reference: "RU-Q-TEST1",
         variantId: variant.id,
@@ -230,7 +230,7 @@ describe("constraints", () => {
         ownershipDeclaredAt: new Date(),
         activationLockOffDeclaredAt: new Date(),
       })
-      .returning();
+      .$returningId();
 
     const payout = {
       quoteId: quote!.id,
@@ -238,7 +238,7 @@ describe("constraints", () => {
       amountPence: 18000,
       method: "bank_transfer" as const,
     };
-    expect((await pgError(db.insert(schema.payouts).values(payout))).constraint).toBe(
+    expect((await queryError(db.insert(schema.payouts).values(payout))).constraint).toBe(
       "payouts_bank_details_check",
     );
 
@@ -247,17 +247,18 @@ describe("constraints", () => {
       { accountHolderName: "Jane Smith", sortCode: "12-34-56", accountNumber: "12345678" },
       cipher,
     );
-    const [saved] = await db
+    const [{ id: payoutId }] = await db
       .insert(schema.payouts)
       .values({ ...payout, ...encrypted })
-      .returning();
+      .$returningId();
+    const [saved] = await db.select().from(schema.payouts).where(eq(schema.payouts.id, payoutId!));
 
     // Nothing sensitive is stored in clear.
-    const raw = await client.query<Record<string, unknown>>("select * from payouts where id = $1", [
-      saved!.id,
-    ]);
-    expect(JSON.stringify(raw.rows[0])).not.toMatch(/Jane Smith|123456|12345678/);
-    expect(raw.rows[0]!.account_number_last4).toBe("5678");
+    const [rows] = (await db.execute(
+      sql`select * from payouts where id = ${payoutId}`,
+    )) as unknown as [Record<string, unknown>[]];
+    expect(JSON.stringify(rows[0])).not.toMatch(/Jane Smith|123456|12345678/);
+    expect(rows[0]!.account_number_last4).toBe("5678");
 
     expect(decryptBankDetails(saved as typeof encrypted, cipher).accountNumber).toBe("12345678");
   });

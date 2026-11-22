@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -60,9 +60,9 @@ export async function listOrdersAdmin(
       email: orders.email,
       contactName: orders.contactName,
       fulfilmentMethod: orders.fulfilmentMethod,
-      storeName: sql<string | null>`${stores.name} || ', ' || ${stores.town}`,
+      storeName: sql<string | null>`concat(${stores.name}, ', ', ${stores.town})`,
       totalPence: orders.totalPence,
-      items: sql<number>`(select count(*) from ${orderItems} where ${orderItems.orderId} = ${orders.id})::int`,
+      items: sql<number>`(select count(*) from ${orderItems} where ${orderItems.orderId} = ${orders.id})`,
       placedAt: orders.placedAt,
     })
     .from(orders)
@@ -72,9 +72,9 @@ export async function listOrdersAdmin(
         inArray(orders.status, [...ORDER_FILTERS[filter].statuses]),
         q
           ? or(
-              ilike(orders.orderNumber, `%${q}%`),
-              ilike(orders.email, `%${q}%`),
-              ilike(orders.contactName, `%${q}%`),
+              like(orders.orderNumber, `%${q}%`),
+              like(orders.email, `%${q}%`),
+              like(orders.contactName, `%${q}%`),
             )
           : undefined,
       ),

@@ -9,6 +9,7 @@ import {
 } from "@/auth/staff-session";
 import { generateTotpSecret, verifyTotp } from "@/auth/totp";
 import { staffPasskeys, staffSessions, staffUsers } from "@refnused/database/db/schema";
+import { affectedRows } from "@refnused/database/db/results";
 import type { AppDb } from "@refnused/database/db/types";
 import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
 import type { FieldCipher } from "@refnused/database/lib/crypto/field-encryption";
@@ -51,7 +52,7 @@ export async function loadStaffSession(
       role: staffUsers.role,
       isActive: staffUsers.isActive,
       totpEnabledAt: staffUsers.totpEnabledAt,
-      passkeyCount: sql<number>`(select count(*)::int from staff_passkeys where staff_passkeys.staff_id = ${staffUsers.id})`,
+      passkeyCount: sql<number>`(select count(*) from staff_passkeys where staff_passkeys.staff_id = ${staffUsers.id})`,
     })
     .from(staffSessions)
     .innerJoin(staffUsers, eq(staffSessions.userId, staffUsers.id))
@@ -106,24 +107,23 @@ export async function completeStaffMfa(
   const newToken = randomBytes(32).toString("hex");
   return db.transaction(async (tx) => {
     const [old] = await tx
-      .delete(staffSessions)
+      .select()
+      .from(staffSessions)
       .where(eq(staffSessions.sessionToken, input.sessionToken))
-      .returning();
+      .for("update");
     if (!old) throw new Error("Session not found");
-    const [created] = await tx
-      .insert(staffSessions)
-      .values({
-        sessionToken: newToken,
-        userId: old.userId,
-        expires: old.expires,
-        createdAt: old.createdAt,
-        lastActiveAt: now,
-        mfaVerifiedAt: now,
-        mfaMethod: input.method,
-        mfaFailedAttempts: 0,
-      })
-      .returning({ sessionToken: staffSessions.sessionToken, expires: staffSessions.expires });
-    return created!;
+    await tx.delete(staffSessions).where(eq(staffSessions.sessionToken, input.sessionToken));
+    await tx.insert(staffSessions).values({
+      sessionToken: newToken,
+      userId: old.userId,
+      expires: old.expires,
+      createdAt: old.createdAt,
+      lastActiveAt: now,
+      mfaVerifiedAt: now,
+      mfaMethod: input.method,
+      mfaFailedAttempts: 0,
+    });
+    return { sessionToken: newToken, expires: old.expires };
   });
 }
 
@@ -139,11 +139,18 @@ export async function recordMfaFailure(
   method: "passkey" | "totp",
   meta: RequestMeta,
 ): Promise<MfaFailure> {
-  const [updated] = await db
-    .update(staffSessions)
-    .set({ mfaFailedAttempts: sql`${staffSessions.mfaFailedAttempts} + 1` })
-    .where(eq(staffSessions.sessionToken, record.sessionToken))
-    .returning({ attempts: staffSessions.mfaFailedAttempts });
+  // Increment and read back in one transaction (MySQL has no RETURNING).
+  const updated = await db.transaction(async (tx) => {
+    await tx
+      .update(staffSessions)
+      .set({ mfaFailedAttempts: sql`${staffSessions.mfaFailedAttempts} + 1` })
+      .where(eq(staffSessions.sessionToken, record.sessionToken));
+    const [row] = await tx
+      .select({ attempts: staffSessions.mfaFailedAttempts })
+      .from(staffSessions)
+      .where(eq(staffSessions.sessionToken, record.sessionToken));
+    return row;
+  });
   const attempts = updated?.attempts ?? STAFF_MFA_MAX_ATTEMPTS;
 
   const base = {
@@ -206,9 +213,8 @@ export async function verifyStaffTotp(
         eq(staffUsers.id, record.staff.id),
         or(isNull(staffUsers.totpLastUsedStep), lt(staffUsers.totpLastUsedStep, step)),
       ),
-    )
-    .returning({ id: staffUsers.id });
-  if (claimed.length === 0) return recordMfaFailure(db, record, "totp", meta);
+    );
+  if (affectedRows(claimed) === 0) return recordMfaFailure(db, record, "totp", meta);
 
   const session = await completeStaffMfa(db, {
     sessionToken: record.sessionToken,

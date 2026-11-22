@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 
-import { lt, sql } from "drizzle-orm";
+import { eq, lt, sql } from "drizzle-orm";
 
 import { rateLimits } from "../../db/schema";
+import { mysqlDatetime } from "../../db/datetime";
 import type { AppDb } from "../../db/types";
 
 export type RateLimitResult = {
@@ -22,23 +23,23 @@ export async function consumeRateLimit(
 ): Promise<RateLimitResult> {
   const now = input.now ?? new Date();
   const windowStartCutoff = new Date(now.getTime() - input.windowSeconds * 1000);
-  const cutoffIso = windowStartCutoff.toISOString();
-  const nowIso = now.toISOString();
+  const cutoff = mysqlDatetime(windowStartCutoff);
+  const nowValue = mysqlDatetime(now);
 
+  // Written out because the order matters: MySQL applies ON DUPLICATE KEY
+  // UPDATE assignments left to right and later ones see earlier results, so
+  // count must be decided before window_start moves (Drizzle's builder emits
+  // them in column order). If the window has expired, start a new one.
+  await db.execute(sql`
+    insert into rate_limits (\`key\`, window_start, count)
+    values (${input.key}, cast(${nowValue} as datetime(3)), 1)
+    on duplicate key update
+      count = if(window_start <= cast(${cutoff} as datetime(3)), 1, count + 1),
+      window_start = if(window_start <= cast(${cutoff} as datetime(3)), cast(${nowValue} as datetime(3)), window_start)`);
   const [row] = await db
-    .insert(rateLimits)
-    .values({ key: input.key, windowStart: now, count: 1 })
-    .onConflictDoUpdate({
-      target: rateLimits.key,
-      set: {
-        // Start a new window if the old one has expired, otherwise count up.
-        // Raw sql params bypass Drizzle's column mapping, and its postgres.js
-        // driver doesn't serialise Date objects: pass ISO strings with casts.
-        count: sql`case when ${rateLimits.windowStart} <= ${cutoffIso}::timestamptz then 1 else ${rateLimits.count} + 1 end`,
-        windowStart: sql`case when ${rateLimits.windowStart} <= ${cutoffIso}::timestamptz then ${nowIso}::timestamptz else ${rateLimits.windowStart} end`,
-      },
-    })
-    .returning({ count: rateLimits.count, windowStart: rateLimits.windowStart });
+    .select({ count: rateLimits.count, windowStart: rateLimits.windowStart })
+    .from(rateLimits)
+    .where(eq(rateLimits.key, input.key));
 
   // Occasionally clear out old counters.
   if (Math.random() < 0.01) {

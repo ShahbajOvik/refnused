@@ -14,7 +14,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import type { PgColumn, SelectedFields } from "drizzle-orm/pg-core";
+import type { MySqlColumn, SelectedFields } from "drizzle-orm/mysql-core";
 import type { SelectResultFields } from "drizzle-orm/query-builders/select.types";
 
 import {
@@ -84,7 +84,7 @@ export type ShopProduct = {
   listedAt: Date | null;
 };
 
-const colourSlug = sql<string>`trim(both '-' from regexp_replace(lower(${modelVariants.colour}), '[^a-z0-9]+', '-', 'g'))`;
+const colourSlug = sql<string>`trim(both '-' from regexp_replace(lower(${modelVariants.colour}), '[^a-z0-9]+', '-'))`;
 
 const productColumns = {
   id: products.id,
@@ -108,7 +108,7 @@ const productColumns = {
   storeSlug: stores.slug,
   storeName: stores.name,
   storeTown: stores.town,
-  photo: sql<ProductPhoto | null>`${products.photos} -> 0`,
+  photo: sql<ProductPhoto | null>`json_extract(${products.photos}, '$[0]')`,
   modelImageUrl: deviceModels.imageUrl,
   releaseYear: deviceModels.releaseYear,
   listedAt: products.listedAt,
@@ -117,8 +117,8 @@ const productColumns = {
 /** The parts of a dynamic select used here, typed by the selected columns. */
 type ProductQuery<R> = PromiseLike<R[]> & {
   where(condition: SQL | undefined): ProductQuery<R>;
-  groupBy(...columns: (PgColumn | SQL)[]): ProductQuery<R>;
-  orderBy(...columns: (PgColumn | SQL)[]): ProductQuery<R>;
+  groupBy(...columns: (MySqlColumn | SQL)[]): ProductQuery<R>;
+  orderBy(...columns: (MySqlColumn | SQL)[]): ProductQuery<R>;
   limit(n: number): ProductQuery<R>;
   offset(n: number): ProductQuery<R>;
 };
@@ -166,10 +166,11 @@ function filterConditions(filters: ShopFilters, except?: FacetKey): SQL[] {
 }
 
 const SORT_ORDER: Record<ShopFilters["sort"], SQL[]> = {
-  newest: [sql`${products.listedAt} desc nulls last`],
+  // MySQL already sorts NULLs last in descending order.
+  newest: [desc(products.listedAt)],
   "price-asc": [asc(products.pricePence)],
   "price-desc": [desc(products.pricePence)],
-  "battery-desc": [sql`${products.batteryHealthPercent} desc nulls last`, asc(products.pricePence)],
+  "battery-desc": [desc(products.batteryHealthPercent), asc(products.pricePence)],
 };
 
 export type ShopSearchResult = {
@@ -282,7 +283,7 @@ export async function getShopFacets(db: AppDb, filters: ShopFilters): Promise<Sh
       .orderBy(asc(colourSlug)),
     fromProducts(db, {
       value: stores.slug,
-      label: sql<string>`${stores.name} || ', ' || ${stores.town}`,
+      label: sql<string>`concat(${stores.name}, ', ', ${stores.town})`,
       count: n,
     })
       .where(where("stores"))
@@ -293,7 +294,7 @@ export async function getShopFacets(db: AppDb, filters: ShopFilters): Promise<Sh
       Object.fromEntries(
         BATTERY_THRESHOLDS.map((t) => [
           `t${t}`,
-          sql<number>`count(*) filter (where ${products.batteryHealthPercent} >= ${t})::int`,
+          sql<number>`cast(sum(case when ${products.batteryHealthPercent} >= ${t} then 1 else 0 end) as signed)`,
         ]),
       ),
     ).where(where("battery")),
@@ -411,8 +412,8 @@ export async function getStockByStore(
       storeSlug: stores.slug,
       storeName: stores.name,
       storeTown: stores.town,
-      modelCount: sql<number>`count(${products.id})::int`,
-      variantCount: sql<number>`count(${products.id}) filter (where ${products.variantId} = ${input.variantId})::int`,
+      modelCount: sql<number>`count(${products.id})`,
+      variantCount: sql<number>`cast(sum(case when ${products.variantId} = ${input.variantId} then 1 else 0 end) as signed)`,
     })
     .from(stores)
     .leftJoin(
@@ -558,9 +559,7 @@ export async function listTradeInModels(db: AppDb): Promise<TradeInModelOption[]
       name: deviceModels.name,
       brand: brands.name,
       brandSlug: brands.slug,
-      storage: sql<
-        number[]
-      >`array_agg(distinct ${modelVariants.storageGb} order by ${modelVariants.storageGb})`,
+      storage: sql<string>`group_concat(distinct ${modelVariants.storageGb} order by ${modelVariants.storageGb})`,
     })
     .from(deviceModels)
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
@@ -577,7 +576,10 @@ export async function listTradeInModels(db: AppDb): Promise<TradeInModelOption[]
     )
     .groupBy(deviceModels.id, brands.id)
     .orderBy(asc(brands.sortOrder), desc(deviceModels.releaseYear), asc(deviceModels.name));
-  return rows.map((r) => ({ ...r, storage: r.storage.map(Number) }));
+  return rows.map((r) => ({
+    ...r,
+    storage: (r.storage ?? "").split(",").filter(Boolean).map(Number),
+  }));
 }
 
 export type TradeInEstimate =

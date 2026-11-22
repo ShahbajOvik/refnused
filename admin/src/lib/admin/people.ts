@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -43,17 +43,17 @@ export async function searchCustomers(db: AppDb, query: string): Promise<Custome
       phone: customers.phone,
       createdAt: customers.createdAt,
       deletedAt: customers.deletedAt,
-      quotes: sql<number>`(select count(*) from ${quotes} where ${quotes.customerId} = ${customers.id})::int`,
-      orders: sql<number>`(select count(*) from ${orders} where ${orders.customerId} = ${customers.id})::int`,
+      quotes: sql<number>`(select count(*) from ${quotes} where ${quotes.customerId} = ${customers.id})`,
+      orders: sql<number>`(select count(*) from ${orders} where ${orders.customerId} = ${customers.id})`,
     })
     .from(customers)
     .where(
       or(
-        ilike(customers.email, `%${q}%`),
-        ilike(customers.name, `%${q}%`),
-        phoneLike ? ilike(customers.phone, phoneLike) : undefined,
-        sql`exists (select 1 from ${quotes} where ${quotes.customerId} = ${customers.id} and ${quotes.reference} ilike ${q})`,
-        sql`exists (select 1 from ${orders} where ${orders.customerId} = ${customers.id} and ${orders.orderNumber} ilike ${q})`,
+        like(customers.email, `%${q}%`),
+        like(customers.name, `%${q}%`),
+        phoneLike ? like(customers.phone, phoneLike) : undefined,
+        sql`exists (select 1 from ${quotes} where ${quotes.customerId} = ${customers.id} and ${quotes.reference} like ${q})`,
+        sql`exists (select 1 from ${orders} where ${orders.customerId} = ${customers.id} and ${orders.orderNumber} like ${q})`,
       ),
     )
     .orderBy(desc(customers.createdAt))
@@ -235,7 +235,7 @@ export async function listAudit(
       and(
         options.entityType ? eq(auditLog.entityType, options.entityType) : undefined,
         options.entityId ? eq(auditLog.entityId, options.entityId) : undefined,
-        options.action ? ilike(auditLog.action, `${options.action}%`) : undefined,
+        options.action ? like(auditLog.action, `${options.action}%`) : undefined,
       ),
     )
     .orderBy(desc(auditLog.createdAt), desc(auditLog.id))

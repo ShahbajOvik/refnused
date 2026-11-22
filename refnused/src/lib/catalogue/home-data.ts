@@ -48,8 +48,8 @@ export async function searchModels(
 ): Promise<ModelSearchResult[]> {
   const words = query.toLowerCase().split(" ").filter(Boolean).slice(0, 5);
   if (words.length === 0) return [];
-  const haystack = sql`lower(${brands.name} || ' ' || ${deviceModels.name})`;
-  const conditions = words.map((w) => sql`${haystack} like ${`%${likeEscape(w)}%`} escape '\\'`);
+  const haystack = sql`lower(concat(${brands.name}, ' ', ${deviceModels.name}))`;
+  const conditions = words.map((w) => sql`${haystack} like ${`%${likeEscape(w)}%`}`);
 
   const rows = await db
     .select({
@@ -77,7 +77,7 @@ export async function getQuoteStats(db: AppDb): Promise<QuoteStats> {
   const [[priced], [storeCount]] = await Promise.all([
     db
       .select({
-        models: sql<number>`count(distinct ${deviceModels.id})::int`,
+        models: sql<number>`count(distinct ${deviceModels.id})`,
         maxTradeInPence: max(tradeInPrices.pricePence),
       })
       .from(tradeInPrices)

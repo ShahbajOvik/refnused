@@ -205,9 +205,9 @@ export async function createCategory(
     const [row] = await tx
       .insert(categories)
       .values({ ...values, slug })
-      .returning({ id: categories.id, slug: categories.slug });
+      .$returningId();
     await audit(tx, { staffId }, "catalogue.category_created", "category", row!.id, values, meta);
-    return row!;
+    return { id: row!.id, slug };
   });
 }
 
@@ -270,12 +270,12 @@ export async function createBrand(
     const [existing] = await tx.select({ id: brands.id }).from(brands).where(eq(brands.slug, slug));
     if (existing) throw new ActionError("A brand with that name already exists.");
     const [{ next } = { next: 0 }] = await tx
-      .select({ next: sql<number>`coalesce(max(${brands.sortOrder}), 0)::int + 1` })
+      .select({ next: sql<number>`coalesce(max(${brands.sortOrder}), 0) + 1` })
       .from(brands);
     const [row] = await tx
       .insert(brands)
-      .values({ name: input.name, slug, sortOrder: next })
-      .returning({ id: brands.id, slug: brands.slug });
+      .values({ name: input.name, slug, sortOrder: Number(next) })
+      .$returningId();
     await audit(
       tx,
       { staffId: input.staffId },
@@ -285,7 +285,7 @@ export async function createBrand(
       { name: input.name, slug },
       meta,
     );
-    return row!;
+    return { id: row!.id, slug };
   });
 }
 
@@ -323,7 +323,7 @@ export async function createModel(
         slug,
         releaseYear: input.releaseYear,
       })
-      .returning({ id: deviceModels.id, slug: deviceModels.slug });
+      .$returningId();
     await tx.insert(modelVariants).values(options.map((o) => ({ ...o, modelId: model!.id })));
     await audit(
       tx,
@@ -334,7 +334,7 @@ export async function createModel(
       { name: input.name, slug, category: category.slug, variants: options.length },
       meta,
     );
-    return { ...model!, variants: options.length };
+    return { id: model!.id, slug, variants: options.length };
   });
 }
 
@@ -378,15 +378,8 @@ export async function addVariants(
     await tx
       .insert(modelVariants)
       .values(options.map((o) => ({ ...o, modelId: model.id })))
-      .onConflictDoUpdate({
-        target: [
-          modelVariants.modelId,
-          modelVariants.storageGb,
-          modelVariants.configuration,
-          modelVariants.colour,
-        ],
-        set: { isActive: true, updatedAt: new Date() },
-      });
+      // Existing options (model_variants_model_options_unique) are re-activated.
+      .onDuplicateKeyUpdate({ set: { isActive: true, updatedAt: new Date() } });
     await audit(
       tx,
       { staffId: input.staffId },
@@ -448,7 +441,7 @@ export async function loadCatalogue(db: AppDb) {
         hasBattery: categories.hasBattery,
         requiresDataWipe: categories.requiresDataWipe,
         isActive: categories.isActive,
-        modelCount: sql<number>`(select count(*)::int from ${deviceModels} where ${deviceModels.categoryId} = ${categories.id})`,
+        modelCount: sql<number>`(select count(*) from ${deviceModels} where ${deviceModels.categoryId} = ${categories.id})`,
       })
       .from(categories)
       .orderBy(asc(categories.sortOrder), asc(categories.name)),
