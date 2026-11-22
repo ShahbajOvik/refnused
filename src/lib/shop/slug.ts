@@ -25,11 +25,12 @@ export function randomSlugSuffix(length = 6): string {
 /** URL slug for one unit, e.g. "iphone-15-128gb-black-k3x9q2". */
 export function productSlug(input: {
   modelSlug: string;
-  storageGb: number;
+  storageGb: number | null;
   colour: string;
   suffix?: string;
 }): string {
+  const storage = input.storageGb ? `${input.storageGb}gb-` : "";
   return slugify(
-    `${input.modelSlug}-${input.storageGb}gb-${input.colour}-${input.suffix ?? randomSlugSuffix()}`,
+    `${input.modelSlug}-${storage}${input.colour}-${input.suffix ?? randomSlugSuffix()}`,
   );
 }

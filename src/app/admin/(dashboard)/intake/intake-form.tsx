@@ -9,16 +9,27 @@ import { ImeiScanner } from "@/app/admin/_components/imei-scanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ImeiLookup } from "@/lib/admin/intake";
+import { variantLabel } from "@/lib/shop/variant-label";
 import { isValidImei } from "@/lib/validation/uk";
 
 import { createProductAction, lookupImeiAction } from "./actions";
 
+type Category = {
+  id: string;
+  name: string;
+  identifierType: "imei" | "serial" | "none";
+  hasBattery: boolean;
+  requiresDataWipe: boolean;
+};
+
 type Variant = {
   id: string;
+  categoryId: string;
   brand: string;
   model: string;
   modelSlug: string;
-  storageGb: number;
+  storageGb: number | null;
+  configuration: string;
   colour: string;
 };
 
@@ -26,16 +37,20 @@ const selectClass =
   "h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
 export function IntakeForm({
+  categories,
   variants,
   stores,
   defaultStoreId,
 }: {
+  categories: Category[];
   variants: Variant[];
   stores: { id: string; label: string }[];
   defaultStoreId?: string;
 }) {
   const id = useId();
   const { pending, run } = useAdminAction();
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [serialNumber, setSerialNumber] = useState("");
   const [imei, setImei] = useState("");
   const [lookup, setLookup] = useState<ImeiLookup | null>(null);
   const [modelSlug, setModelSlug] = useState("");
@@ -46,14 +61,25 @@ export function IntakeForm({
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [created, setCreated] = useState<{ href: string; status: string } | null>(null);
 
+  const category = categories.find((c) => c.id === categoryId);
+  const identifierType = category?.identifierType ?? "imei";
+  const needsCertificate = category?.requiresDataWipe ?? true;
   const models = useMemo(() => {
     const seen = new Map<string, string>();
-    for (const v of variants) seen.set(v.modelSlug, `${v.brand} ${v.model}`);
+    for (const v of variants) {
+      if (v.categoryId === categoryId) seen.set(v.modelSlug, `${v.brand} ${v.model}`);
+    }
     return [...seen];
-  }, [variants]);
+  }, [variants, categoryId]);
   const modelVariants = variants.filter((v) => v.modelSlug === modelSlug);
   const chosen = variants.find((v) => v.id === variantId);
   const imeiValid = imei.length === 15 && isValidImei(imei);
+  const identifierReady =
+    identifierType === "imei"
+      ? imeiValid
+      : identifierType === "serial"
+        ? serialNumber.trim().length >= 3
+        : true;
 
   const doLookup = useCallback(
     (value: string) => {
@@ -105,12 +131,13 @@ export function IntakeForm({
             onClick={() => {
               setCreated(null);
               setImei("");
+              setSerialNumber("");
               setLookup(null);
               setPhotos([]);
               setCertificate([]);
             }}
           >
-            Add another phone
+            Add another item
           </Button>
         </div>
       </div>
@@ -128,7 +155,8 @@ export function IntakeForm({
         run(
           () =>
             createProductAction({
-              imei,
+              imei: identifierType === "imei" ? imei : "",
+              serialNumber: identifierType === "serial" ? serialNumber : "",
               variantId,
               grade: grade as "A",
               batteryHealthPercent: data.get("battery") as never,
@@ -158,47 +186,102 @@ export function IntakeForm({
         );
       }}
     >
-      <div className="flex flex-col gap-1.5 md:col-span-2">
-        <label htmlFor={`${id}-imei`} className="text-sm font-medium">
-          IMEI
-        </label>
-        <div className="flex flex-wrap gap-2">
-          <Input
-            id={`${id}-imei`}
-            value={imei}
-            onChange={(e) => doLookup(e.target.value.replace(/\D/g, "").slice(0, 15))}
-            inputMode="numeric"
-            autoComplete="off"
-            className="max-w-xs font-mono"
-            aria-describedby={`${id}-imei-hint`}
-            aria-invalid={(imei.length === 15 && !imeiValid) || err("imei") ? true : undefined}
-          />
-          <ImeiScanner onScan={doLookup} />
+      {categories.length > 1 ? (
+        <div className="flex flex-col gap-1.5 md:col-span-2">
+          <label htmlFor={`${id}-category`} className="text-sm font-medium">
+            Category
+          </label>
+          <select
+            id={`${id}-category`}
+            value={categoryId}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setModelSlug("");
+              setVariantId("");
+              setImei("");
+              setSerialNumber("");
+              setLookup(null);
+              setCertificate([]);
+              setErrors({});
+            }}
+            className={`${selectClass} md:max-w-xs`}
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <p id={`${id}-imei-hint`} className="text-xs text-muted-foreground">
-          15 digits. Dial *#06# on the phone, or scan the box.
-          {imei.length === 15 && !imeiValid ? " This IMEI isn’t valid (check digit)." : ""}
-        </p>
-        {lookup?.product ? (
-          <p role="alert" className="text-sm font-medium text-destructive">
-            Already in stock ({lookup.product.status}).{" "}
-            <Link href={`/admin/products?q=${imei}`} className="underline">
-              Open it
-            </Link>
+      ) : null}
+
+      {identifierType === "serial" ? (
+        <div className="flex flex-col gap-1.5 md:col-span-2">
+          <label htmlFor={`${id}-serial`} className="text-sm font-medium">
+            Serial number
+          </label>
+          <Input
+            id={`${id}-serial`}
+            value={serialNumber}
+            onChange={(e) => setSerialNumber(e.target.value)}
+            autoComplete="off"
+            maxLength={64}
+            className="max-w-xs font-mono uppercase"
+            aria-describedby={`${id}-serial-hint`}
+            aria-invalid={err("serialNumber") ? true : undefined}
+          />
+          <p id={`${id}-serial-hint`} className="text-xs text-muted-foreground">
+            Usually printed on the base or in the system settings.
           </p>
-        ) : lookup?.quote ? (
-          <p className="text-sm">
-            From trade-in{" "}
-            <Link
-              href={`/admin/quotes/${lookup.quote.id}`}
-              className="font-medium text-primary underline"
-            >
-              {lookup.quote.reference}
-            </Link>{" "}
-            ({lookup.quote.device}).
+          {err("serialNumber") ? (
+            <p className="text-sm text-destructive">{err("serialNumber")}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {identifierType === "imei" ? (
+        <div className="flex flex-col gap-1.5 md:col-span-2">
+          <label htmlFor={`${id}-imei`} className="text-sm font-medium">
+            IMEI
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              id={`${id}-imei`}
+              value={imei}
+              onChange={(e) => doLookup(e.target.value.replace(/\D/g, "").slice(0, 15))}
+              inputMode="numeric"
+              autoComplete="off"
+              className="max-w-xs font-mono"
+              aria-describedby={`${id}-imei-hint`}
+              aria-invalid={(imei.length === 15 && !imeiValid) || err("imei") ? true : undefined}
+            />
+            <ImeiScanner onScan={doLookup} />
+          </div>
+          <p id={`${id}-imei-hint`} className="text-xs text-muted-foreground">
+            15 digits. Dial *#06# on the phone, or scan the box.
+            {imei.length === 15 && !imeiValid ? " This IMEI isn’t valid (check digit)." : ""}
           </p>
-        ) : null}
-      </div>
+          {lookup?.product ? (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              Already in stock ({lookup.product.status}).{" "}
+              <Link href={`/admin/products?q=${imei}`} className="underline">
+                Open it
+              </Link>
+            </p>
+          ) : lookup?.quote ? (
+            <p className="text-sm">
+              From trade-in{" "}
+              <Link
+                href={`/admin/quotes/${lookup.quote.id}`}
+                className="font-medium text-primary underline"
+              >
+                {lookup.quote.reference}
+              </Link>{" "}
+              ({lookup.quote.device}).
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor={`${id}-model`} className="text-sm font-medium">
@@ -223,7 +306,7 @@ export function IntakeForm({
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={`${id}-variant`} className="text-sm font-medium">
-          Storage and colour
+          Options
         </label>
         <select
           id={`${id}-variant`}
@@ -236,7 +319,7 @@ export function IntakeForm({
           <option value="">{modelSlug ? "Choose" : "Choose a model first"}</option>
           {modelVariants.map((v) => (
             <option key={v.id} value={v.id}>
-              {v.storageGb}GB · {v.colour}
+              {variantLabel(v, " · ")}
             </option>
           ))}
         </select>
@@ -268,12 +351,16 @@ export function IntakeForm({
 
       {(
         [
-          [
-            "battery",
-            "Battery health (%)",
-            "batteryHealthPercent",
-            { min: 0, max: 100, step: 1, inputMode: "numeric" as const },
-          ],
+          ...(category?.hasBattery === false
+            ? []
+            : ([
+                [
+                  "battery",
+                  "Battery health (%)",
+                  "batteryHealthPercent",
+                  { min: 0, max: 100, step: 1, inputMode: "numeric" as const },
+                ],
+              ] as const)),
           [
             "price",
             "Price (£)",
@@ -322,7 +409,7 @@ export function IntakeForm({
       </div>
 
       <div className="md:col-span-2">
-        <p className="mb-2 text-sm font-medium">Photos of this phone</p>
+        <p className="mb-2 text-sm font-medium">Photos of this item</p>
         <FileUploader
           kind="product-photo"
           label="Take or add photos"
@@ -330,26 +417,28 @@ export function IntakeForm({
           value={photos}
           onChange={setPhotos}
           altPrefix={
-            chosen ? `${chosen.brand} ${chosen.model} ${chosen.colour}, photo` : "Phone photo"
+            chosen ? `${chosen.brand} ${chosen.model} ${chosen.colour}, photo` : "Item photo"
           }
         />
       </div>
-      <div className="md:col-span-2">
-        <p className="mb-2 text-sm font-medium">Data-wipe certificate (PDF)</p>
-        <FileUploader
-          kind="certificate"
-          label="Upload certificate"
-          value={certificate}
-          onChange={setCertificate}
-        />
-      </div>
+      {needsCertificate ? (
+        <div className="md:col-span-2">
+          <p className="mb-2 text-sm font-medium">Data-wipe certificate (PDF)</p>
+          <FileUploader
+            kind="certificate"
+            label="Upload certificate"
+            value={certificate}
+            onChange={setCertificate}
+          />
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-3 md:col-span-2">
         <Button
           type="submit"
           name="intent"
           value="publish"
-          disabled={pending || !imeiValid || Boolean(lookup?.product)}
+          disabled={pending || !identifierReady || Boolean(lookup?.product)}
           className="min-h-11"
         >
           {pending ? "Saving…" : "Publish to shop"}
@@ -359,13 +448,15 @@ export function IntakeForm({
           name="intent"
           value="draft"
           variant="outline"
-          disabled={pending || !imeiValid || Boolean(lookup?.product)}
+          disabled={pending || !identifierReady || Boolean(lookup?.product)}
           className="min-h-11"
         >
           Save as draft
         </Button>
         <p className="w-full text-xs text-muted-foreground">
-          Publishing needs the certificate and at least one photo.
+          {needsCertificate
+            ? "Publishing needs the certificate and at least one photo."
+            : "Publishing needs at least one photo."}
         </p>
       </div>
     </form>

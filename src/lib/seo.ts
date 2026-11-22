@@ -15,16 +15,99 @@ export function absoluteUrl(path = "/"): string {
   return new URL(path, publicEnv.NEXT_PUBLIC_SITE_URL).toString();
 }
 
-export function organizationJsonLd() {
+export const ORGANIZATION_ID = "/#organization";
+export const WEBSITE_ID = "/#website";
+
+/**
+ * The business. Stores are linked as departments by @id, so their full
+ * details (from storeJsonLd) are only written once per page.
+ */
+export function organizationJsonLd(stores: Pick<PublicStore, "slug">[] = []) {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": absoluteUrl("/#organization"),
+    "@id": absoluteUrl(ORGANIZATION_ID),
     name: siteConfig.name,
     url: absoluteUrl("/"),
     logo: absoluteUrl("/icon.svg"),
     description: siteConfig.description,
     areaServed: "GB",
+    ...(stores.length
+      ? { department: stores.map((s) => ({ "@id": absoluteUrl(`${storePath(s)}#store`) })) }
+      : {}),
+  };
+}
+
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": absoluteUrl(WEBSITE_ID),
+    name: siteConfig.name,
+    url: absoluteUrl("/"),
+    inLanguage: siteConfig.locale,
+    publisher: { "@id": absoluteUrl(ORGANIZATION_ID) },
+  };
+}
+
+export type FaqItem = { question: string; answer: string };
+
+/** FAQPage. Only for questions shown on the same page, word for word. */
+export function faqPageJsonLd(items: FaqItem[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
+
+export type ArticleJsonLdInput = {
+  path: string;
+  headline: string;
+  description: string;
+  author:
+    { kind: "person"; name: string; role: string | null } | { kind: "organization"; name: string };
+  /** ISO 8601. */
+  publishedAt: string;
+  updatedAt: string;
+  /** Absolute or site-relative. */
+  images: string[];
+  /** Things the article is about, e.g. "Apple iPhone 15". */
+  about?: string[];
+};
+
+export function articleJsonLd(input: ArticleJsonLdInput) {
+  const url = absoluteUrl(input.path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: input.headline.slice(0, 110),
+    description: input.description,
+    url,
+    mainEntityOfPage: url,
+    inLanguage: siteConfig.locale,
+    datePublished: input.publishedAt,
+    dateModified: input.updatedAt,
+    author:
+      input.author.kind === "person"
+        ? {
+            "@type": "Person",
+            name: input.author.name,
+            ...(input.author.role ? { jobTitle: input.author.role } : {}),
+            worksFor: { "@id": absoluteUrl(ORGANIZATION_ID) },
+          }
+        : { "@type": "Organization", "@id": absoluteUrl(ORGANIZATION_ID), name: input.author.name },
+    publisher: { "@id": absoluteUrl(ORGANIZATION_ID) },
+    isPartOf: { "@id": absoluteUrl(WEBSITE_ID) },
+    image: input.images.map((src) => absoluteUrl(src)),
+    ...(input.about?.length
+      ? { about: input.about.map((name) => ({ "@type": "Thing", name })) }
+      : {}),
   };
 }
 

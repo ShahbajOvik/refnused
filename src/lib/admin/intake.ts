@@ -1,8 +1,11 @@
+import { randomBytes } from "node:crypto";
+
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
   brands,
+  categories,
   deviceModels,
   inspections,
   modelVariants,
@@ -18,10 +21,22 @@ import { productSlug } from "@/lib/shop/slug";
 import { imeiSchema } from "@/lib/validation/uk";
 
 /*
- * Device intake: turning a phone (usually a trade-in) into a unit for sale,
- * and managing units afterwards. A unit can only be listed with a
- * data-wipe certificate and at least one photo.
+ * Device intake: turning an item (often a trade-in) into a unit for sale,
+ * and managing units afterwards. The item's category decides how it is
+ * identified and what is needed. A unit can only be listed with at least one
+ * photo and, if it can hold personal data, a data-wipe certificate.
  */
+
+/** "128GB, 16GB RAM, Black", in SQL. concat_ws skips the options an item lacks. */
+const variantOptionsSql = sql<string>`concat_ws(', ', ${modelVariants.storageGb} || 'GB', nullif(${modelVariants.configuration}, ''), ${modelVariants.colour})`;
+
+const blankToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
+
+export const serialNumberSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z0-9][A-Z0-9._/-]{2,63}$/, "Enter the serial number, as printed on the item");
 
 const photoSchema = z.object({
   key: z.string().regex(/^products\/[\w/.-]+$/),
@@ -29,14 +44,19 @@ const photoSchema = z.object({
 });
 
 export const intakeSchema = z.object({
-  imei: imeiSchema,
-  variantId: z.uuid("Choose the model, storage and colour"),
+  imei: z.preprocess(blankToUndefined, imeiSchema.optional()),
+  serialNumber: z.preprocess(blankToUndefined, serialNumberSchema.optional()),
+  variantId: z.uuid("Choose the model and options"),
   grade: z.enum(["A", "B", "C"], "Choose the grade"),
-  batteryHealthPercent: z.coerce
-    .number("Enter battery health")
-    .int("Whole numbers only")
-    .min(0)
-    .max(100, "Battery health is 0–100%"),
+  batteryHealthPercent: z.preprocess(
+    blankToUndefined,
+    z.coerce
+      .number("Enter battery health")
+      .int("Whole numbers only")
+      .min(0)
+      .max(100, "Battery health is 0–100%")
+      .optional(),
+  ),
   pricePounds: z.coerce.number("Enter the price").positive("Enter the price").max(5000),
   storeId: z.uuid("Choose the store"),
   warrantyMonths: z.coerce.number().int().min(0).max(36).default(12),
@@ -95,28 +115,67 @@ export async function lookupImei(db: AppDb, imei: string): Promise<ImeiLookup> {
   return { product: product ?? null, quote: quote ?? null };
 }
 
+/** Categories staff can add stock to, with what each one needs. */
+export async function listCategoriesForIntake(db: AppDb) {
+  return db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      identifierType: categories.identifierType,
+      hasBattery: categories.hasBattery,
+      requiresDataWipe: categories.requiresDataWipe,
+    })
+    .from(categories)
+    .where(eq(categories.isActive, true))
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
+}
+
 /** All variants, for the intake model picker. */
 export async function listVariantsForIntake(db: AppDb) {
   return db
     .select({
       id: modelVariants.id,
+      categoryId: deviceModels.categoryId,
       brand: brands.name,
       model: deviceModels.name,
       modelSlug: deviceModels.slug,
       storageGb: modelVariants.storageGb,
+      configuration: modelVariants.configuration,
       colour: modelVariants.colour,
     })
     .from(modelVariants)
     .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
-    .where(and(eq(modelVariants.isActive, true), eq(deviceModels.isActive, true)))
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+    .where(
+      and(
+        eq(modelVariants.isActive, true),
+        eq(deviceModels.isActive, true),
+        eq(categories.isActive, true),
+      ),
+    )
     .orderBy(
       asc(brands.sortOrder),
       desc(deviceModels.releaseYear),
       asc(deviceModels.name),
       asc(modelVariants.storageGb),
+      asc(modelVariants.configuration),
       asc(modelVariants.colour),
     );
+}
+
+/** The unit's identifier, as its category requires. */
+function unitIdentifier(type: "imei" | "serial" | "none", input: IntakeInput) {
+  if (type === "imei") {
+    if (!input.imei) throw new ActionError("Enter the IMEI.");
+    return { imei: input.imei, serialNumber: null };
+  }
+  if (type === "serial") {
+    if (!input.serialNumber) throw new ActionError("Enter the serial number.");
+    return { imei: null, serialNumber: input.serialNumber };
+  }
+  const stockCode = `SKU-${randomBytes(6).toString("hex").toUpperCase()}`;
+  return { imei: null, serialNumber: input.serialNumber ?? stockCode };
 }
 
 export async function createProductFromIntake(
@@ -125,32 +184,50 @@ export async function createProductFromIntake(
   meta?: RequestMeta,
   now = new Date(),
 ): Promise<{ id: string; slug: string; brandSlug: string; status: "draft" | "listed" }> {
-  if (input.publish && !input.certificateKey) {
-    throw new ActionError("Upload the data-wipe certificate before publishing.");
-  }
-  if (input.publish && input.photos.length === 0) {
-    throw new ActionError("Add at least one photo before publishing.");
-  }
   return db.transaction(async (transaction) => {
     const tx = transaction as unknown as AppDb;
-    const [existing] = await tx
-      .select({ id: products.id })
-      .from(products)
-      .where(eq(products.imei, input.imei));
-    if (existing)
-      throw new ActionError("A unit with this IMEI already exists. Find it under Products.");
     const [variant] = await tx
       .select({
         modelSlug: deviceModels.slug,
         brandSlug: brands.slug,
         storageGb: modelVariants.storageGb,
         colour: modelVariants.colour,
+        identifierType: categories.identifierType,
+        hasBattery: categories.hasBattery,
+        requiresDataWipe: categories.requiresDataWipe,
       })
       .from(modelVariants)
       .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
       .innerJoin(brands, eq(deviceModels.brandId, brands.id))
+      .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
       .where(eq(modelVariants.id, input.variantId));
-    if (!variant) throw new ActionError("Choose the model, storage and colour.");
+    if (!variant) throw new ActionError("Choose the model and options.");
+
+    // The category decides what's needed, never the form that was submitted.
+    const identifier = unitIdentifier(variant.identifierType, input);
+    if (variant.hasBattery && input.batteryHealthPercent === undefined) {
+      throw new ActionError("Enter battery health.");
+    }
+    const certificateKey = variant.requiresDataWipe ? input.certificateKey : null;
+    if (input.publish && variant.requiresDataWipe && !certificateKey) {
+      throw new ActionError("Upload the data-wipe certificate before publishing.");
+    }
+    if (input.publish && input.photos.length === 0) {
+      throw new ActionError("Add at least one photo before publishing.");
+    }
+
+    const [existing] = await tx
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        identifier.imei
+          ? eq(products.imei, identifier.imei)
+          : eq(products.serialNumber, identifier.serialNumber!),
+      );
+    if (existing) {
+      const what = identifier.imei ? "IMEI" : "serial number";
+      throw new ActionError(`A unit with this ${what} already exists. Find it under Products.`);
+    }
     const [store] = await tx
       .select({ id: stores.id })
       .from(stores)
@@ -167,14 +244,15 @@ export async function createProductFromIntake(
           colour: variant.colour,
         }),
         variantId: input.variantId,
-        imei: input.imei,
+        ...identifier,
         grade: input.grade,
-        batteryHealthPercent: input.batteryHealthPercent,
+        batteryHealthPercent: variant.hasBattery ? input.batteryHealthPercent : null,
         photos: input.photos,
         pricePence: Math.round(input.pricePounds * 100),
         storeId: input.storeId,
         status,
-        dataWipeCertificateKey: input.certificateKey,
+        dataWipeRequired: variant.requiresDataWipe,
+        dataWipeCertificateKey: certificateKey,
         warrantyMonths: input.warrantyMonths,
         sourceQuoteId: input.sourceQuoteId ?? null,
         listedAt: input.publish ? now : null,
@@ -196,7 +274,7 @@ export async function createProductFromIntake(
             pricePence: Math.round(input.pricePounds * 100),
             storeId: input.storeId,
             photos: input.photos.length,
-            certificate: Boolean(input.certificateKey),
+            certificate: Boolean(certificateKey),
             sourceQuoteId: input.sourceQuoteId ?? null,
           },
         },
@@ -214,12 +292,14 @@ export type ProductAdminRow = {
   slug: string;
   brandSlug: string;
   device: string;
-  imei: string;
+  /** IMEI, serial number or stock code. */
+  identifier: string;
   grade: string;
-  batteryHealthPercent: number;
+  batteryHealthPercent: number | null;
   pricePence: number;
   status: string;
   storeName: string;
+  certificateRequired: boolean;
   hasCertificate: boolean;
   photos: number;
   listedAt: Date | null;
@@ -235,13 +315,14 @@ export async function listProductsAdmin(
       id: products.id,
       slug: products.slug,
       brandSlug: brands.slug,
-      device: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${modelVariants.storageGb} || 'GB, ' || ${modelVariants.colour}`,
-      imei: products.imei,
+      device: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${variantOptionsSql}`,
+      identifier: sql<string>`coalesce(${products.imei}, ${products.serialNumber})`,
       grade: products.grade,
       batteryHealthPercent: products.batteryHealthPercent,
       pricePence: products.pricePence,
       status: products.status,
       storeName: sql<string>`${stores.name} || ', ' || ${stores.town}`,
+      certificateRequired: products.dataWipeRequired,
       hasCertificate: sql<boolean>`${products.dataWipeCertificateKey} is not null`,
       photos: sql<number>`jsonb_array_length(${products.photos})::int`,
       listedAt: products.listedAt,
@@ -259,6 +340,7 @@ export async function listProductsAdmin(
         q
           ? or(
               eq(products.imei, q),
+              eq(products.serialNumber, q.toUpperCase()),
               ilike(products.slug, `%${q}%`),
               ilike(deviceModels.name, `%${q}%`),
             )
@@ -291,6 +373,7 @@ export async function updateProductAdmin(
         pricePence: products.pricePence,
         storeId: products.storeId,
         certificate: products.dataWipeCertificateKey,
+        certificateRequired: products.dataWipeRequired,
         photos: products.photos,
         holdOrderId: products.checkoutHoldOrderId,
         listedAt: products.listedAt,
@@ -308,8 +391,11 @@ export async function updateProductAdmin(
     if (input.pricePounds !== undefined) next.pricePence = Math.round(input.pricePounds * 100);
     if (input.storeId) next.storeId = input.storeId;
     if (input.status) {
-      if (input.status === "listed" && (!p.certificate || p.photos.length === 0)) {
-        throw new ActionError("Add a data-wipe certificate and at least one photo before listing.");
+      if (input.status === "listed" && p.certificateRequired && !p.certificate) {
+        throw new ActionError("Add a data-wipe certificate before listing.");
+      }
+      if (input.status === "listed" && p.photos.length === 0) {
+        throw new ActionError("Add at least one photo before listing.");
       }
       next.status = input.status;
       if (input.status === "listed" && !p.listedAt) next.listedAt = now;

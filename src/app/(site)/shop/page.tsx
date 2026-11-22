@@ -2,35 +2,57 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
-import { describeFilters, ShopListing, ShopListingSkeleton } from "@/components/shop/shop-listing";
+import {
+  CategoryLinks,
+  describeFilters,
+  ShopListing,
+  ShopListingSkeleton,
+} from "@/components/shop/shop-listing";
 import {
   isIndexableListing,
   parseShopFilters,
   serializeShopFilters,
   type ShopFilters,
 } from "@/lib/shop/filters";
+import { pageMetadata } from "@/lib/metadata";
 import { orFallback } from "@/lib/shop/load";
-import { cachedFacets, cachedSearch, cachedShopBrands } from "@/lib/shop/queries";
+import {
+  cachedFacets,
+  cachedSearch,
+  cachedShopBrands,
+  cachedShopCategories,
+} from "@/lib/shop/queries";
+import { listingNoun } from "@/lib/shop/variant-label";
 
 export async function generateMetadata({ searchParams }: PageProps<"/shop">): Promise<Metadata> {
   const filters = parseShopFilters(await searchParams);
   const query = serializeShopFilters(filters);
-  const brands = await orFallback("brands", cachedShopBrands, []);
+  const [brands, categories] = await Promise.all([
+    orFallback("brands", cachedShopBrands, []),
+    orFallback("categories", cachedShopCategories, []),
+  ]);
+  const noun = listingNoun(
+    filters.categories,
+    categories.map((c) => c.slug),
+  );
   const brand =
     filters.brands.length === 1
       ? brands.find((b) => b.slug === filters.brands[0])?.name
       : undefined;
   const title = isIndexableListing(filters)
-    ? "Refurbished phones with warranty"
-    : describeFilters(filters, { brand }) + (filters.page > 1 ? ` · page ${filters.page}` : "");
-  return {
+    ? `Refurbished ${noun.many} with warranty`
+    : describeFilters(filters, { brand, noun: noun.many }) +
+      (filters.page > 1 ? ` · page ${filters.page}` : "");
+  return pageMetadata({
     title,
     description:
-      "Tested, graded and data-wiped refurbished iPhone, Samsung Galaxy and Google Pixel phones with a 12-month warranty. Free UK delivery or click and collect in North and South Shields.",
-    alternates: { canonical: query ? `/shop?${query}` : "/shop" },
+      categories.length > 1
+        ? "Tested and graded refurbished tech with a warranty. Free UK delivery or click and collect in North and South Shields."
+        : "Tested, graded and data-wiped refurbished iPhone, Samsung Galaxy and Google Pixel phones with a 12-month warranty. Free UK delivery or click and collect in North and South Shields.",
+    path: query ? `/shop?${query}` : "/shop",
     // Filtered combinations are useful to share but not to index.
-    robots: isIndexableListing(filters) ? undefined : { index: false, follow: true },
-  };
+    noindex: !isIndexableListing(filters),
+  });
 }
 
 export default function ShopPage({ searchParams }: PageProps<"/shop">) {
@@ -42,11 +64,6 @@ export default function ShopPage({ searchParams }: PageProps<"/shop">) {
           { label: "Shop", href: "/shop" },
         ]}
       />
-      <h1 className="mt-6 text-4xl font-semibold sm:text-5xl">Refurbished phones</h1>
-      <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-        Every phone is tested, graded and data-wiped, with a 12-month warranty. The photos are of
-        the actual phone you’ll get.
-      </p>
       <Suspense fallback={<ShopListingSkeleton />}>
         <Listing searchParams={searchParams} />
       </Suspense>
@@ -56,9 +73,24 @@ export default function ShopPage({ searchParams }: PageProps<"/shop">) {
 
 async function Listing({ searchParams }: Pick<PageProps<"/shop">, "searchParams">) {
   const filters: ShopFilters = parseShopFilters(await searchParams);
-  const [result, facets] = await Promise.all([
+  const [result, facets, categories] = await Promise.all([
     orFallback("search", () => cachedSearch(filters), null),
     orFallback("facets", () => cachedFacets(filters), null),
+    orFallback("categories", cachedShopCategories, []),
   ]);
-  return <ShopListing filters={filters} result={result} facets={facets} />;
+  const noun = listingNoun(
+    filters.categories,
+    categories.map((c) => c.slug),
+  );
+  return (
+    <>
+      <h1 className="mt-6 text-4xl font-semibold sm:text-5xl">Refurbished {noun.many}</h1>
+      <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
+        Every {noun.one} is tested and graded, with a warranty. The photos are of the actual{" "}
+        {noun.one} you’ll get.
+      </p>
+      <CategoryLinks categories={categories} />
+      <ShopListing filters={filters} result={result} facets={facets} noun={noun} />
+    </>
+  );
 }

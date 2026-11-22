@@ -24,30 +24,59 @@ import { cn } from "@/lib/utils";
 import { FilterForm } from "./filter-form";
 import { ProductCard } from "./product-card";
 
+type Noun = { one: string; many: string };
+
+/** A listing whose brand or category comes from the path, not a filter. */
+type ListingScope = { kind: "brand" | "category"; path: string; param: string; name: string };
+
 type ListingProps = {
   filters: ShopFilters;
   result: ShopSearchResult | null;
   facets: ShopFacets | null;
-  /** Set on /shop/[brand]: the brand comes from the path, not a filter. */
+  /** Set on /shop/[brand]. */
   brand?: { slug: string; name: string };
+  /** Set on /shop/category/[category]. */
+  category?: { slug: string; name: string };
+  /** What the listing calls its items. */
+  noun?: Noun;
 };
 
-/** Path of a listing with these filters (brand left out on brand pages). */
-function hrefFor(filters: ShopFilters, brand?: { slug: string }) {
-  const base = brand ? `/shop/${brand.slug}` : "/shop";
-  const query = serializeShopFilters(filters, { omit: brand ? [PARAM.brands] : [] });
+type ScopedProps = Pick<ListingProps, "filters" | "facets"> & { scope?: ListingScope; noun: Noun };
+
+/** Path of a listing with these filters (the path's own filter left out). */
+function hrefFor(filters: ShopFilters, scope?: ListingScope) {
+  const base = scope?.path ?? "/shop";
+  const query = serializeShopFilters(filters, { omit: scope ? [scope.param] : [] });
   return query ? `${base}?${query}` : base;
 }
 
-export function ShopListing({ filters, result, facets, brand }: ListingProps) {
-  const action = brand ? `/shop/${brand.slug}` : "/shop";
+export function ShopListing({
+  filters,
+  result,
+  facets,
+  brand,
+  category,
+  noun = { one: "phone", many: "phones" },
+}: ListingProps) {
+  const scope: ListingScope | undefined = brand
+    ? { kind: "brand", path: `/shop/${brand.slug}`, param: PARAM.brands, name: brand.name }
+    : category
+      ? {
+          kind: "category",
+          path: `/shop/category/${category.slug}`,
+          param: PARAM.categories,
+          name: category.name,
+        }
+      : undefined;
+  const action = scope?.path ?? "/shop";
   const activeCount =
     filters.models.length +
     filters.grades.length +
     filters.storage.length +
     filters.colours.length +
     filters.stores.length +
-    (brand ? 0 : filters.brands.length) +
+    (scope?.kind === "brand" ? 0 : filters.brands.length) +
+    (scope?.kind === "category" ? 0 : filters.categories.length) +
     (filters.minPrice !== undefined || filters.maxPrice !== undefined ? 1 : 0) +
     (filters.minBattery !== undefined ? 1 : 0);
 
@@ -55,10 +84,10 @@ export function ShopListing({ filters, result, facets, brand }: ListingProps) {
     <FilterForm
       action={action}
       stateKey={serializeShopFilters(filters)}
-      omit={brand ? [PARAM.brands] : undefined}
+      omit={scope ? [scope.param] : undefined}
       className="group/filters mt-6 grid gap-8 lg:grid-cols-[16rem_1fr]"
     >
-      <FilterPanel filters={filters} facets={facets} brand={brand} />
+      <FilterPanel filters={filters} facets={facets} scope={scope} noun={noun} />
 
       <div className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -73,7 +102,7 @@ export function ShopListing({ filters, result, facets, brand }: ListingProps) {
             {result ? (
               <>
                 <strong className="text-foreground">{result.total}</strong>{" "}
-                {result.total === 1 ? "phone" : "phones"}
+                {result.total === 1 ? noun.one : noun.many}
               </>
             ) : null}
           </p>
@@ -101,10 +130,10 @@ export function ShopListing({ filters, result, facets, brand }: ListingProps) {
           </div>
         </div>
 
-        <ActiveFilters filters={filters} facets={facets} brand={brand} />
+        <ActiveFilters filters={filters} facets={facets} scope={scope} />
 
         <div className="mt-6 transition-opacity group-data-pending/filters:opacity-60 motion-reduce:transition-none">
-          <Results filters={filters} result={result} brand={brand} />
+          <Results filters={filters} result={result} scope={scope} noun={noun} />
         </div>
       </div>
     </FilterForm>
@@ -113,11 +142,7 @@ export function ShopListing({ filters, result, facets, brand }: ListingProps) {
 
 // Filter panel -----------------------------------------------------------------
 
-function FilterPanel({
-  filters,
-  facets,
-  brand,
-}: Pick<ListingProps, "filters" | "facets" | "brand">) {
+function FilterPanel({ filters, facets, scope, noun }: ScopedProps) {
   return (
     <div
       id="filters"
@@ -147,9 +172,18 @@ function FilterPanel({
 
       {facets ? (
         <div className="mt-4 flex flex-col gap-6">
-          {brand ? (
+          {!scope && facets.categories.length > 1 ? (
+            <CheckboxFacet
+              legend="Category"
+              param={PARAM.categories}
+              options={facets.categories}
+              selected={filters.categories}
+              noun={noun}
+            />
+          ) : null}
+          {scope?.kind === "brand" ? (
             <p className="text-sm">
-              Showing {brand.name} only.{" "}
+              Showing {scope.name} only.{" "}
               <Link href="/shop" className="font-medium text-primary underline underline-offset-4">
                 All brands
               </Link>
@@ -160,6 +194,7 @@ function FilterPanel({
               param={PARAM.brands}
               options={facets.brands}
               selected={filters.brands}
+              noun={noun}
             />
           )}
           <CheckboxFacet
@@ -167,6 +202,7 @@ function FilterPanel({
             param={PARAM.models}
             options={facets.models}
             selected={filters.models}
+            noun={noun}
             scroll
           />
           <PriceFacet filters={filters} range={facets.price} />
@@ -179,26 +215,32 @@ function FilterPanel({
               hint: GRADE_INFO[g.value as Grade].description,
             }))}
             selected={filters.grades}
+            noun={noun}
           />
           <CheckboxFacet
             legend="Storage"
             param={PARAM.storage}
             options={facets.storage}
             selected={filters.storage.map(String)}
+            noun={noun}
           />
           <CheckboxFacet
             legend="Colour"
             param={PARAM.colours}
             options={facets.colours}
             selected={filters.colours}
+            noun={noun}
             scroll
           />
-          <BatteryFacet filters={filters} options={facets.battery} />
+          {filters.minBattery !== undefined || facets.battery.some((o) => o.count > 0) ? (
+            <BatteryFacet filters={filters} options={facets.battery} noun={noun} />
+          ) : null}
           <CheckboxFacet
             legend="Available at"
             param={PARAM.stores}
             options={facets.stores}
             selected={filters.stores}
+            noun={noun}
           />
         </div>
       ) : (
@@ -210,11 +252,11 @@ function FilterPanel({
           type="submit"
           className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
         >
-          Show phones
+          Show {noun.many}
         </button>
         {hasActiveFilters(filters) ? (
           <Link
-            href={brand ? `/shop/${brand.slug}` : "/shop"}
+            href={scope?.path ?? "/shop"}
             className="inline-flex min-h-11 items-center rounded-lg border px-4 text-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             Clear all
@@ -233,9 +275,11 @@ function CheckboxFacet({
   param,
   options,
   selected,
+  noun,
   scroll = false,
 }: {
   legend: string;
+  noun: Noun;
   param: string;
   options: (FacetOption & { hint?: string })[];
   selected: string[];
@@ -297,7 +341,7 @@ function CheckboxFacet({
                 </span>
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {option.count}
-                  <span className="sr-only"> {option.count === 1 ? "phone" : "phones"}</span>
+                  <span className="sr-only"> {option.count === 1 ? noun.one : noun.many}</span>
                 </span>
               </label>
             </div>
@@ -343,7 +387,15 @@ function PriceFacet({ filters, range }: { filters: ShopFilters; range: ShopFacet
   );
 }
 
-function BatteryFacet({ filters, options }: { filters: ShopFilters; options: FacetOption[] }) {
+function BatteryFacet({
+  filters,
+  options,
+  noun,
+}: {
+  filters: ShopFilters;
+  options: FacetOption[];
+  noun: Noun;
+}) {
   const current = filters.minBattery === undefined ? "" : String(filters.minBattery);
   return (
     <fieldset className={fieldsetClass}>
@@ -368,7 +420,7 @@ function BatteryFacet({ filters, options }: { filters: ShopFilters; options: Fac
             {option.count !== undefined ? (
               <span className="text-xs text-muted-foreground tabular-nums">
                 {option.count}
-                <span className="sr-only"> {option.count === 1 ? "phone" : "phones"}</span>
+                <span className="sr-only"> {option.count === 1 ? noun.one : noun.many}</span>
               </span>
             ) : null}
           </label>
@@ -380,11 +432,7 @@ function BatteryFacet({ filters, options }: { filters: ShopFilters; options: Fac
 
 // Active filters ---------------------------------------------------------------
 
-function ActiveFilters({
-  filters,
-  facets,
-  brand,
-}: Pick<ListingProps, "filters" | "facets" | "brand">) {
+function ActiveFilters({ filters, facets, scope }: Omit<ScopedProps, "noun">) {
   const labelFor = (facet: keyof ShopFacets, value: string) => {
     const list = facets?.[facet];
     return (Array.isArray(list) && list.find((o) => o.value === value)?.label) || value;
@@ -394,11 +442,12 @@ function ActiveFilters({
     for (const value of filters[facet]) {
       chips.push({
         label: describe(String(value)),
-        href: hrefFor(withoutValue(filters, facet, value), brand),
+        href: hrefFor(withoutValue(filters, facet, value), scope),
       });
     }
   };
-  if (!brand) addList("brands", (v) => labelFor("brands", v));
+  if (scope?.kind !== "category") addList("categories", (v) => labelFor("categories", v));
+  if (scope?.kind !== "brand") addList("brands", (v) => labelFor("brands", v));
   addList("models", (v) => labelFor("models", v));
   addList("grades", (v) => `Grade ${v}`);
   addList("storage", (v) => labelFor("storage", v));
@@ -409,13 +458,13 @@ function ActiveFilters({
     const to = filters.maxPrice !== undefined ? `£${filters.maxPrice}` : "any";
     chips.push({
       label: `Price ${from} to ${to}`,
-      href: hrefFor(withFilters(filters, { minPrice: undefined, maxPrice: undefined }), brand),
+      href: hrefFor(withFilters(filters, { minPrice: undefined, maxPrice: undefined }), scope),
     });
   }
   if (filters.minBattery !== undefined) {
     chips.push({
       label: `Battery ${filters.minBattery}%+`,
-      href: hrefFor(withFilters(filters, { minBattery: undefined }), brand),
+      href: hrefFor(withFilters(filters, { minBattery: undefined }), scope),
     });
   }
   if (chips.length === 0) return null;
@@ -439,7 +488,7 @@ function ActiveFilters({
         ))}
       </ul>
       <Link
-        href={brand ? `/shop/${brand.slug}` : "/shop"}
+        href={scope?.path ?? "/shop"}
         scroll={false}
         className="text-sm font-medium text-primary underline-offset-4 hover:underline"
       >
@@ -453,11 +502,16 @@ function ActiveFilters({
 
 const gridClass = "grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 lg:gap-6";
 
-function Results({ filters, result, brand }: Pick<ListingProps, "filters" | "result" | "brand">) {
+function Results({
+  filters,
+  result,
+  scope,
+  noun,
+}: Pick<ListingProps, "filters" | "result"> & { scope?: ListingScope; noun: Noun }) {
   if (!result) {
     return (
       <p className="rounded-2xl border bg-muted/40 p-8 text-center text-muted-foreground">
-        We can’t show our phones right now. Please try again in a moment.
+        We can’t show our {noun.many} right now. Please try again in a moment.
       </p>
     );
   }
@@ -466,17 +520,13 @@ function Results({ filters, result, brand }: Pick<ListingProps, "filters" | "res
     return (
       <div className="rounded-2xl border bg-muted/40 p-8 text-center">
         <p className="font-medium">
-          {pastEnd ? "There are no phones on this page." : "No phones match those filters."}
+          {pastEnd
+            ? `There are no ${noun.many} on this page.`
+            : `No ${noun.many} match those filters.`}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           <Link
-            href={
-              pastEnd
-                ? hrefFor({ ...filters, page: 1 }, brand)
-                : brand
-                  ? `/shop/${brand.slug}`
-                  : "/shop"
-            }
+            href={pastEnd ? hrefFor({ ...filters, page: 1 }, scope) : (scope?.path ?? "/shop")}
             className="font-medium text-primary underline underline-offset-4"
           >
             {pastEnd ? "Go to the first page" : "Clear the filters"}
@@ -494,7 +544,7 @@ function Results({ filters, result, brand }: Pick<ListingProps, "filters" | "res
   const offset = (result.page - 1) * result.pageSize;
   return (
     <>
-      <h2 className="sr-only">Phones</h2>
+      <h2 className="sr-only capitalize">{noun.many}</h2>
       <ul className={gridClass}>
         {result.items.map((product, index) => (
           <li key={product.id}>
@@ -502,7 +552,7 @@ function Results({ filters, result, brand }: Pick<ListingProps, "filters" | "res
           </li>
         ))}
       </ul>
-      <Pagination filters={filters} result={result} brand={brand} />
+      <Pagination filters={filters} result={result} scope={scope} />
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -538,10 +588,10 @@ export function pageWindow(page: number, pageCount: number, radius = 1): (number
 function Pagination({
   filters,
   result,
-  brand,
-}: Pick<ListingProps, "filters" | "brand"> & { result: ShopSearchResult }) {
+  scope,
+}: Pick<ListingProps, "filters"> & { result: ShopSearchResult; scope?: ListingScope }) {
   if (result.pageCount <= 1) return null;
-  const link = (page: number) => hrefFor({ ...filters, page }, brand);
+  const link = (page: number) => hrefFor({ ...filters, page }, scope);
   const linkClass =
     "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 text-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
@@ -587,6 +637,42 @@ function Pagination({
   );
 }
 
+/** Links to each category, shown once the shop sells more than one. */
+export function CategoryLinks({
+  categories,
+  current,
+}: {
+  categories: { slug: string; name: string }[];
+  current?: string;
+}) {
+  if (categories.length < 2) return null;
+  const links = [
+    { key: "all", label: "All", href: "/shop" },
+    ...categories.map((c) => ({
+      key: c.slug,
+      label: c.name,
+      href: `/shop/category/${c.slug}`,
+    })),
+  ];
+  return (
+    <nav aria-label="Categories" className="mt-6 overflow-x-auto pb-1">
+      <ul className="flex gap-2">
+        {links.map((link) => (
+          <li key={link.key} className="shrink-0">
+            <Link
+              href={link.href}
+              aria-current={(current ?? "all") === link.key ? "page" : undefined}
+              className="inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:border-primary aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"
+            >
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 export function ShopListingSkeleton() {
   return (
     <div className="mt-6 grid gap-8 lg:grid-cols-[16rem_1fr]" aria-hidden>
@@ -606,12 +692,13 @@ export function ShopListingSkeleton() {
 /** "Refurbished Apple phones · Grade A · under £400" for titles. */
 export function describeFilters(
   filters: ShopFilters,
-  names: { brand?: string; models?: string[] },
+  names: { brand?: string; models?: string[]; noun?: string },
 ): string {
+  const noun = names.noun ?? "phones";
   const parts: string[] = [];
   if (names.models?.length === 1) parts.push(`Refurbished ${names.models[0]}`);
-  else if (names.brand) parts.push(`Refurbished ${names.brand} phones`);
-  else parts.push("Refurbished phones");
+  else if (names.brand) parts.push(`Refurbished ${names.brand} ${noun}`);
+  else parts.push(`Refurbished ${noun}`);
   if (filters.grades.length === 1) parts.push(`Grade ${filters.grades[0]}`);
   if (filters.storage.length === 1) parts.push(`${filters.storage[0]}GB`);
   if (filters.maxPrice !== undefined)

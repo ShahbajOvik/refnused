@@ -6,13 +6,17 @@ import { db } from "@/db";
 
 import {
   getBrandBySlug,
+  getCategoryBySlug,
   getCompareProducts,
   getProductDetail,
   getShopFacets,
   getSimilarProducts,
   getStockByStore,
+  listCategoryParams,
   listProductParams,
+  listProductSitemap,
   listShopBrands,
+  listShopCategories,
   listTradeInModels,
   searchProducts,
 } from "./catalogue";
@@ -45,6 +49,27 @@ export async function cachedShopBrands() {
   return listShopBrands(db);
 }
 
+export async function cachedShopCategories() {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("products", "catalogue");
+  return listShopCategories(db);
+}
+
+export async function cachedCategoryParams() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("catalogue");
+  return listCategoryParams(db);
+}
+
+export async function cachedCategory(slug: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("catalogue");
+  return getCategoryBySlug(db, slug);
+}
+
 export async function cachedBrand(slug: string) {
   "use cache";
   cacheLife("hours");
@@ -57,6 +82,13 @@ export async function cachedProductParams() {
   cacheLife("minutes");
   cacheTag("products");
   return listProductParams(db);
+}
+
+export async function cachedProductSitemap() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("products");
+  return listProductSitemap(db);
 }
 
 export async function cachedProduct(brandSlug: string, slug: string) {
@@ -76,6 +108,7 @@ export async function cachedStockByStore(modelId: string, variantId: string) {
 
 export async function cachedSimilar(input: {
   excludeId: string;
+  categoryId: string;
   modelId: string;
   brandId: string;
   pricePence: number;

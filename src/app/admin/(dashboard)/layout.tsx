@@ -18,6 +18,7 @@ const SECTIONS: { href: string; label: string; permission: Permission; exact?: b
   { href: "/admin/payouts", label: "Payouts", permission: "payouts.approve" },
   { href: "/admin/intake", label: "Device intake", permission: "products.manage" },
   { href: "/admin/products", label: "Products", permission: "products.manage" },
+  { href: "/admin/catalogue", label: "Catalogue", permission: "catalogue.manage" },
   { href: "/admin/orders", label: "Orders", permission: "orders.manage" },
   { href: "/admin/returns", label: "Returns & warranty", permission: "orders.manage" },
   { href: "/admin/prices", label: "Prices", permission: "prices.update" },

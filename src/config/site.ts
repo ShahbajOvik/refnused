@@ -41,6 +41,11 @@ export const mainNav: NavItem[] = [
   { label: "Help", href: "/help", description: "FAQs, delivery and returns" },
 ];
 
+/** Footer links after the main sections. */
+export const footerExtraNav: NavItem[] = [
+  { label: "Guides", href: "/guides", description: "Phone prices, wiping and grading" },
+];
+
 export const stores: Store[] = [
   {
     slug: "metrotech-north-shields",

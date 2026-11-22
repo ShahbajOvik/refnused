@@ -97,7 +97,7 @@ describe("searchProducts", () => {
     ["battery-desc", (a: number, b: number) => b - a, "batteryHealthPercent"],
   ] as const)("sorts by %s", async (sort, compare, key) => {
     const { items } = await searchProducts(db, filters({ sort }), 100);
-    const values = items.map((p) => p[key]);
+    const values = items.map((p) => p[key] as number);
     expect(values).toEqual([...values].sort(compare));
   });
 

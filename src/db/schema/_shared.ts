@@ -37,6 +37,12 @@ export const tradeInGrade = pgEnum("trade_in_grade", ["A", "B", "C", "faulty"]);
  */
 export const staffRole = pgEnum("staff_role", ["owner", "manager", "staff", "content_editor"]);
 
+/**
+ * How each unit in a category is identified: a checked 15-digit IMEI, the
+ * maker's serial number, or a stock code we generate (e.g. accessories).
+ */
+export const identifierType = pgEnum("identifier_type", ["imei", "serial", "none"]);
+
 /** How a staff session completed its second factor. */
 export const mfaMethod = pgEnum("mfa_method", ["passkey", "totp"]);
 

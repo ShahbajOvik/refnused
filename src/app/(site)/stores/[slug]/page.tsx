@@ -15,7 +15,8 @@ import { StoreMap } from "@/components/stores/store-map";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
-import { absoluteUrl, storeJsonLd } from "@/lib/seo";
+import { storeMetadata } from "@/lib/metadata-templates";
+import { storeJsonLd } from "@/lib/seo";
 import { EMPTY_FILTERS, shopHref } from "@/lib/shop/filters";
 import { type PublicStore, storeAddress, storeName, storePath } from "@/lib/stores";
 import {
@@ -32,20 +33,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/stores/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const store = await loadPublicStore(slug);
-  if (!store) return {};
-  const name = storeName(store);
-  const photo = store.photos[0];
-  return {
-    title: `${name}: phone shop, trade-ins and refurbished phones`,
-    description: `${name}, ${storeAddress(store)}. Call ${store.phoneDisplay}. Sell your phone, buy refurbished with a warranty, or collect an order. Opening hours, parking and stock.`,
-    alternates: { canonical: storePath(store) },
-    openGraph: {
-      type: "website",
-      title: name,
-      url: storePath(store),
-      ...(photo ? { images: [{ url: absoluteUrl(mediaUrl(photo.key)), alt: photo.alt }] } : {}),
-    },
-  };
+  return store ? storeMetadata(store) : {};
 }
 
 export default function StorePage({ params }: PageProps<"/stores/[slug]">) {

@@ -230,7 +230,7 @@ test("device intake: add a phone with photos and certificate, publish to the sho
   await page.getByLabel("IMEI").fill(luhnImei());
   await expect(page.getByText("New phone.")).toBeVisible();
   await page.getByLabel("Model").selectOption({ label: "Apple iPhone 13" });
-  await page.getByLabel("Storage and colour").selectOption({ label: "128GB · Midnight" });
+  await page.getByLabel("Options").selectOption({ label: "128GB · Midnight" });
   await page.getByRole("radio", { name: "Grade A" }).check();
   await page.getByLabel("Battery health (%)").fill("91");
   await page.getByLabel("Price (£)").fill("279");
@@ -251,6 +251,66 @@ test("device intake: add a phone with photos and certificate, publish to the sho
     "Apple iPhone 13, 128GB, Midnight",
   );
   await expect(page.getByTestId("product-price")).toHaveText("£279.00");
+});
+
+test("catalogue: add a laptop model, stock it and find it in its shop category", async () => {
+  await page.goto("/admin/catalogue");
+  await page.getByLabel("New brand").fill("Lenovo");
+  await page.getByRole("button", { name: "Add brand" }).click();
+  await expect(page.getByText("Lenovo added.")).toBeVisible();
+
+  const form = page.locator("section").filter({
+    has: page.getByRole("heading", { level: 2, name: "Add a model" }),
+  });
+  await form.getByLabel("Category", { exact: true }).selectOption({ label: "Laptops" });
+  await form.getByLabel("Brand").selectOption({ label: "Lenovo" });
+  await form.getByLabel("Model name").fill("ThinkPad T14");
+  await form.getByLabel("Release year").fill("2023");
+  await form.getByLabel("Storage sizes").fill("256GB, 512GB");
+  await form.getByLabel("Colours").fill("Storm Grey");
+  await form.getByLabel("Other specifications (optional)").fill("16GB RAM Intel Core i7");
+  await form.getByRole("button", { name: "Add model" }).click();
+  await expect(page.getByText("ThinkPad T14 added with 2 options.")).toBeVisible();
+
+  await page.goto("/admin/intake");
+  await page.getByLabel("Category").selectOption({ label: "Laptops" });
+  await expect(page.getByLabel("IMEI")).toHaveCount(0);
+  await page.getByLabel("Serial number").fill("pf-3x9k2l");
+  await page.getByLabel("Model").selectOption({ label: "Lenovo ThinkPad T14" });
+  await page
+    .getByLabel("Options")
+    .selectOption({ label: "256GB · 16GB RAM Intel Core i7 · Storm Grey" });
+  await page.getByRole("radio", { name: "Grade A" }).check();
+  await page.getByLabel("Battery health (%)").fill("88");
+  await page.getByLabel("Price (£)").fill("449");
+  await page.getByLabel("Store").selectOption({ label: "MetroTech, North Shields" });
+  await page
+    .getByLabel("Take or add photos")
+    .setInputFiles({ name: "laptop.png", mimeType: "image/png", buffer: PNG });
+  await page
+    .getByLabel("Upload certificate")
+    .setInputFiles({ name: "laptop-wipe.pdf", mimeType: "application/pdf", buffer: PDF });
+  await expect(page.getByRole("link", { name: /laptop-wipe\.pdf/ })).toBeVisible();
+  await page.getByRole("button", { name: "Publish to shop" }).click();
+  await page.getByRole("link", { name: "View in the shop" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Lenovo ThinkPad T14, 256GB, 16GB RAM Intel Core i7, Storm Grey",
+  );
+  await expect(page.getByTestId("product-price")).toHaveText("£449.00");
+  await expect(page.getByRole("button", { name: "View in 3D" })).toHaveCount(0);
+
+  // The listing refreshes in the background after a change.
+  await expect(async () => {
+    await page.goto("/shop/category/laptops");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Refurbished laptops");
+    await expect(page.getByRole("link", { name: "Lenovo ThinkPad T14" })).toBeVisible({
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 45_000 });
+
+  // Laptops are for sale only: no trade-in page.
+  const sell = await page.goto("/sell/lenovo");
+  expect(sell?.status()).toBe(404);
 });
 
 test("orders: dispatch with tracking, refund part, mark delivered", async () => {
@@ -368,6 +428,7 @@ test("admin pages have no WCAG 2.2 AA violations (desktop and phone)", async () 
       "/admin",
       "/admin/quotes",
       "/admin/intake",
+      "/admin/catalogue",
       "/admin/prices",
       "/admin/payouts",
       "/admin/orders",

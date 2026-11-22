@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { stores } from "@/config/site";
-import { absoluteUrl, breadcrumbJsonLd, storeJsonLd, storesJsonLd } from "@/lib/seo";
+import {
+  absoluteUrl,
+  articleJsonLd,
+  breadcrumbJsonLd,
+  organizationJsonLd,
+  storeJsonLd,
+  storesJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 import { storeName } from "@/lib/stores";
 
 describe("absoluteUrl", () => {
@@ -84,5 +92,72 @@ describe("storesJsonLd", () => {
     expect(entry).not.toHaveProperty("geo");
     expect(entry).not.toHaveProperty("openingHoursSpecification");
     expect(entry).not.toHaveProperty("image");
+  });
+});
+
+describe("organizationJsonLd and websiteJsonLd", () => {
+  it("links the WebSite to the Organization and the Organization to each store", () => {
+    const org = organizationJsonLd(stores);
+    expect(org["@id"]).toBe("http://localhost:3000/#organization");
+    expect(org.department).toEqual(
+      stores.map((s) => ({ "@id": `http://localhost:3000/stores/${s.slug}#store` })),
+    );
+    expect(organizationJsonLd()).not.toHaveProperty("department");
+
+    const site = websiteJsonLd();
+    expect(site).toMatchObject({
+      "@type": "WebSite",
+      "@id": "http://localhost:3000/#website",
+      inLanguage: "en-GB",
+      publisher: { "@id": org["@id"] },
+    });
+  });
+
+  it("uses the same @id the stores use as parentOrganization", () => {
+    const entry = storeJsonLd({ ...fullStore(stores[0]!) });
+    expect(entry.parentOrganization["@id"]).toBe(organizationJsonLd()["@id"]);
+  });
+});
+
+describe("articleJsonLd", () => {
+  const input = {
+    path: "/guides/how-to-wipe-a-phone",
+    headline: "How to wipe a phone",
+    description: "Steps",
+    publishedAt: "2026-11-01T00:00:00.000Z",
+    updatedAt: "2026-11-05T00:00:00.000Z",
+    images: ["/opengraph-image"],
+  };
+
+  it("describes a person author who works for us", () => {
+    const data = articleJsonLd({
+      ...input,
+      author: { kind: "person", name: "Sam Lee", role: "Refurb lead" },
+      about: ["Apple iPhone 15"],
+    });
+    expect(data).toMatchObject({
+      "@type": "Article",
+      url: "http://localhost:3000/guides/how-to-wipe-a-phone",
+      datePublished: "2026-11-01T00:00:00.000Z",
+      dateModified: "2026-11-05T00:00:00.000Z",
+      author: { "@type": "Person", name: "Sam Lee", jobTitle: "Refurb lead" },
+      publisher: { "@id": "http://localhost:3000/#organization" },
+      image: ["http://localhost:3000/opengraph-image"],
+      about: [{ "@type": "Thing", name: "Apple iPhone 15" }],
+    });
+  });
+
+  it("uses the Organization as author for team guides and caps the headline", () => {
+    const data = articleJsonLd({
+      ...input,
+      headline: "x".repeat(200),
+      author: { kind: "organization", name: "RefurbednUsed" },
+    });
+    expect(data.author).toMatchObject({
+      "@type": "Organization",
+      "@id": "http://localhost:3000/#organization",
+    });
+    expect(data.headline).toHaveLength(110);
+    expect(data).not.toHaveProperty("about");
   });
 });

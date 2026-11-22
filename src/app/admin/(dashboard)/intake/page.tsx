@@ -8,7 +8,7 @@ import { requireStaff } from "@/auth/guards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { stores } from "@/db/schema";
-import { listVariantsForIntake } from "@/lib/admin/intake";
+import { listCategoriesForIntake, listVariantsForIntake } from "@/lib/admin/intake";
 
 import { IntakeForm } from "./intake-form";
 
@@ -19,7 +19,7 @@ export default function IntakePage() {
     <>
       <PageHeader
         title="Device intake"
-        description="Add a checked, wiped phone to stock. Enter or scan the IMEI first: we’ll fill in what we know from its trade-in."
+        description="Add a checked item to stock. For phones, enter or scan the IMEI first: we’ll fill in what we know from its trade-in."
       />
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <Intake />
@@ -31,7 +31,8 @@ export default function IntakePage() {
 async function Intake() {
   await requireStaff("products.manage", "/admin/intake");
   await connection();
-  const [variants, storeRows] = await Promise.all([
+  const [categories, variants, storeRows] = await Promise.all([
+    listCategoriesForIntake(db),
     listVariantsForIntake(db),
     db
       .select({ id: stores.id, name: stores.name, town: stores.town })
@@ -42,6 +43,7 @@ async function Intake() {
   return (
     <Section>
       <IntakeForm
+        categories={categories}
         variants={variants}
         stores={storeRows.map((s) => ({ id: s.id, label: `${s.name}, ${s.town}` }))}
       />

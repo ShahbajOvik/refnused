@@ -196,8 +196,8 @@ test.describe("stores", () => {
     }
   });
 
-  test("the sitemap lists every store page", async ({ request }) => {
-    const xml = await (await request.get("/sitemap.xml")).text();
+  test("the stores sitemap lists every store page", async ({ request }) => {
+    const xml = await (await request.get("/sitemaps/stores/sitemap.xml")).text();
     for (const store of STORES) expect(xml).toContain(`/stores/${store.slug}</loc>`);
     const robots = await (await request.get("/robots.txt")).text();
     expect(robots).toContain("Disallow: /admin");

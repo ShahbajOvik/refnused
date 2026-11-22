@@ -26,6 +26,7 @@ import { ukPhoneSchema, ukPostcodeSchema } from "@/lib/validation/uk";
 
 import { MAX_BASKET_ITEMS } from "./basket";
 import { calculateOrderTotals, type OrderTotals } from "./totals";
+import { variantLabel } from "@/lib/shop/variant-label";
 
 /*
  * Checkout: works out the price on the server, holds the units for 15
@@ -133,7 +134,8 @@ type ProductRow = {
   brandSlug: string;
   brand: string;
   model: string;
-  storageGb: number;
+  storageGb: number | null;
+  configuration: string;
   colour: string;
   grade: "A" | "B" | "C";
   pricePence: number;
@@ -156,6 +158,7 @@ async function loadProducts(db: AppDb, ids: string[]): Promise<ProductRow[]> {
       brand: brands.name,
       model: deviceModels.name,
       storageGb: modelVariants.storageGb,
+      configuration: modelVariants.configuration,
       colour: modelVariants.colour,
       grade: products.grade,
       pricePence: products.pricePence,
@@ -203,7 +206,7 @@ function toLine(p: ProductRow, available: boolean): BasketLine {
     productId: p.id,
     slug: p.slug,
     brandSlug: p.brandSlug,
-    description: `${p.brand} ${p.model}, ${p.storageGb}GB, ${p.colour}, Grade ${p.grade}`,
+    description: `${p.brand} ${p.model}, ${variantLabel(p)}, Grade ${p.grade}`,
     model: `${p.brand} ${p.model}`,
     pricePence: p.pricePence,
     warrantyMonths: p.warrantyMonths,

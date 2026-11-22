@@ -10,8 +10,10 @@ import {
   parseShopFilters,
   serializeShopFilters,
 } from "@/lib/shop/filters";
+import { pageMetadata } from "@/lib/metadata";
 import { orFallback } from "@/lib/shop/load";
 import { cachedBrand, cachedFacets, cachedSearch, cachedShopBrands } from "@/lib/shop/queries";
+import { listingNoun } from "@/lib/shop/variant-label";
 
 export async function generateStaticParams() {
   const brands = await cachedShopBrands();
@@ -28,15 +30,21 @@ export async function generateMetadata({
   const filters = parseShopFilters(await searchParams);
   const query = serializeShopFilters(filters, { omit: [PARAM.brands] });
   const indexable = isIndexableListing({ ...filters, brands: [] });
-  return {
+  const facets = await orFallback(
+    "facets",
+    () => cachedFacets({ ...filters, brands: [brand.slug] }),
+    null,
+  );
+  const noun = listingNoun(filters.categories, facets?.categories.map((c) => c.value) ?? []).many;
+  return pageMetadata({
     title: indexable
-      ? `Refurbished ${brand.name} phones`
-      : describeFilters(filters, { brand: brand.name }) +
+      ? `Refurbished ${brand.name} ${noun}`
+      : describeFilters(filters, { brand: brand.name, noun }) +
         (filters.page > 1 ? ` · page ${filters.page}` : ""),
-    description: `Refurbished ${brand.name} phones, tested and graded with a 12-month warranty. Free UK delivery or click and collect in North and South Shields.`,
-    alternates: { canonical: query ? `/shop/${brand.slug}?${query}` : `/shop/${brand.slug}` },
-    robots: indexable ? undefined : { index: false, follow: true },
-  };
+    description: `Refurbished ${brand.name} ${noun}, tested and graded with a warranty. Free UK delivery or click and collect in North and South Shields.`,
+    path: query ? `/shop/${brand.slug}?${query}` : `/shop/${brand.slug}`,
+    noindex: !indexable,
+  });
 }
 
 export default function ShopBrandPage({ params, searchParams }: PageProps<"/shop/[brand]">) {
@@ -58,6 +66,7 @@ async function BrandListing({ params, searchParams }: PageProps<"/shop/[brand]">
     orFallback("search", () => cachedSearch(filters), null),
     orFallback("facets", () => cachedFacets(filters), null),
   ]);
+  const noun = listingNoun(filters.categories, facets?.categories.map((c) => c.value) ?? []);
 
   return (
     <>
@@ -68,11 +77,13 @@ async function BrandListing({ params, searchParams }: PageProps<"/shop/[brand]">
           { label: brand.name, href: `/shop/${brand.slug}` },
         ]}
       />
-      <h1 className="mt-6 text-4xl font-semibold sm:text-5xl">Refurbished {brand.name} phones</h1>
+      <h1 className="mt-6 text-4xl font-semibold sm:text-5xl">
+        Refurbished {brand.name} {noun.many}
+      </h1>
       <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-        Tested, graded and data-wiped, with a 12-month warranty.
+        Tested and graded, with a warranty.
       </p>
-      <ShopListing filters={filters} result={result} facets={facets} brand={brand} />
+      <ShopListing filters={filters} result={result} facets={facets} brand={brand} noun={noun} />
     </>
   );
 }

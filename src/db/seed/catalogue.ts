@@ -14,6 +14,27 @@ export type SeedModel = {
   baseTradeInPence: number;
 };
 
+export const seedCategories = [
+  {
+    slug: "phones",
+    name: "Phones",
+    sortOrder: 1,
+    identifierType: "imei",
+    hasStorage: true,
+    hasBattery: true,
+    requiresDataWipe: true,
+  },
+  {
+    slug: "laptops",
+    name: "Laptops",
+    sortOrder: 2,
+    identifierType: "serial",
+    hasStorage: true,
+    hasBattery: true,
+    requiresDataWipe: true,
+  },
+] as const;
+
 export const seedBrands = [
   { slug: "apple", name: "Apple", sortOrder: 1 },
   { slug: "samsung", name: "Samsung", sortOrder: 2 },

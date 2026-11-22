@@ -33,6 +33,7 @@ const MAX_PAGE = 500;
 const MAX_POUNDS = 100_000;
 
 export type ShopFilters = {
+  categories: string[];
   brands: string[];
   models: string[];
   grades: Grade[];
@@ -49,6 +50,7 @@ export type ShopFilters = {
 };
 
 export const EMPTY_FILTERS: ShopFilters = {
+  categories: [],
   brands: [],
   models: [],
   grades: [],
@@ -60,10 +62,12 @@ export const EMPTY_FILTERS: ShopFilters = {
 };
 
 /** Facets that are lists of values (checkbox groups). */
-export type ListFacet = "brands" | "models" | "grades" | "storage" | "colours" | "stores";
+export type ListFacet =
+  "categories" | "brands" | "models" | "grades" | "storage" | "colours" | "stores";
 
 /** URL parameter for each filter. */
 export const PARAM = {
+  categories: "category",
   brands: "brand",
   models: "model",
   grades: "grade",
@@ -132,6 +136,7 @@ export function parseShopFilters(raw: RawSearchParams | URLSearchParams): ShopFi
     parseOptional(firstOf(raw, PARAM.page), z.coerce.number().int().min(1).max(MAX_PAGE)) ?? 1;
 
   return {
+    categories: parseList(valuesOf(raw, PARAM.categories), slugSchema),
     brands: parseList(valuesOf(raw, PARAM.brands), slugSchema),
     models: parseList(valuesOf(raw, PARAM.models), slugSchema),
     grades: parseList(valuesOf(raw, PARAM.grades), gradeSchema),
@@ -157,6 +162,7 @@ export function serializeShopFilters(filters: ShopFilters, options: { omit?: str
   };
   const list = (values: (string | number)[]) => (values.length ? values.join(",") : undefined);
 
+  add(PARAM.categories, list(filters.categories));
   add(PARAM.brands, list(filters.brands));
   add(PARAM.models, list(filters.models));
   add(PARAM.grades, list(filters.grades));
@@ -196,7 +202,8 @@ export function withoutValue<F extends ListFacet>(
 /** True when anything other than sort and page is set. */
 export function hasActiveFilters(filters: ShopFilters) {
   return (
-    filters.brands.length +
+    filters.categories.length +
+      filters.brands.length +
       filters.models.length +
       filters.grades.length +
       filters.storage.length +
@@ -210,7 +217,7 @@ export function hasActiveFilters(filters: ShopFilters) {
 }
 
 /**
- * Only plain listings are indexed: /shop and /shop/[brand], first page,
+ * Only plain listings are indexed: /shop, /shop/[brand] and category pages, first page,
  * default sort. Every filtered combination is noindex (but followed), so
  * search engines don't crawl thousands of near-duplicate pages.
  */

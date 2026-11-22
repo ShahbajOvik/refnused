@@ -10,10 +10,11 @@ export type ProductJsonLdInput = {
   sku: string;
   brand: string;
   model: string;
-  storageGb: number;
+  storageGb: number | null;
+  configuration?: string;
   colour: string;
   grade: Grade;
-  batteryHealthPercent: number;
+  batteryHealthPercent: number | null;
   warrantyMonths: number;
   pricePence: number;
   availability: ProductAvailability;
@@ -82,14 +83,20 @@ export function shippingDetailsJsonLd() {
 /** Product + Offer for one refurbished unit. */
 export function productJsonLd(input: ProductJsonLdInput) {
   const url = absoluteUrl(input.path);
-  const name = `${input.brand} ${input.model} ${input.storageGb}GB ${input.colour} (refurbished, Grade ${input.grade})`;
+  const specs = [
+    input.storageGb ? `${input.storageGb}GB` : null,
+    input.configuration || null,
+  ].filter(Boolean);
+  const name = `${input.brand} ${input.model} ${[...specs, input.colour].join(" ")} (refurbished, Grade ${input.grade})`;
+  const battery =
+    input.batteryHealthPercent === null ? "" : ` Battery health ${input.batteryHealthPercent}%.`;
   const condition = "https://schema.org/RefurbishedCondition";
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     "@id": `${url}#product`,
     name,
-    description: `Refurbished ${input.brand} ${input.model}, ${input.storageGb}GB in ${input.colour}. Grade ${input.grade} (${GRADE_INFO[input.grade].label}): ${GRADE_INFO[input.grade].description} Battery health ${input.batteryHealthPercent}%. ${input.warrantyMonths}-month warranty.`,
+    description: `Refurbished ${input.brand} ${input.model}, ${specs.length ? `${specs.join(", ")} ` : ""}in ${input.colour}. Grade ${input.grade} (${GRADE_INFO[input.grade].label}): ${GRADE_INFO[input.grade].description}${battery} ${input.warrantyMonths}-month warranty.`,
     sku: input.sku,
     url,
     image: input.images.map((src) => absoluteUrl(src)),
@@ -98,18 +105,27 @@ export function productJsonLd(input: ProductJsonLdInput) {
     color: input.colour,
     itemCondition: condition,
     additionalProperty: [
-      { "@type": "PropertyValue", name: "Storage", value: input.storageGb, unitText: "GB" },
+      ...(input.storageGb
+        ? [{ "@type": "PropertyValue", name: "Storage", value: input.storageGb, unitText: "GB" }]
+        : []),
+      ...(input.configuration
+        ? [{ "@type": "PropertyValue", name: "Specification", value: input.configuration }]
+        : []),
       {
         "@type": "PropertyValue",
         name: "Cosmetic grade",
         value: `${input.grade} (${GRADE_INFO[input.grade].label})`,
       },
-      {
-        "@type": "PropertyValue",
-        name: "Battery health",
-        value: input.batteryHealthPercent,
-        unitText: "percent",
-      },
+      ...(input.batteryHealthPercent === null
+        ? []
+        : [
+            {
+              "@type": "PropertyValue",
+              name: "Battery health",
+              value: input.batteryHealthPercent,
+              unitText: "percent",
+            },
+          ]),
       {
         "@type": "PropertyValue",
         name: "Warranty",

@@ -16,7 +16,7 @@ export function NotifyMeForm({
 }: {
   productId: string;
   modelName: string;
-  storageGb: number;
+  storageGb: number | null;
   turnstileSiteKey?: string;
 }) {
   const id = useId();
@@ -87,11 +87,11 @@ export function NotifyMeForm({
         ) : null}
       </div>
       <fieldset>
-        <legend className="mb-2 text-sm font-medium">Which phones?</legend>
+        <legend className="mb-2 text-sm font-medium">Which ones?</legend>
         <div className="flex flex-col gap-1">
           {(
             [
-              ["storage", `${modelName} ${storageGb}GB only`],
+              ...(storageGb ? ([["storage", `${modelName} ${storageGb}GB only`]] as const) : []),
               ["model", `Any ${modelName}`],
             ] as const
           ).map(([value, label], index) => (

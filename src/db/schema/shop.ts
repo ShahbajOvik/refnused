@@ -49,7 +49,7 @@ export type PostalAddress = {
   country: "GB";
 };
 
-/** A single refurbished unit for sale. Each physical phone is one row. */
+/** A single refurbished unit for sale. Each physical item is one row. */
 export const products = pgTable(
   "products",
   {
@@ -62,9 +62,13 @@ export const products = pgTable(
     variantId: uuid()
       .notNull()
       .references(() => modelVariants.id, { onDelete: "restrict" }),
-    imei: varchar({ length: 15 }).notNull().unique(),
+    /** Set for IMEI categories; every other unit has a serialNumber instead. */
+    imei: varchar({ length: 15 }).unique(),
+    /** Upper-case serial number or generated stock code. */
+    serialNumber: varchar({ length: 64 }).unique(),
     grade: productGrade().notNull(),
-    batteryHealthPercent: smallint().notNull(),
+    /** Null for items without a battery. */
+    batteryHealthPercent: smallint(),
     photos: jsonb().$type<ProductPhoto[]>().notNull().default([]),
     pricePence: integer().notNull(),
     /** Where the unit physically is (for click and collect and stock). */
@@ -72,7 +76,9 @@ export const products = pgTable(
       .notNull()
       .references(() => stores.id, { onDelete: "restrict" }),
     status: productStatus().notNull().default("draft"),
-    /** R2 key of the data-wipe certificate PDF. Required before listing. */
+    /** Copied from the category at intake. Accessories hold no customer data. */
+    dataWipeRequired: boolean().notNull().default(true),
+    /** R2 key of the data-wipe certificate PDF. Required before listing if dataWipeRequired. */
     dataWipeCertificateKey: text(),
     warrantyMonths: smallint().notNull().default(12),
     /** The trade-in this unit came from, if bought from the public. */
@@ -97,6 +103,11 @@ export const products = pgTable(
     index("products_status_listed_idx").on(t.status, t.listedAt),
     check("products_slug_check", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
     check("products_imei_check", sql`${t.imei} ~ '${sql.raw(IMEI_PATTERN)}'`),
+    check("products_identifier_check", sql`(${t.imei} is null) <> (${t.serialNumber} is null)`),
+    check(
+      "products_serial_check",
+      sql`${t.serialNumber} is null or ${t.serialNumber} ~ '^[A-Z0-9][A-Z0-9._/-]{2,63}$'`,
+    ),
     check("products_battery_check", sql`${t.batteryHealthPercent} between 0 and 100`),
     check("products_price_check", sql`${t.pricePence} > 0`),
     check("products_warranty_check", sql`${t.warrantyMonths} >= 0`),
@@ -106,7 +117,7 @@ export const products = pgTable(
     ),
     check(
       "products_wipe_certificate_check",
-      sql`${t.status} in ('draft', 'withdrawn') or ${t.dataWipeCertificateKey} is not null`,
+      sql`${t.status} in ('draft', 'withdrawn') or not ${t.dataWipeRequired} or ${t.dataWipeCertificateKey} is not null`,
     ),
   ],
 );

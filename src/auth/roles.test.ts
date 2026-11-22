@@ -31,6 +31,7 @@ describe("role permissions", () => {
     ["quotes.manage", true, true, true, false],
     ["inspections.manage", true, true, true, false],
     ["orders.manage", true, true, true, false],
+    ["catalogue.manage", true, true, false, false],
     ["content.edit", true, true, false, true],
     ["reviews.moderate", true, true, false, true],
   ];
@@ -50,6 +51,7 @@ describe("permissionForAdminPath", () => {
     ["/admin", "admin.access"],
     ["/admin/security", "admin.access"],
     ["/admin/staff", "staff.manage"],
+    ["/admin/catalogue", "catalogue.manage"],
     ["/admin/staff/123", "staff.manage"],
     ["/admin/prices", "prices.update"],
     ["/admin/content/home", "content.edit"],

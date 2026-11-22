@@ -8,6 +8,7 @@ import { HERO_POSTER } from "@/components/home/hero/config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@/lib/format";
+import { sellBrandMetadata } from "@/lib/metadata-templates";
 import { cachedBrand, cachedBrandModels, cachedSellBrands } from "@/lib/sell/queries";
 
 export async function generateStaticParams() {
@@ -17,12 +18,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/sell/[brand]">): Promise<Metadata> {
   const brand = await cachedBrand((await params).brand);
-  if (!brand) return {};
-  return {
-    title: `Sell your ${brand.name} phone`,
-    description: `Instant trade-in quotes for ${brand.name} phones. Free postage or drop off in store.`,
-    alternates: { canonical: `/sell/${brand.slug}` },
-  };
+  return brand ? sellBrandMetadata(brand) : {};
 }
 
 export default function SellBrandPage({ params }: PageProps<"/sell/[brand]">) {

@@ -12,6 +12,7 @@ import {
   SAMPLE_PHOTO_VIEWS,
   sampleTradeInPence,
   seedBrands,
+  seedCategories,
   seedModels,
   seedProducts,
   seedQuoteQuestions,
@@ -60,6 +61,16 @@ export async function seed(db: SeedDb) {
       .select({ id: schema.stores.id, slug: schema.stores.slug })
       .from(schema.stores);
 
+    // Only adds missing categories: they are edited in /admin/catalogue.
+    await tx
+      .insert(schema.categories)
+      .values([...seedCategories])
+      .onConflictDoNothing({ target: schema.categories.slug });
+    const [phones] = await tx
+      .select({ id: schema.categories.id })
+      .from(schema.categories)
+      .where(eq(schema.categories.slug, "phones"));
+
     const brandRows = await tx
       .insert(schema.brands)
       .values([...seedBrands])
@@ -78,6 +89,7 @@ export async function seed(db: SeedDb) {
       .insert(schema.deviceModels)
       .values(
         seedModels.map((m) => ({
+          categoryId: phones!.id,
           brandId: brandId.get(m.brand)!,
           name: m.name,
           slug: m.slug,
@@ -114,6 +126,7 @@ export async function seed(db: SeedDb) {
         target: [
           schema.modelVariants.modelId,
           schema.modelVariants.storageGb,
+          schema.modelVariants.configuration,
           schema.modelVariants.colour,
         ],
         set: {
@@ -132,7 +145,7 @@ export async function seed(db: SeedDb) {
     const modelById = new Map(seedModels.map((m) => [modelId.get(m.slug)!, m]));
     const priceValues = variantRows.flatMap((v) => {
       const model = modelById.get(v.modelId)!;
-      const storageIndex = model.storageGb.indexOf(v.storageGb);
+      const storageIndex = model.storageGb.indexOf(v.storageGb!);
       return TRADE_IN_GRADES.map((grade) => ({
         variantId: v.id,
         grade,

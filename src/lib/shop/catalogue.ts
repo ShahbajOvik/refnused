@@ -19,6 +19,7 @@ import type { SelectResultFields } from "drizzle-orm/query-builders/select.types
 
 import {
   brands,
+  categories,
   deviceModels,
   modelVariants,
   products,
@@ -36,6 +37,9 @@ import {
   type TradeInConditionKey,
   type TradeInSaving,
 } from "./product-info";
+import { storageLabel } from "./variant-label";
+
+export { storageLabel };
 
 /*
  * Read-only shop queries. Filtering, sorting and pagination all happen in
@@ -52,13 +56,20 @@ export type ShopProduct = {
   slug: string;
   brandSlug: string;
   brand: string;
+  categorySlug: string;
+  categoryName: string;
   modelSlug: string;
   model: string;
-  storageGb: number;
+  /** Null for items without storage. */
+  storageGb: number | null;
+  /** Other specs, e.g. "16GB RAM, Intel Core i7". Empty if none. */
+  configuration: string;
   colour: string;
   colourHex: string | null;
   grade: Grade;
-  batteryHealthPercent: number;
+  /** Null for items without a battery. */
+  batteryHealthPercent: number | null;
+  dataWipeRequired: boolean;
   pricePence: number;
   warrantyMonths: number;
   status: PublicProductStatus;
@@ -80,13 +91,17 @@ const productColumns = {
   slug: products.slug,
   brandSlug: brands.slug,
   brand: brands.name,
+  categorySlug: categories.slug,
+  categoryName: categories.name,
   modelSlug: deviceModels.slug,
   model: deviceModels.name,
   storageGb: modelVariants.storageGb,
+  configuration: modelVariants.configuration,
   colour: modelVariants.colour,
   colourHex: modelVariants.colourHex,
   grade: products.grade,
   batteryHealthPercent: products.batteryHealthPercent,
+  dataWipeRequired: products.dataWipeRequired,
   pricePence: products.pricePence,
   warrantyMonths: products.warrantyMonths,
   status: sql<PublicProductStatus>`${products.status}`,
@@ -121,6 +136,7 @@ function fromProducts<T extends SelectedFields>(
     .innerJoin(modelVariants, eq(products.variantId, modelVariants.id))
     .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
     .innerJoin(stores, eq(products.storeId, stores.id))
     .$dynamic() as unknown as ProductQuery<SelectResultFields<T>>;
 }
@@ -133,6 +149,7 @@ function filterConditions(filters: ShopFilters, except?: FacetKey): SQL[] {
   const add = (key: FacetKey, condition: SQL | undefined) => {
     if (key !== except && condition) conditions.push(condition);
   };
+  if (filters.categories.length) add("categories", inArray(categories.slug, filters.categories));
   if (filters.brands.length) add("brands", inArray(brands.slug, filters.brands));
   if (filters.models.length) add("models", inArray(deviceModels.slug, filters.models));
   if (filters.grades.length) add("grades", inArray(products.grade, filters.grades));
@@ -152,7 +169,7 @@ const SORT_ORDER: Record<ShopFilters["sort"], SQL[]> = {
   newest: [sql`${products.listedAt} desc nulls last`],
   "price-asc": [asc(products.pricePence)],
   "price-desc": [desc(products.pricePence)],
-  "battery-desc": [desc(products.batteryHealthPercent), asc(products.pricePence)],
+  "battery-desc": [sql`${products.batteryHealthPercent} desc nulls last`, asc(products.pricePence)],
 };
 
 export type ShopSearchResult = {
@@ -199,6 +216,7 @@ export type FacetOption = {
 };
 
 export type ShopFacets = {
+  categories: FacetOption[];
   brands: FacetOption[];
   models: FacetOption[];
   grades: FacetOption[];
@@ -218,73 +236,87 @@ export async function getShopFacets(db: AppDb, filters: ShopFilters): Promise<Sh
   const where = (except: FacetKey) => and(...filterConditions(filters, except));
   const n = count();
 
-  const [brandRows, modelRows, gradeRows, storageRows, colourRows, storeRows, batteryRows, price] =
-    await Promise.all([
-      fromProducts(db, { value: brands.slug, label: brands.name, count: n })
-        .where(where("brands"))
-        .groupBy(brands.id)
-        .orderBy(asc(brands.sortOrder), asc(brands.name)),
-      fromProducts(db, {
-        value: deviceModels.slug,
-        label: deviceModels.name,
-        group: brands.name,
-        count: n,
-      })
-        .where(where("models"))
-        .groupBy(deviceModels.id, brands.id)
-        .orderBy(asc(brands.sortOrder), desc(deviceModels.releaseYear), asc(deviceModels.name)),
-      fromProducts(db, { value: products.grade, count: n })
-        .where(where("grades"))
-        .groupBy(products.grade),
-      fromProducts(db, { value: modelVariants.storageGb, count: n })
-        .where(where("storage"))
-        .groupBy(modelVariants.storageGb)
-        .orderBy(asc(modelVariants.storageGb)),
-      fromProducts(db, {
-        value: colourSlug,
-        label: min(modelVariants.colour),
-        hex: min(modelVariants.colourHex),
-        count: n,
-      })
-        .where(where("colours"))
-        .groupBy(colourSlug)
-        .orderBy(asc(colourSlug)),
-      fromProducts(db, {
-        value: stores.slug,
-        label: sql<string>`${stores.name} || ', ' || ${stores.town}`,
-        count: n,
-      })
-        .where(where("stores"))
-        .groupBy(stores.id)
-        .orderBy(asc(stores.name), asc(stores.town)),
-      fromProducts(
-        db,
-        Object.fromEntries(
-          BATTERY_THRESHOLDS.map((t) => [
-            `t${t}`,
-            sql<number>`count(*) filter (where ${products.batteryHealthPercent} >= ${t})::int`,
-          ]),
-        ),
-      ).where(where("battery")),
-      fromProducts(db, {
-        minPence: min(products.pricePence),
-        maxPence: max(products.pricePence),
-      }).where(where("price")),
-    ]);
+  const [
+    categoryRows,
+    brandRows,
+    modelRows,
+    gradeRows,
+    storageRows,
+    colourRows,
+    storeRows,
+    batteryRows,
+    price,
+  ] = await Promise.all([
+    fromProducts(db, { value: categories.slug, label: categories.name, count: n })
+      .where(where("categories"))
+      .groupBy(categories.id)
+      .orderBy(asc(categories.sortOrder), asc(categories.name)),
+    fromProducts(db, { value: brands.slug, label: brands.name, count: n })
+      .where(where("brands"))
+      .groupBy(brands.id)
+      .orderBy(asc(brands.sortOrder), asc(brands.name)),
+    fromProducts(db, {
+      value: deviceModels.slug,
+      label: deviceModels.name,
+      group: brands.name,
+      count: n,
+    })
+      .where(where("models"))
+      .groupBy(deviceModels.id, brands.id)
+      .orderBy(asc(brands.sortOrder), desc(deviceModels.releaseYear), asc(deviceModels.name)),
+    fromProducts(db, { value: products.grade, count: n })
+      .where(where("grades"))
+      .groupBy(products.grade),
+    fromProducts(db, { value: modelVariants.storageGb, count: n })
+      .where(where("storage"))
+      .groupBy(modelVariants.storageGb)
+      .orderBy(asc(modelVariants.storageGb)),
+    fromProducts(db, {
+      value: colourSlug,
+      label: min(modelVariants.colour),
+      hex: min(modelVariants.colourHex),
+      count: n,
+    })
+      .where(where("colours"))
+      .groupBy(colourSlug)
+      .orderBy(asc(colourSlug)),
+    fromProducts(db, {
+      value: stores.slug,
+      label: sql<string>`${stores.name} || ', ' || ${stores.town}`,
+      count: n,
+    })
+      .where(where("stores"))
+      .groupBy(stores.id)
+      .orderBy(asc(stores.name), asc(stores.town)),
+    fromProducts(
+      db,
+      Object.fromEntries(
+        BATTERY_THRESHOLDS.map((t) => [
+          `t${t}`,
+          sql<number>`count(*) filter (where ${products.batteryHealthPercent} >= ${t})::int`,
+        ]),
+      ),
+    ).where(where("battery")),
+    fromProducts(db, {
+      minPence: min(products.pricePence),
+      maxPence: max(products.pricePence),
+    }).where(where("price")),
+  ]);
 
   const byGrade = new Map(gradeRows.map((r) => [r.value, r.count]));
   const battery = (batteryRows[0] ?? {}) as Record<string, number>;
   const priceRow = price[0];
 
   return {
+    categories: categoryRows,
     brands: brandRows,
     models: modelRows,
     grades: GRADES.map((g) => ({ value: g, label: g, count: byGrade.get(g) ?? 0 })),
-    storage: storageRows.map((r) => ({
-      value: String(r.value),
-      label: storageLabel(r.value),
-      count: r.count,
-    })),
+    storage: storageRows.flatMap((r) =>
+      r.value === null
+        ? []
+        : [{ value: String(r.value), label: storageLabel(r.value), count: r.count }],
+    ),
     colours: colourRows.map((r) => ({ ...r, label: r.label ?? r.value })),
     stores: storeRows,
     battery: BATTERY_THRESHOLDS.map((t) => ({
@@ -299,13 +331,9 @@ export async function getShopFacets(db: AppDb, filters: ShopFilters): Promise<Sh
   };
 }
 
-/** 1024GB → "1TB". */
-export function storageLabel(gb: number) {
-  return gb >= 1024 && gb % 1024 === 0 ? `${gb / 1024}TB` : `${gb}GB`;
-}
-
 export type ProductDetail = ShopProduct & {
   photos: ProductPhoto[];
+  categoryId: string;
   modelId: string;
   brandId: string;
   variantId: string;
@@ -330,6 +358,7 @@ export async function getProductDetail(
   const [row] = await fromProducts(db, {
     ...productColumns,
     photos: products.photos,
+    categoryId: categories.id,
     modelId: deviceModels.id,
     brandId: brands.id,
     variantId: modelVariants.id,
@@ -407,16 +436,28 @@ export async function getStockByStore(
 }
 
 /**
- * Other in-stock phones like this one: same model first, then same brand,
- * then closest in price.
+ * Other in-stock items like this one, from the same category: same model
+ * first, then same brand, then closest in price.
  */
 export async function getSimilarProducts(
   db: AppDb,
-  input: { excludeId: string; modelId: string; brandId: string; pricePence: number },
+  input: {
+    excludeId: string;
+    categoryId?: string;
+    modelId: string;
+    brandId: string;
+    pricePence: number;
+  },
   limit = 4,
 ): Promise<ShopProduct[]> {
   const rows = await fromProducts(db, productColumns)
-    .where(and(eq(products.status, "listed"), ne(products.id, input.excludeId)))
+    .where(
+      and(
+        eq(products.status, "listed"),
+        ne(products.id, input.excludeId),
+        input.categoryId ? eq(categories.id, input.categoryId) : undefined,
+      ),
+    )
     .orderBy(
       sql`(${deviceModels.id} = ${input.modelId}) desc`,
       sql`(${brands.id} = ${input.brandId}) desc`,
@@ -444,12 +485,50 @@ export async function listProductParams(db: AppDb) {
   );
 }
 
+/** Units with a page worth indexing (for sale or reserved), for the products sitemap. */
+export async function listProductSitemap(db: AppDb) {
+  return fromProducts(db, {
+    brand: brands.slug,
+    slug: products.slug,
+    updatedAt: products.updatedAt,
+    photos: products.photos,
+  })
+    .where(inArray(products.status, ["listed", "reserved"]))
+    .orderBy(desc(products.updatedAt))
+    .limit(50_000);
+}
+
 /** Brands with phones in stock, for /shop/[brand]. */
 export async function listShopBrands(db: AppDb) {
   return fromProducts(db, { slug: brands.slug, name: brands.name, count: count() })
     .where(eq(products.status, "listed"))
     .groupBy(brands.id)
     .orderBy(asc(brands.sortOrder), asc(brands.name));
+}
+
+/** Categories with items in stock, for the shop's category links. */
+export async function listShopCategories(db: AppDb) {
+  return fromProducts(db, { slug: categories.slug, name: categories.name, count: count() })
+    .where(and(eq(products.status, "listed"), eq(categories.isActive, true)))
+    .groupBy(categories.id)
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
+}
+
+/** Visible categories, for /shop/category/[category]. */
+export async function listCategoryParams(db: AppDb) {
+  return db
+    .select({ category: categories.slug })
+    .from(categories)
+    .where(eq(categories.isActive, true));
+}
+
+export async function getCategoryBySlug(db: AppDb, slug: string) {
+  const [row] = await db
+    .select({ slug: categories.slug, name: categories.name, description: categories.description })
+    .from(categories)
+    .where(and(eq(categories.slug, slug), eq(categories.isActive, true)))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function getBrandBySlug(db: AppDb, slug: string) {
@@ -487,7 +566,15 @@ export async function listTradeInModels(db: AppDb): Promise<TradeInModelOption[]
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
     .innerJoin(modelVariants, eq(modelVariants.modelId, deviceModels.id))
     .innerJoin(tradeInPrices, eq(tradeInPrices.variantId, modelVariants.id))
-    .where(and(eq(deviceModels.isActive, true), eq(modelVariants.isActive, true)))
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+    .where(
+      and(
+        eq(deviceModels.isActive, true),
+        eq(modelVariants.isActive, true),
+        eq(categories.isActive, true),
+        eq(categories.identifierType, "imei"),
+      ),
+    )
     .groupBy(deviceModels.id, brands.id)
     .orderBy(asc(brands.sortOrder), desc(deviceModels.releaseYear), asc(deviceModels.name));
   return rows.map((r) => ({ ...r, storage: r.storage.map(Number) }));

@@ -1,40 +1,69 @@
-import { and, asc, desc, eq, max } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNotNull, max, sql } from "drizzle-orm";
 
-import { brands, deviceModels, modelVariants, stores, tradeInPrices } from "@/db/schema";
+import {
+  brands,
+  categories,
+  deviceModels,
+  modelVariants,
+  stores,
+  tradeInPrices,
+} from "@/db/schema";
 import type { AppDb } from "@/db/types";
 
 /* Catalogue reads for the sell pages (used at build time and cached). */
+
+/** We only buy items identified by IMEI: laptops and accessories are sale-only. */
+const tradeInCategory = and(eq(categories.identifierType, "imei"), eq(categories.isActive, true));
+
+/** Brands with at least one model we buy. */
+function brandHasTradeInModels(db: AppDb) {
+  return exists(
+    db
+      .select({ id: deviceModels.id })
+      .from(deviceModels)
+      .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+      .where(
+        and(eq(deviceModels.brandId, brands.id), eq(deviceModels.isActive, true), tradeInCategory),
+      ),
+  );
+}
 
 export async function listSellBrands(db: AppDb) {
   return db
     .select({ slug: brands.slug, name: brands.name, logoUrl: brands.logoUrl })
     .from(brands)
+    .where(brandHasTradeInModels(db))
     .orderBy(asc(brands.sortOrder), asc(brands.name));
 }
 
 export async function listBrandModels(db: AppDb, brandSlug: string) {
-  return db
-    .select({
-      slug: deviceModels.slug,
-      name: deviceModels.name,
-      releaseYear: deviceModels.releaseYear,
-      imageUrl: deviceModels.imageUrl,
-      maxPricePence: max(tradeInPrices.pricePence),
-    })
-    .from(deviceModels)
-    .innerJoin(brands, eq(deviceModels.brandId, brands.id))
-    .leftJoin(modelVariants, eq(modelVariants.modelId, deviceModels.id))
-    .leftJoin(tradeInPrices, eq(tradeInPrices.variantId, modelVariants.id))
-    .where(and(eq(brands.slug, brandSlug), eq(deviceModels.isActive, true)))
-    .groupBy(deviceModels.id)
-    .orderBy(desc(deviceModels.releaseYear), asc(deviceModels.name));
+  return (
+    db
+      .select({
+        slug: deviceModels.slug,
+        name: deviceModels.name,
+        releaseYear: deviceModels.releaseYear,
+        imageUrl: deviceModels.imageUrl,
+        maxPricePence: max(tradeInPrices.pricePence),
+      })
+      .from(deviceModels)
+      .innerJoin(brands, eq(deviceModels.brandId, brands.id))
+      .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+      .leftJoin(modelVariants, eq(modelVariants.modelId, deviceModels.id))
+      .leftJoin(tradeInPrices, eq(tradeInPrices.variantId, modelVariants.id))
+      .where(and(eq(brands.slug, brandSlug), eq(deviceModels.isActive, true), tradeInCategory))
+      .groupBy(deviceModels.id)
+      // A new model appears once its trade-in prices are set in /admin/prices.
+      .having(isNotNull(max(tradeInPrices.pricePence)))
+      .orderBy(desc(deviceModels.releaseYear), asc(deviceModels.name))
+  );
 }
 
 export async function getBrand(db: AppDb, slug: string) {
   const [brand] = await db
     .select({ slug: brands.slug, name: brands.name })
     .from(brands)
-    .where(eq(brands.slug, slug));
+    .where(and(eq(brands.slug, slug), brandHasTradeInModels(db)));
   return brand ?? null;
 }
 
@@ -51,11 +80,13 @@ export async function getSellModel(db: AppDb, brandSlug: string, modelSlug: stri
     })
     .from(deviceModels)
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
     .where(
       and(
         eq(deviceModels.slug, modelSlug),
         eq(brands.slug, brandSlug),
         eq(deviceModels.isActive, true),
+        tradeInCategory,
       ),
     );
   if (!model) return null;
@@ -76,7 +107,8 @@ export async function getSellModel(db: AppDb, brandSlug: string, modelSlug: stri
   const priced = variants.filter((v) => v.maxPricePence !== null);
   return {
     ...model,
-    variants: priced.map((v) => ({ id: v.id, storageGb: v.storageGb, colour: v.colour })),
+    // IMEI categories always have storage (categories_imei_storage_check).
+    variants: priced.map((v) => ({ id: v.id, storageGb: v.storageGb!, colour: v.colour })),
     maxPricePence: priced.reduce((m, v) => Math.max(m, v.maxPricePence ?? 0), 0) || null,
   };
 }
@@ -86,7 +118,14 @@ export async function listSellModelParams(db: AppDb) {
     .select({ brand: brands.slug, model: deviceModels.slug })
     .from(deviceModels)
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
-    .where(eq(deviceModels.isActive, true));
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+    .where(
+      and(
+        eq(deviceModels.isActive, true),
+        tradeInCategory,
+        sql`exists (select 1 from ${modelVariants} inner join ${tradeInPrices} on ${tradeInPrices.variantId} = ${modelVariants.id} where ${modelVariants.modelId} = ${deviceModels.id})`,
+      ),
+    );
 }
 
 export async function listDropOffStores(db: AppDb) {

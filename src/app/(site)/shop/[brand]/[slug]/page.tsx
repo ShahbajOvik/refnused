@@ -20,6 +20,7 @@ import { AddToBasket } from "@/components/checkout/add-to-basket";
 import { HERO_MODEL_URL } from "@/components/home/hero/config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ModelLinks } from "@/components/seo/model-links";
 import { CompareToggle } from "@/components/shop/compare-toggle";
 import { NotifyMeForm } from "@/components/shop/notify-me-form";
 import { ProductCard } from "@/components/shop/product-card";
@@ -33,12 +34,14 @@ import { publicEnv } from "@/lib/env";
 import { formatDate, formatPrice, telHref } from "@/lib/format";
 import { GRADE_INFO, GRADES } from "@/lib/grades";
 import { mediaUrl } from "@/lib/media";
-import { absoluteUrl } from "@/lib/seo";
+import { GRADING_GUIDE_SLUG, guidePath } from "@/lib/guides/slugs";
+import { productMetadata } from "@/lib/metadata-templates";
 import type { ProductDetail } from "@/lib/shop/catalogue";
 import { productJsonLd, type ProductAvailability } from "@/lib/shop/json-ld";
 import { orFallback } from "@/lib/shop/load";
 import { productImageSrc, productPath, productTitle } from "@/lib/shop/paths";
 import { batteryRating } from "@/lib/shop/product-info";
+import { itemNoun, variantLabel } from "@/lib/shop/variant-label";
 import {
   cachedProduct,
   cachedProductParams,
@@ -68,23 +71,7 @@ export async function generateMetadata({
 }: PageProps<"/shop/[brand]/[slug]">): Promise<Metadata> {
   const { brand, slug } = await params;
   const p = await cachedProduct(brand, slug);
-  if (!p) return {};
-  const status = p.status === "sold" ? "Sold" : p.status === "reserved" ? "Reserved" : null;
-  const title = `${productTitle(p)}, Grade ${p.grade} refurbished${status ? ` (${status})` : ""}`;
-  const description = `Refurbished ${p.brand} ${p.model} ${p.storageGb}GB in ${p.colour}. Grade ${p.grade} (${GRADE_INFO[p.grade].label}), battery health ${p.batteryHealthPercent}%, ${p.warrantyMonths}-month warranty. ${formatPrice(p.pricePence)}.`;
-  const image = photosOf(p)[0]!;
-  return {
-    title,
-    description,
-    alternates: { canonical: productPath(p) },
-    openGraph: {
-      type: "website",
-      title,
-      description,
-      url: productPath(p),
-      images: [{ url: absoluteUrl(image.src), alt: image.alt }],
-    },
-  };
+  return p ? productMetadata(p) : {};
 }
 
 export default function ProductPage({ params }: PageProps<"/shop/[brand]/[slug]">) {
@@ -121,6 +108,7 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
   const forSale = p.status === "listed";
   const photos = photosOf(p);
   const title = productTitle(p);
+  const noun = itemNoun(p.categorySlug);
   const [stock, similar, tradeInModels] = await Promise.all([
     orFallback("stock", () => cachedStockByStore(p.modelId, p.variantId), []),
     orFallback(
@@ -128,6 +116,7 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
       () =>
         cachedSimilar({
           excludeId: p.id,
+          categoryId: p.categoryId,
           modelId: p.modelId,
           brandId: p.brandId,
           pricePence: p.pricePence,
@@ -144,7 +133,7 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
           { label: "Home", href: "/" },
           { label: "Shop", href: "/shop" },
           { label: p.brand, href: `/shop/${p.brandSlug}` },
-          { label: `${p.model} ${p.storageGb}GB ${p.colour}`, href: productPath(p) },
+          { label: `${p.model} ${variantLabel(p, " ")}`, href: productPath(p) },
         ]}
       />
       <JsonLd
@@ -154,6 +143,7 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
           brand: p.brand,
           model: p.model,
           storageGb: p.storageGb,
+          configuration: p.configuration,
           colour: p.colour,
           grade: p.grade,
           batteryHealthPercent: p.batteryHealthPercent,
@@ -169,12 +159,15 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
         <div className="flex flex-col gap-4">
           <ProductGallery photos={photos} />
           <div className="flex flex-wrap items-center gap-3">
-            <ViewIn3D
-              modelUrl={p.model3dUrl ?? HERO_MODEL_URL}
-              modelName={`${p.brand} ${p.model}`}
-            />
+            {/* The stand-in 3D model is a phone, so other items need their own. */}
+            {p.model3dUrl || p.categorySlug === "phones" ? (
+              <ViewIn3D
+                modelUrl={p.model3dUrl ?? HERO_MODEL_URL}
+                modelName={`${p.brand} ${p.model}`}
+              />
+            ) : null}
             {p.photos.length ? (
-              <p className="text-sm text-muted-foreground">Photos are of this exact phone.</p>
+              <p className="text-sm text-muted-foreground">Photos are of this exact {noun.one}.</p>
             ) : null}
           </div>
         </div>
@@ -188,7 +181,9 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
               ) : null}
             </div>
             <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">{title}</h1>
-            <p className="mt-1 text-muted-foreground">Refurbished · Tested and data-wiped</p>
+            <p className="mt-1 text-muted-foreground">
+              Refurbished · {p.dataWipeRequired ? "Tested and data-wiped" : "Tested"}
+            </p>
           </div>
 
           {forSale ? (
@@ -223,7 +218,8 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
       {forSale ? null : (
         <SimilarPhones
           products={similar}
-          title={`Similar phones in stock`}
+          title={`Similar ${noun.many} in stock`}
+          noun={noun.many}
           className="mt-12"
           emptyText="Nothing similar is in stock right now. Sign up above and we’ll email you."
         />
@@ -235,7 +231,13 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
             Condition: Grade {p.grade}, {GRADE_INFO[p.grade].label.toLowerCase()}
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Grades describe how a phone looks. Every grade is fully tested and works like new.
+            Grades describe how a {noun.one} looks. Every grade is fully tested and works like new.{" "}
+            <Link
+              href={guidePath(GRADING_GUIDE_SLUG)}
+              className="font-medium text-primary underline underline-offset-4"
+            >
+              Grading explained
+            </Link>
           </p>
           <ul className="mt-4 flex flex-col gap-3">
             {GRADES.map((g) => (
@@ -249,7 +251,7 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
               >
                 <p className="font-medium">
                   Grade {g} · {GRADE_INFO[g].label}
-                  {g === p.grade ? <span className="text-primary"> (this phone)</span> : null}
+                  {g === p.grade ? <span className="text-primary"> (this {noun.one})</span> : null}
                 </p>
                 <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 text-sm text-muted-foreground">
                   <dt className="font-medium text-foreground">Screen</dt>
@@ -263,7 +265,9 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
         </section>
 
         <div className="flex flex-col gap-8">
-          <BatterySection percent={p.batteryHealthPercent} />
+          {p.batteryHealthPercent !== null ? (
+            <BatterySection percent={p.batteryHealthPercent} noun={noun.one} />
+          ) : null}
           <section aria-labelledby="warranty-heading" className="rounded-2xl border p-6">
             <h2 id="warranty-heading" className="flex items-center gap-2 text-xl font-semibold">
               <ShieldCheckIcon className="size-5 text-primary" aria-hidden />
@@ -349,8 +353,15 @@ async function Product({ params }: Pick<PageProps<"/shop/[brand]/[slug]">, "para
       ) : null}
 
       {forSale ? (
-        <SimilarPhones products={similar} title="You might also like" className="mt-12" />
+        <SimilarPhones
+          products={similar}
+          title="You might also like"
+          noun={noun.many}
+          className="mt-12"
+        />
       ) : null}
+
+      <ModelLinks models={[p.modelSlug]} currentPath={productPath(p)} className="mt-12" />
     </>
   );
 }
@@ -362,13 +373,20 @@ function KeyFacts({ product: p }: { product: ProductDetail }) {
       label: "Condition",
       value: `Grade ${p.grade} · ${GRADE_INFO[p.grade].label}`,
     },
-    {
-      icon: BatteryMediumIcon,
-      label: "Battery health",
-      value: `${p.batteryHealthPercent}% · ${batteryRating(p.batteryHealthPercent).label}`,
-    },
+    ...(p.batteryHealthPercent !== null
+      ? [
+          {
+            icon: BatteryMediumIcon,
+            label: "Battery health",
+            value: `${p.batteryHealthPercent}% · ${batteryRating(p.batteryHealthPercent).label}`,
+          },
+        ]
+      : []),
     { icon: ShieldCheckIcon, label: "Warranty", value: `${p.warrantyMonths} months` },
-    { icon: HardDriveIcon, label: "Storage", value: `${p.storageGb}GB` },
+    ...(p.storageGb ? [{ icon: HardDriveIcon, label: "Storage", value: `${p.storageGb}GB` }] : []),
+    ...(p.configuration
+      ? [{ icon: BadgeCheckIcon, label: "Specification", value: p.configuration }]
+      : []),
     { icon: PaletteIcon, label: "Colour", value: p.colour },
     { icon: CalendarIcon, label: "Released", value: String(p.releaseYear) },
   ];
@@ -388,11 +406,12 @@ function KeyFacts({ product: p }: { product: ProductDetail }) {
 }
 
 function SoldNotice({ product: p }: { product: ProductDetail }) {
+  const noun = itemNoun(p.categorySlug).one;
   return (
     <div className="flex flex-col gap-4 rounded-2xl border bg-muted/40 p-6">
       <div>
         <p className="text-xl font-semibold">
-          {p.status === "sold" ? "Sorry, this phone has sold" : "This phone is reserved"}
+          {p.status === "sold" ? `Sorry, this ${noun} has sold` : `This ${noun} is reserved`}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           {p.status === "sold"
@@ -418,7 +437,7 @@ function SoldNotice({ product: p }: { product: ProductDetail }) {
   );
 }
 
-function BatterySection({ percent }: { percent: number }) {
+function BatterySection({ percent, noun }: { percent: number; noun: string }) {
   const rating = batteryRating(percent);
   return (
     <section aria-labelledby="battery-heading" className="rounded-2xl border p-6">
@@ -442,7 +461,7 @@ function BatterySection({ percent }: { percent: number }) {
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
         Battery health is how much charge the battery holds compared with when it was new. We
-        measure it when we test every phone.
+        measure it when we test every {noun}.
       </p>
     </section>
   );
@@ -456,6 +475,7 @@ function StockPerStore({
   stock: Awaited<ReturnType<typeof cachedStockByStore>>;
 }) {
   if (!stock.length) return null;
+  const noun = itemNoun(p.categorySlug);
   return (
     <div className="rounded-2xl border p-6">
       <h3 className="flex items-center gap-2 font-semibold">
@@ -463,7 +483,7 @@ function StockPerStore({
       </h3>
       <table className="mt-3 w-full text-sm">
         <caption className="sr-only">
-          {p.model} phones in stock at each store, including this one
+          {p.model} {noun.many} in stock at each store, including this one
         </caption>
         <thead>
           <tr className="text-left text-muted-foreground">
@@ -471,7 +491,7 @@ function StockPerStore({
               Store
             </th>
             <th scope="col" className="py-1 pl-3 text-right font-normal">
-              {p.storageGb}GB {p.colour}
+              {variantLabel(p, " ")}
             </th>
             <th scope="col" className="py-1 pl-3 text-right font-normal">
               Any {p.model}
@@ -494,7 +514,7 @@ function StockPerStore({
                 )}
                 {s.storeSlug === p.storeSlug && p.status === "listed" ? (
                   <span className="block text-xs font-normal text-muted-foreground">
-                    This phone is here
+                    This {noun.one} is here
                   </span>
                 ) : null}
               </th>
@@ -511,11 +531,13 @@ function StockPerStore({
 function SimilarPhones({
   products,
   title,
+  noun = "phones",
   className,
   emptyText,
 }: {
   products: Awaited<ReturnType<typeof cachedSimilar>>;
   title: string;
+  noun?: string;
   className?: string;
   emptyText?: string;
 }) {
@@ -530,7 +552,7 @@ function SimilarPhones({
           href="/shop"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          Shop all phones
+          Shop all {noun}
         </Link>
       </div>
       {products.length ? (

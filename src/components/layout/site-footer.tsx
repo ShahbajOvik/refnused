@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { StoreAddress } from "@/components/stores/store-actions";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { legalNav, mainNav, siteConfig, socialLinks } from "@/config/site";
+import { footerExtraNav, legalNav, mainNav, siteConfig, socialLinks } from "@/config/site";
 import { telHref } from "@/lib/format";
 import { storeName, storePath } from "@/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
@@ -76,7 +76,7 @@ export async function SiteFooter() {
           <nav aria-label="Footer">
             <h2 className="mb-4 text-base font-semibold">Explore</h2>
             <ul className="flex flex-col gap-2 text-muted-foreground">
-              {mainNav.map((item) => (
+              {[...mainNav, ...footerExtraNav].map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className={linkClass}>
                     {item.label}

@@ -25,6 +25,7 @@ export const PERMISSIONS = [
   "quotes.manage",
   "inspections.manage",
   "products.manage",
+  "catalogue.manage",
   "orders.manage",
   "prices.update",
   "payouts.approve",
@@ -52,6 +53,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<Permission>> = {
   manager: new Set<Permission>([
     "admin.access",
     ...OPERATIONS,
+    "catalogue.manage",
     "reports.view",
     "customers.view",
     "prices.update",
@@ -90,6 +92,7 @@ const ADMIN_ROUTE_PERMISSIONS: [prefix: string, permission: Permission][] = [
   ["/admin/orders", "orders.manage"],
   ["/admin/returns", "orders.manage"],
   ["/admin/intake", "products.manage"],
+  ["/admin/catalogue", "catalogue.manage"],
   ["/admin/customers", "customers.view"],
   ["/admin/files", "admin.access"],
 ];

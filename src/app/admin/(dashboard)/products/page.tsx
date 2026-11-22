@@ -37,10 +37,10 @@ export default function ProductsPage({ searchParams }: PageProps<"/admin/product
     <>
       <PageHeader
         title="Products"
-        description="Units in stock. Change price or status here; add new phones with device intake."
+        description="Units in stock. Change price or status here; add new items with device intake."
         actions={
           <Button asChild className="min-h-11">
-            <Link href="/admin/intake">Add a phone</Link>
+            <Link href="/admin/intake">Add an item</Link>
           </Button>
         }
       />
@@ -73,14 +73,18 @@ async function Products({ searchParams }: Pick<PageProps<"/admin/products">, "se
           href: `/admin/products?status=${key}`,
         }))}
       />
-      <SearchForm action="/admin/products" defaultValue={q} placeholder="IMEI, model or slug" />
+      <SearchForm
+        action="/admin/products"
+        defaultValue={q}
+        placeholder="IMEI, serial number, model or slug"
+      />
       {rows.length === 0 ? (
         <Empty>No units found.</Empty>
       ) : (
         <DataTable label="Products">
           <thead>
             <tr>
-              <th scope="col">Phone</th>
+              <th scope="col">Item</th>
               <th scope="col">Grade · battery</th>
               <th scope="col">Store</th>
               <th scope="col">Status</th>
@@ -102,20 +106,27 @@ async function Products({ searchParams }: Pick<PageProps<"/admin/products">, "se
                       {p.device}
                     </Link>
                   )}
-                  <span className="block font-mono text-xs text-muted-foreground">{p.imei}</span>
+                  <span className="block font-mono text-xs text-muted-foreground">
+                    {p.identifier}
+                  </span>
                   <span className="block text-xs text-muted-foreground">
                     {formatPrice(p.pricePence)}
                   </span>
                 </td>
                 <td>
-                  {p.grade} · {p.batteryHealthPercent}%
+                  {p.grade}
+                  {p.batteryHealthPercent !== null ? ` · ${p.batteryHealthPercent}%` : ""}
                 </td>
                 <td>{p.storeName}</td>
                 <td>
                   <StatusPill status={p.status} />
                 </td>
                 <td className="text-xs">
-                  {p.hasCertificate ? "Certificate ✓" : "No certificate"}
+                  {!p.certificateRequired
+                    ? "Certificate not needed"
+                    : p.hasCertificate
+                      ? "Certificate ✓"
+                      : "No certificate"}
                   <span className="block">{p.photos} photos</span>
                 </td>
                 <td>

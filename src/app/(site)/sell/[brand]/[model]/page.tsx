@@ -6,11 +6,17 @@ import { Suspense } from "react";
 
 import { HERO_POSTER } from "@/components/home/hero/config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { FaqList } from "@/components/seo/faq-list";
+import { JsonLd } from "@/components/seo/json-ld";
+import { ModelLinks } from "@/components/seo/model-links";
 import { SellWizard } from "@/components/sell/sell-wizard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicEnv } from "@/lib/env";
 import { formatPrice } from "@/lib/format";
+import { sellModelMetadata } from "@/lib/metadata-templates";
+import { sellModelFaqs } from "@/lib/sell/model-faqs";
 import { PRICE_LOCK_DAYS } from "@/lib/sell/offer-service";
+import { faqPageJsonLd } from "@/lib/seo";
 import {
   cachedDropOffStores,
   cachedModelParams,
@@ -27,15 +33,7 @@ export async function generateMetadata({
 }: PageProps<"/sell/[brand]/[model]">): Promise<Metadata> {
   const { brand, model } = await params;
   const m = await cachedSellModel(brand, model);
-  if (!m) return {};
-  const upTo = m.maxPricePence
-    ? ` Get up to ${formatPrice(m.maxPricePence, { whole: true })}.`
-    : "";
-  return {
-    title: `Sell your ${m.brandName} ${m.name}`,
-    description: `Instant quote for your ${m.brandName} ${m.name}.${upTo} Price locked for ${PRICE_LOCK_DAYS} days.`,
-    alternates: { canonical: `/sell/${m.brandSlug}/${m.slug}` },
-  };
+  return m ? sellModelMetadata(m, PRICE_LOCK_DAYS) : {};
 }
 
 export default function SellModelPage({ params }: PageProps<"/sell/[brand]/[model]">) {
@@ -56,6 +54,14 @@ async function ModelQuote({ params }: Pick<PageProps<"/sell/[brand]/[model]">, "
     cachedDropOffStores(),
   ]);
   if (!m || m.variants.length === 0) notFound();
+  const path = `/sell/${m.brandSlug}/${m.slug}`;
+  const faqs = sellModelFaqs({
+    brandName: m.brandName,
+    name: m.name,
+    maxPricePence: m.maxPricePence,
+    priceLockDays: PRICE_LOCK_DAYS,
+    dropOffStores: stores,
+  });
 
   return (
     <>
@@ -64,7 +70,7 @@ async function ModelQuote({ params }: Pick<PageProps<"/sell/[brand]/[model]">, "
           { label: "Home", href: "/" },
           { label: "Sell", href: "/sell" },
           { label: m.brandName, href: `/sell/${m.brandSlug}` },
-          { label: m.name, href: `/sell/${m.brandSlug}/${m.slug}` },
+          { label: m.name, href: path },
         ]}
       />
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_2fr]">
@@ -108,6 +114,17 @@ async function ModelQuote({ params }: Pick<PageProps<"/sell/[brand]/[model]">, "
           turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
         />
       </div>
+
+      <div className="mt-12 grid gap-8 lg:grid-cols-[2fr_1fr]">
+        <section aria-labelledby="sell-faq-heading">
+          <h2 id="sell-faq-heading" className="text-2xl font-semibold">
+            Selling your {m.brandName} {m.name}: questions
+          </h2>
+          <FaqList items={faqs} className="mt-4" />
+        </section>
+        <ModelLinks models={[m.slug]} currentPath={path} className="self-start" />
+      </div>
+      <JsonLd data={faqPageJsonLd(faqs)} />
     </>
   );
 }

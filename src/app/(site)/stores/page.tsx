@@ -1,19 +1,13 @@
-import type { Metadata } from "next";
-
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { StoreCard } from "@/components/stores/store-card";
 import { siteConfig } from "@/config/site";
+import { storesIndexMetadata } from "@/lib/metadata-templates";
 import { absoluteUrl, storesJsonLd } from "@/lib/seo";
 import { storeName, storePath } from "@/lib/stores";
 import { loadPublicStores } from "@/lib/stores-cache";
 
-export const metadata: Metadata = {
-  title: "Our stores in North Shields and South Shields",
-  description: `Visit ${siteConfig.name} in North Shields or South Shields: sell your phone over the counter, collect an order or see refurbished phones in person. Opening hours, parking and Metro.`,
-  alternates: { canonical: "/stores" },
-  openGraph: { title: "Our stores", url: "/stores" },
-};
+export const metadata = storesIndexMetadata();
 
 export default async function StoresPage() {
   const stores = await loadPublicStores();

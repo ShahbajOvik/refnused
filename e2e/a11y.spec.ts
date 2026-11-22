@@ -3,7 +3,15 @@ import { expect, test } from "@playwright/test";
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-for (const path of ["/", "/styleguide"]) {
+for (const path of [
+  "/",
+  "/styleguide",
+  "/guides",
+  "/guides/how-much-is-my-iphone-15-worth",
+  "/guides/how-to-wipe-a-phone",
+  "/guides/phone-grading-explained",
+  "/sell/apple/iphone-15",
+]) {
   for (const colorScheme of ["light", "dark"] as const) {
     test(`${path} has no WCAG 2.2 AA violations (${colorScheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });

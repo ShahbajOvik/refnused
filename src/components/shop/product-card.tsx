@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Badge, GradeBadge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import type { ShopProduct } from "@/lib/shop/catalogue";
-import { productImageSrc, productPath } from "@/lib/shop/paths";
+import { productImageSrc, productPath, productTitle } from "@/lib/shop/paths";
+import { variantLabel } from "@/lib/shop/variant-label";
 import { cn } from "@/lib/utils";
 
 import { CompareToggle } from "./compare-toggle";
@@ -70,14 +71,14 @@ export function ProductCard({
             {name}
           </Link>
         </Heading>
-        <p className="text-sm text-muted-foreground">
-          {p.storageGb}GB · {p.colour}
-        </p>
+        <p className="text-sm text-muted-foreground">{variantLabel(p, " · ")}</p>
         <p className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <BatteryFullIcon className="size-3.5" aria-hidden />
-            Battery {p.batteryHealthPercent}%
-          </span>
+          {p.batteryHealthPercent !== null ? (
+            <span className="inline-flex items-center gap-1">
+              <BatteryFullIcon className="size-3.5" aria-hidden />
+              Battery {p.batteryHealthPercent}%
+            </span>
+          ) : null}
           <span className="inline-flex items-center gap-1">
             <MapPinIcon className="size-3.5" aria-hidden />
             {p.storeTown}
@@ -86,7 +87,7 @@ export function ProductCard({
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <p className="text-lg font-semibold">{formatPrice(p.pricePence)}</p>
           {compare && p.status === "listed" ? (
-            <CompareToggle slug={p.slug} name={`${name}, ${p.storageGb}GB, ${p.colour}`} />
+            <CompareToggle slug={p.slug} name={productTitle(p)} />
           ) : null}
         </div>
       </div>

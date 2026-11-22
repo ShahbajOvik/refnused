@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   auditLog,
   brands,
+  categories,
   deviceModels,
   modelVariants,
   products,
@@ -28,7 +29,7 @@ export type PriceRow = {
   brand: string;
   model: string;
   modelSlug: string;
-  storageGb: number;
+  storageGb: number | null;
   colour: string;
   prices: Partial<Record<PriceGrade, number>>;
   /** Average price of this variant in the shop, by grade (listed units). */
@@ -40,6 +41,8 @@ export async function listModelsForPrices(db: AppDb) {
     .select({ slug: deviceModels.slug, name: deviceModels.name, brand: brands.name })
     .from(deviceModels)
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+    .where(eq(categories.identifierType, "imei"))
     .orderBy(asc(brands.sortOrder), desc(deviceModels.releaseYear), asc(deviceModels.name));
 }
 
@@ -56,7 +59,13 @@ export async function getPriceTable(db: AppDb, modelSlug?: string): Promise<Pric
     .from(modelVariants)
     .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
     .innerJoin(brands, eq(deviceModels.brandId, brands.id))
-    .where(modelSlug ? eq(deviceModels.slug, modelSlug) : undefined)
+    .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+    .where(
+      and(
+        eq(categories.identifierType, "imei"),
+        modelSlug ? eq(deviceModels.slug, modelSlug) : undefined,
+      ),
+    )
     .orderBy(
       asc(brands.sortOrder),
       desc(deviceModels.releaseYear),
@@ -264,7 +273,8 @@ export async function previewPriceImport(db: AppDb, text: string): Promise<Impor
       .from(modelVariants)
       .innerJoin(deviceModels, eq(modelVariants.modelId, deviceModels.id))
       .innerJoin(brands, eq(deviceModels.brandId, brands.id))
-      .where(inArray(modelVariants.id, ids)),
+      .innerJoin(categories, eq(deviceModels.categoryId, categories.id))
+      .where(and(inArray(modelVariants.id, ids), eq(categories.identifierType, "imei"))),
     db.select().from(tradeInPrices).where(inArray(tradeInPrices.variantId, ids)),
   ]);
   const label = new Map(variants.map((v) => [v.id, v.label]));

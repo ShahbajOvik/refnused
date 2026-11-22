@@ -83,14 +83,18 @@ const ROWS: Row[] = [
   },
   {
     label: "Battery health",
-    value: (p) => `${p.batteryHealthPercent}% (${batteryRating(p.batteryHealthPercent).label})`,
-    best: (items) => bestBy(items, (p) => p.batteryHealthPercent),
+    value: (p) =>
+      p.batteryHealthPercent === null
+        ? "Not applicable"
+        : `${p.batteryHealthPercent}% (${batteryRating(p.batteryHealthPercent).label})`,
+    best: (items) => bestBy(items, (p) => p.batteryHealthPercent ?? -1),
   },
   {
     label: "Storage",
-    value: (p) => `${p.storageGb}GB`,
-    best: (items) => bestBy(items, (p) => p.storageGb),
+    value: (p) => (p.storageGb ? `${p.storageGb}GB` : "Not applicable"),
+    best: (items) => bestBy(items, (p) => p.storageGb ?? -1),
   },
+  { label: "Specification", value: (p) => p.configuration || "Not listed" },
   { label: "Colour", value: (p) => p.colour },
   {
     label: "Warranty",

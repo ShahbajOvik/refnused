@@ -1,5 +1,4 @@
 import { ArrowRightIcon } from "lucide-react";
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -10,14 +9,16 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { modelSearchQuerySchema } from "@/lib/catalogue/home-data";
 import { loadModelSearch } from "@/lib/catalogue/queries";
 import { formatPrice } from "@/lib/format";
+import { guidePath, WIPE_GUIDE_SLUG } from "@/lib/guides/slugs";
+import { pageMetadata } from "@/lib/metadata";
 import { cachedSellBrands } from "@/lib/sell/queries";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Sell your phone for cash",
   description:
     "Get an instant quote for your Apple, Samsung or Google phone. Free postage, or drop it off in North Shields or South Shields.",
-  alternates: { canonical: "/sell" },
-};
+  path: "/sell",
+});
 
 export default function SellPage({ searchParams }: PageProps<"/sell">) {
   return (
@@ -47,6 +48,19 @@ export default function SellPage({ searchParams }: PageProps<"/sell">) {
           </h2>
           <BrandGrid />
         </section>
+        <p className="mt-8 text-muted-foreground">
+          Getting ready to sell?{" "}
+          <Link
+            href={guidePath(WIPE_GUIDE_SLUG)}
+            className="font-medium text-primary underline underline-offset-4"
+          >
+            How to wipe your phone before you send it
+          </Link>
+          {" · "}
+          <Link href="/guides" className="font-medium text-primary underline underline-offset-4">
+            All guides
+          </Link>
+        </p>
       </div>
       <HowItWorks />
     </MotionProvider>

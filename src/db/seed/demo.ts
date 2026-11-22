@@ -308,7 +308,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
     .values({
       email: DEMO_PASSWORD_STAFF.email,
       name: DEMO_PASSWORD_STAFF.name,
-      role: "staff",
+      role: "owner",
       passwordHash: await hashPassword(DEMO_PASSWORD_STAFF.password),
       passwordChangedAt: now,
       totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
