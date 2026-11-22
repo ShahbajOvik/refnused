@@ -60,9 +60,11 @@ check them again whenever the infrastructure changes.
    (see below); this is a second layer. For readable stack traces, set
    `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` as **build-time**
    variables. Source maps are uploaded, then deleted from the build.
-7. **Database:** use the pooled connection URL with TLS (`sslmode=require`).
-   Restrict who can reach the database (provider IP allow-list or private
-   networking) and turn on automated backups and point-in-time recovery.
+7. **Database:** MySQL 8.0.16+ over TLS (append
+   `?ssl={"rejectUnauthorized":true}` to `DATABASE_URL`). Give the app its
+   own MySQL user with rights on its database only (not root), restrict who
+   can reach the server (host IP allow-list or private networking), and turn
+   on automated backups with binary-log point-in-time recovery if offered.
 8. **Accounts:** turn on two-factor authentication for everyone with access
    to GitHub, Vercel, Cloudflare, Stripe, Resend, Twilio, Sanity, Sentry and
    the database provider. Create the first owner with `npm run staff:create`

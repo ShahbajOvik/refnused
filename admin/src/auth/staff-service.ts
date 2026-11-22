@@ -16,7 +16,7 @@ import type { FieldCipher } from "@refnused/database/lib/crypto/field-encryption
 
 /*
  * Staff authentication data access. Every function takes `db` so it runs
- * against PGlite in tests. Callers are src/auth/staff.ts (Auth.js), the
+ * against a test MySQL in tests. Callers are src/auth/staff.ts (Auth.js), the
  * proxy, src/auth/guards.ts and the /admin 2FA server actions.
  */
 

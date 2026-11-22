@@ -30,10 +30,20 @@ jobs:
   client-secrets:
     name: No secrets in client bundles
     runs-on: ubuntu-latest
+    services:
+      # The builds read the catalogue (sell pages are generated from it).
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: refnused_ci
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     env:
       # Placeholder values: the build needs them; none are real.
-      # The seeded PGlite snapshot made in the first step (tests and CI only).
-      DATABASE_URL: pglite://${{ github.workspace }}/.test-db/snapshot.tar.gz
+      DATABASE_URL: mysql://root@127.0.0.1:3306/refnused_ci
       AUTH_SECRET: ci-placeholder-ci-placeholder-ci-placeholder
       FIELD_ENCRYPTION_KEYS: k1:Y2ktcGxhY2Vob2xkZXItY2ktcGxhY2Vob2xkZXItY2k=
       NEXT_PUBLIC_SITE_URL: https://ci.example.invalid
@@ -45,6 +55,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run db:test-snapshot
+      - run: npm run db:migrate
+      - run: npm run db:seed
       - run: npm run build --workspaces --if-present
       - run: npm run security:secrets --workspaces --if-present

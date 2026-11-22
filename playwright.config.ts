@@ -19,15 +19,13 @@ export const E2E_OUTBOX_DIR = `${process.cwd()}/.test-db/outbox`;
 export const E2E_WEBHOOK_SECRET =
   process.env.E2E_STRIPE_WEBHOOK_SECRET ?? "whsec_e2e_test_secret_not_real";
 
-const DB_PORT = Number(process.env.E2E_DB_PORT ?? 5499);
+const DB_PORT = Number(process.env.E2E_DB_PORT ?? 3399);
 const ADMIN_PORT = Number(process.env.ADMIN_PORT ?? 3200);
 export const ADMIN_URL = `http://localhost:${ADMIN_PORT}`;
 
 // Test values: no real email, SMS or bot-check providers are called.
 const appEnv = {
-  DATABASE_URL:
-    process.env.E2E_DATABASE_URL ??
-    `postgres://postgres:postgres@127.0.0.1:${DB_PORT}/refnused_e2e`,
+  DATABASE_URL: process.env.E2E_DATABASE_URL ?? `mysql://root@127.0.0.1:${DB_PORT}/refnused_e2e`,
   AUTH_SECRET: process.env.AUTH_SECRET ?? "e2e-secret-e2e-secret-e2e-secret-e2e",
   FIELD_ENCRYPTION_KEYS:
     process.env.FIELD_ENCRYPTION_KEYS ?? "k1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
@@ -89,7 +87,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      // A real PostgreSQL shared by both apps (embedded-postgres), migrated
+      // A real MySQL 8 shared by both apps (mysql-memory-server), migrated
       // and seeded, so admin changes show up on the website as in production.
       command: `npm run db:e2e-server -w @refnused/database -- ${DB_PORT}`,
       wait: { stdout: /E2E database ready/ },

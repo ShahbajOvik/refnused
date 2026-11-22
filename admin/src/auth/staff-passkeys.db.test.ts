@@ -3,7 +3,7 @@
  * Staff passkeys as a second factor. The cryptographic verification is
  * SimpleWebAuthn's job (and needs a real authenticator), so it is mocked;
  * everything around it (challenges, ownership, counters, lockout, session
- * rotation) runs for real against Postgres.
+ * rotation) runs for real against MySQL.
  */
 import { randomBytes } from "node:crypto";
 

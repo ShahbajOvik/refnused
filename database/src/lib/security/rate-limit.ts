@@ -14,7 +14,7 @@ export type RateLimitResult = {
 };
 
 /**
- * Fixed-window rate limit in Postgres: one atomic upsert per call, so it
+ * Fixed-window rate limit in MySQL: one atomic upsert per call, so it
  * works across serverless instances without extra infrastructure.
  */
 export async function consumeRateLimit(
