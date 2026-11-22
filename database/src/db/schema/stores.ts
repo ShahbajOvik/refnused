@@ -1,6 +1,7 @@
-import { boolean, doublePrecision, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { boolean, double, json, mysqlTable, text, varchar } from "drizzle-orm/mysql-core";
 
-import { timestamps } from "./_shared";
+import { id, timestamps } from "./_shared";
 
 export type DayOfWeek = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
@@ -13,24 +14,27 @@ export type StorePhoto = {
   alt: string;
 };
 
-export const stores = pgTable("stores", {
-  id: uuid().primaryKey().defaultRandom(),
-  slug: text().notNull().unique(),
-  name: text().notNull(),
-  street: text().notNull(),
-  town: text().notNull(),
-  postcode: text().notNull(),
-  latitude: doublePrecision(),
-  longitude: doublePrecision(),
-  openingHours: jsonb().$type<OpeningHours>(),
+export const stores = mysqlTable("stores", {
+  id: id(),
+  slug: varchar({ length: 100 }).notNull().unique(),
+  name: varchar({ length: 120 }).notNull(),
+  street: varchar({ length: 200 }).notNull(),
+  town: varchar({ length: 100 }).notNull(),
+  postcode: varchar({ length: 10 }).notNull(),
+  latitude: double(),
+  longitude: double(),
+  openingHours: json().$type<OpeningHours>(),
   /** E.164, e.g. +441913800456 */
-  phone: text().notNull(),
-  email: text(),
+  phone: varchar({ length: 32 }).notNull(),
+  email: varchar({ length: 254 }),
   /** Shown on the store page, e.g. where to park and for how long. */
   parkingInfo: text(),
   /** Nearest Tyne and Wear Metro station, as a sentence. */
   nearestMetro: text(),
-  photos: jsonb().$type<StorePhoto[]>().notNull().default([]),
+  photos: json()
+    .$type<StorePhoto[]>()
+    .notNull()
+    .default(sql`(JSON_ARRAY())`),
   isActive: boolean().notNull().default(true),
   ...timestamps,
 });

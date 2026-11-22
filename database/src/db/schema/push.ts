@@ -1,16 +1,7 @@
 import { sql } from "drizzle-orm";
-import {
-  check,
-  index,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { char, index, mysqlTable, text, uniqueIndex } from "drizzle-orm/mysql-core";
 
-import { timestamps } from "./_shared";
+import { enumType, id, NOW, timestamps, ts, uuidRef } from "./_shared";
 import { customers } from "./people";
 import { orders } from "./shop";
 import { quotes } from "./trade-in";
@@ -21,61 +12,53 @@ import { quotes } from "./trade-in";
  */
 
 /** What a device asked to hear about. */
-export const pushTopicKind = pgEnum("push_topic_kind", ["quote", "order", "price_alerts"]);
+export const pushTopicKind = enumType(["quote", "order", "price_alerts"]);
 
 /**
  * One browser's push subscription. The endpoint is a secret URL at the
  * browser's push service (only known services are accepted, see
  * src/lib/push/subscription.ts); p256dh and auth encrypt the messages.
+ * Endpoints can be up to 2048 characters, too long for a MySQL index, so
+ * uniqueness is on its SHA-256 (src/lib/push/service.ts endpointHash()).
  */
-export const pushSubscriptions = pgTable("push_subscriptions", {
-  id: uuid().primaryKey().defaultRandom(),
-  endpoint: text().notNull().unique("push_subscriptions_endpoint_unique"),
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: id(),
+  endpoint: text().notNull(),
+  endpointHash: char({ length: 64 }).notNull().unique("push_subscriptions_endpoint_hash_unique"),
   p256dh: text().notNull(),
   auth: text().notNull(),
-  lastSentAt: timestamp({ withTimezone: true }),
+  lastSentAt: ts(),
   ...timestamps,
 });
 
 /**
  * What a subscription gets told about. Exactly one target is set, matching
- * the kind. Quote and order links are secret, so the path to open from the
- * notification is stored encrypted (context "push_topic.path").
+ * the kind, and quote and order topics carry the path to open (encrypted,
+ * context "push_topic.path"). MySQL can't CHECK columns used by cascading
+ * foreign keys, so savePushTopic() enforces this.
  */
-export const pushTopics = pgTable(
+export const pushTopics = mysqlTable(
   "push_topics",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    subscriptionId: uuid()
+    id: id(),
+    subscriptionId: uuidRef()
       .notNull()
       .references(() => pushSubscriptions.id, { onDelete: "cascade" }),
     kind: pushTopicKind().notNull(),
-    quoteId: uuid().references(() => quotes.id, { onDelete: "cascade" }),
-    orderId: uuid().references(() => orders.id, { onDelete: "cascade" }),
-    customerId: uuid().references(() => customers.id, { onDelete: "cascade" }),
+    quoteId: uuidRef().references(() => quotes.id, { onDelete: "cascade" }),
+    orderId: uuidRef().references(() => orders.id, { onDelete: "cascade" }),
+    customerId: uuidRef().references(() => customers.id, { onDelete: "cascade" }),
     pathEncrypted: text(),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    createdAt: ts().notNull().default(NOW),
   },
   (t) => [
     uniqueIndex("push_topics_unique").on(
       t.subscriptionId,
       t.kind,
-      sql`coalesce(${t.quoteId}, ${t.orderId}, ${t.customerId})`,
+      sql`(coalesce(${t.quoteId}, ${t.orderId}, ${t.customerId}))`,
     ),
-    index("push_topics_quote_idx")
-      .on(t.quoteId)
-      .where(sql`${t.quoteId} is not null`),
-    index("push_topics_order_idx")
-      .on(t.orderId)
-      .where(sql`${t.orderId} is not null`),
-    index("push_topics_customer_idx")
-      .on(t.customerId)
-      .where(sql`${t.customerId} is not null`),
-    check(
-      "push_topics_target_check",
-      sql`(${t.kind} = 'quote' and ${t.quoteId} is not null and ${t.orderId} is null and ${t.customerId} is null and ${t.pathEncrypted} is not null)
-        or (${t.kind} = 'order' and ${t.orderId} is not null and ${t.quoteId} is null and ${t.customerId} is null and ${t.pathEncrypted} is not null)
-        or (${t.kind} = 'price_alerts' and ${t.customerId} is not null and ${t.quoteId} is null and ${t.orderId} is null)`,
-    ),
+    index("push_topics_quote_idx").on(t.quoteId),
+    index("push_topics_order_idx").on(t.orderId),
+    index("push_topics_customer_idx").on(t.customerId),
   ],
 );

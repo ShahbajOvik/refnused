@@ -56,7 +56,7 @@ beforeAll(async () => {
   const [staff] = await db
     .insert(staffUsers)
     .values({ email: "manager@example.co.uk", name: "Morgan Manager", role: "manager" })
-    .returning({ id: staffUsers.id });
+    .$returningId();
   staffId = staff!.id;
   alex = (
     await db.select({ id: customers.id }).from(customers).where(eq(customers.email, DEMO.quotes))
@@ -427,7 +427,7 @@ describe("orders, refunds and requests", () => {
         reason: "changed_mind",
         description: "Changed my mind about it.",
       })
-      .returning();
+      .$returningId();
     await expect(
       decideRequest(db, { requestId: request!.id, decision: "completed", note: null, staffId }),
     ).rejects.toThrow(ActionError);

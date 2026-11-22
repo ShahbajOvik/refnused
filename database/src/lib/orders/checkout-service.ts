@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt } from "node:crypto";
+import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 
 import { and, eq, inArray, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import {
   stores,
   type PostalAddress,
 } from "../../db/schema";
+import { affectedRows, isUniqueViolation } from "../../db/results";
 import type { AppDb } from "../../db/types";
 import { DELIVERY_OPTIONS } from "../../config/shop";
 import { recordAudit, type RequestMeta } from "../audit";
@@ -413,12 +414,11 @@ export async function releaseOrders(
       continue;
     }
     await db.transaction(async (tx) => {
-      const [cancelled] = await tx
+      const cancelled = await tx
         .update(orders)
         .set({ status: "cancelled", expiresAt: null })
-        .where(and(eq(orders.id, orderId), eq(orders.status, "pending_payment")))
-        .returning({ id: orders.id });
-      if (!cancelled) return;
+        .where(and(eq(orders.id, orderId), eq(orders.status, "pending_payment")));
+      if (!affectedRows(cancelled)) return;
       await tx
         .update(payments)
         .set({ status: "cancelled" })
@@ -534,10 +534,10 @@ export async function startCheckout(
 
       let created: { id: string; orderNumber: string } | undefined;
       for (let attempt = 0; attempt < 5 && !created; attempt++) {
-        [created] = await tx
-          .insert(orders)
-          .values({
-            orderNumber: generateOrderNumber(),
+        const candidate = { id: randomUUID(), orderNumber: generateOrderNumber() };
+        try {
+          await tx.insert(orders).values({
+            ...candidate,
             customerId: customer.id,
             email: input.email,
             contactName: input.name,
@@ -557,9 +557,13 @@ export async function startCheckout(
             accessTokenHash: hashAccessToken(accessToken),
             accessTokenEncrypted: options.cipher.encrypt(accessToken, ACCESS_TOKEN_CONTEXT),
             expiresAt,
-          })
-          .onConflictDoNothing({ target: orders.orderNumber })
-          .returning({ id: orders.id, orderNumber: orders.orderNumber });
+          });
+          created = candidate;
+        } catch (error) {
+          // Order number already taken: try another. (MySQL rolls back just
+          // the failed statement, not the transaction.)
+          if (!isUniqueViolation(error, "orders_order_number_unique")) throw error;
+        }
       }
       if (!created) throw new Error("Could not generate a unique order number");
 
@@ -601,10 +605,7 @@ export async function startCheckout(
       return { ok: false, reason: "unavailable", unavailableProductIds: productIds };
     }
     // Another live order took the trade-in quote in the meantime.
-    if (
-      (error as { cause?: { code?: string } }).cause?.code === "23505" ||
-      (error as { code?: string }).code === "23505"
-    ) {
+    if (isUniqueViolation(error, "orders_trade_in_quote_unique")) {
       return { ok: false, reason: "trade_in_invalid", tradeIn: { ok: false, reason: "in_use" } };
     }
     throw error;

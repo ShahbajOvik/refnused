@@ -1,26 +1,26 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
   index,
-  integer,
-  pgTable,
+  int,
+  mysqlTable,
   smallint,
   text,
-  timestamp,
   unique,
-  uuid,
-} from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/mysql-core";
 
-import { identifierType, timestamps, tradeInGrade } from "./_shared";
+import { id, identifierType, NOW, timestamps, tradeInGrade, ts, uuidRef } from "./_shared";
 import { staffUsers } from "./people";
 
-export const brands = pgTable("brands", {
-  id: uuid().primaryKey().defaultRandom(),
-  name: text().notNull().unique(),
-  slug: text().notNull().unique(),
+export const brands = mysqlTable("brands", {
+  id: id(),
+  name: varchar({ length: 100 }).notNull().unique(),
+  slug: varchar({ length: 100 }).notNull().unique(),
   logoUrl: text(),
-  sortOrder: integer().notNull().default(0),
+  sortOrder: int().notNull().default(0),
   ...timestamps,
 });
 
@@ -28,15 +28,15 @@ export const brands = pgTable("brands", {
  * What we sell, e.g. Phones or Laptops. Created in /admin/catalogue. The flags
  * decide what device intake asks for. Trade-ins are for IMEI categories only.
  */
-export const categories = pgTable(
+export const categories = mysqlTable(
   "categories",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    name: text().notNull().unique(),
+    id: id(),
+    name: varchar({ length: 100 }).notNull().unique(),
     /** URL slug for /shop/category/[slug]. Never changes. */
-    slug: text().notNull().unique(),
+    slug: varchar({ length: 100 }).notNull().unique(),
     description: text(),
-    sortOrder: integer().notNull().default(0),
+    sortOrder: int().notNull().default(0),
     identifierType: identifierType().notNull().default("serial"),
     hasStorage: boolean().notNull().default(true),
     hasBattery: boolean().notNull().default(true),
@@ -45,23 +45,24 @@ export const categories = pgTable(
     ...timestamps,
   },
   (t) => [
-    check("categories_slug_check", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+    // 'c': case-sensitive, so no capitals despite the case-insensitive collation.
+    check("categories_slug_check", sql`regexp_like(${t.slug}, '^[a-z0-9]+(-[a-z0-9]+)*$', 'c')`),
     check("categories_imei_storage_check", sql`${t.identifierType} <> 'imei' or ${t.hasStorage}`),
   ],
 );
 
-export const deviceModels = pgTable(
+export const deviceModels = mysqlTable(
   "device_models",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    categoryId: uuid()
+    id: id(),
+    categoryId: uuidRef()
       .notNull()
       .references(() => categories.id, { onDelete: "restrict" }),
-    brandId: uuid()
+    brandId: uuidRef()
       .notNull()
       .references(() => brands.id, { onDelete: "restrict" }),
-    name: text().notNull(),
-    slug: text().notNull().unique(),
+    name: varchar({ length: 150 }).notNull(),
+    slug: varchar({ length: 150 }).notNull().unique(),
     releaseYear: smallint().notNull(),
     /** R2 URL of the static product image (also the 3D fallback). */
     imageUrl: text(),
@@ -77,50 +78,55 @@ export const deviceModels = pgTable(
   ],
 );
 
-export const modelVariants = pgTable(
+export const modelVariants = mysqlTable(
   "model_variants",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    modelId: uuid()
+    id: id(),
+    modelId: uuidRef()
       .notNull()
       .references(() => deviceModels.id, { onDelete: "cascade" }),
     /** Null for items without storage, such as chargers. */
-    storageGb: integer(),
+    storageGb: int(),
     /** Free text for other specs, e.g. "16GB RAM, Intel Core i7". Empty if none. */
-    configuration: text().notNull().default(""),
-    colour: text().notNull(),
+    configuration: varchar({ length: 255 }).notNull().default(""),
+    colour: varchar({ length: 64 }).notNull(),
     /** Swatch colour for the UI, e.g. #1d1d1f. */
-    colourHex: text(),
+    colourHex: varchar({ length: 7 }),
     isActive: boolean().notNull().default(true),
     ...timestamps,
   },
   (t) => [
-    unique("model_variants_model_options_unique")
-      .on(t.modelId, t.storageGb, t.configuration, t.colour)
-      .nullsNotDistinct(),
+    // Unique options per model; "no storage" counts as one value (-1), not
+    // as distinct NULLs.
+    uniqueIndex("model_variants_model_options_unique").on(
+      t.modelId,
+      sql`(coalesce(${t.storageGb}, -1))`,
+      t.configuration,
+      t.colour,
+    ),
     check("model_variants_storage_check", sql`${t.storageGb} is null or ${t.storageGb} > 0`),
     check(
       "model_variants_colour_hex_check",
-      sql`${t.colourHex} is null or ${t.colourHex} ~ '^#[0-9a-fA-F]{6}$'`,
+      sql`${t.colourHex} is null or regexp_like(${t.colourHex}, '^#[0-9a-fA-F]{6}$')`,
     ),
   ],
 );
 
 /** What we pay for a variant in a given condition. One row per variant and grade. */
-export const tradeInPrices = pgTable(
+export const tradeInPrices = mysqlTable(
   "trade_in_prices",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    variantId: uuid()
+    id: id(),
+    variantId: uuidRef()
       .notNull()
       .references(() => modelVariants.id, { onDelete: "cascade" }),
     grade: tradeInGrade().notNull(),
-    pricePence: integer().notNull(),
+    pricePence: int().notNull(),
     /** Null for system/seeded prices. Every change is also written to audit_log. */
-    updatedBy: uuid().references(() => staffUsers.id, { onDelete: "set null" }),
-    updatedAt: timestamp({ withTimezone: true })
+    updatedBy: uuidRef().references(() => staffUsers.id, { onDelete: "set null" }),
+    updatedAt: ts()
       .notNull()
-      .defaultNow()
+      .default(NOW)
       .$onUpdate(() => new Date()),
   },
   (t) => [

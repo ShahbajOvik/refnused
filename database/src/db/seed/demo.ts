@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { hashPassword } from "../../auth/password";
 import * as schema from "../schema";
@@ -82,19 +82,16 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
     return result;
   }
 
-  const [inspector] = await db
+  await db
     .insert(schema.staffUsers)
     .values({ email: "demo.inspector@example.co.uk", name: "Demo Inspector", role: "staff" })
-    .onConflictDoNothing()
-    .returning({ id: schema.staffUsers.id });
-  const staffId =
-    inspector?.id ??
-    (
-      await db
-        .select({ id: schema.staffUsers.id })
-        .from(schema.staffUsers)
-        .where(eq(schema.staffUsers.email, "demo.inspector@example.co.uk"))
-    )[0]!.id;
+    .onDuplicateKeyUpdate({ set: { email: sql`${schema.staffUsers.email}` } });
+  const staffId = (
+    await db
+      .select({ id: schema.staffUsers.id })
+      .from(schema.staffUsers)
+      .where(eq(schema.staffUsers.email, "demo.inspector@example.co.uk"))
+  )[0]!.id;
 
   async function inspect(quoteId: string, revisedPricePence: number | null) {
     await db
@@ -167,7 +164,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
         listedAt: new Date(now.getTime() - 30 * DAY),
         soldAt: new Date(now.getTime() - 3 * DAY),
       })
-      .returning({ id: schema.products.id });
+      .$returningId();
     return row!.id;
   }
 
@@ -220,7 +217,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
           input.status === "ready_for_collection" ? new Date(placedAt.getTime() + DAY / 4) : null,
         completedAt: input.status === "completed" ? new Date(placedAt.getTime() + 3 * DAY) : null,
       })
-      .returning({ id: schema.orders.id });
+      .$returningId();
     await db.insert(schema.orderItems).values({
       orderId: row!.id,
       productId: input.productId,
@@ -260,7 +257,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
   const [dee] = await db
     .insert(schema.customers)
     .values({ email: DEMO.deletable, name: "Dee Leet", phone: "+447700900222" })
-    .returning({ id: schema.customers.id });
+    .$returningId();
   await order({
     customerId: dee!.id,
     email: DEMO.deletable,
@@ -301,7 +298,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
         totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
         totpEnabledAt: now,
       })
-      .onConflictDoNothing();
+      .onDuplicateKeyUpdate({ set: { email: sql`${schema.staffUsers.email}` } });
   }
   await db
     .insert(schema.staffUsers)
@@ -314,7 +311,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
       totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
       totpEnabledAt: now,
     })
-    .onConflictDoNothing();
+    .onDuplicateKeyUpdate({ set: { email: sql`${schema.staffUsers.email}` } });
 
   // Store details for the store pages (test data only; real hours are set in /admin/stores).
   const weekday = { opens: "09:00", closes: "17:30" };

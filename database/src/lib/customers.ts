@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { customers } from "../db/schema";
 import type { AppDb } from "../db/types";
@@ -12,13 +12,14 @@ export async function findOrCreateCustomer(
   const [existing] = await db
     .select({ id: customers.id, name: customers.name, phone: customers.phone })
     .from(customers)
-    .where(sql`lower(${customers.email}) = ${email}`);
+    // The column's collation is case-insensitive (and indexed).
+    .where(eq(customers.email, email));
   if (!existing) {
     const [created] = await db
       .insert(customers)
       .values({ email, name: input.name ?? null, phone: input.phone ?? null })
-      .returning({ id: customers.id });
-    return created!;
+      .$returningId();
+    return { id: created!.id };
   }
   if ((!existing.name && input.name) || (!existing.phone && input.phone)) {
     await db

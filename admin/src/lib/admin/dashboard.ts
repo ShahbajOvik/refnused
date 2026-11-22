@@ -1,5 +1,7 @@
 import { and, asc, eq, gte, inArray, sql, sum } from "drizzle-orm";
 
+import { mysqlDatetime } from "@refnused/database/db/datetime";
+
 import { orders, payments, payouts, products, quotes, stores } from "@refnused/database/db/schema";
 import type { AppDb } from "@refnused/database/db/types";
 
@@ -44,26 +46,26 @@ export async function getDashboard(
 
   const [quoteRow] = await db
     .select({
-      acceptedToday: sql<number>`count(*) filter (where ${quotes.acceptedAt} >= ${today.toISOString()})::int`,
-      receivedToday: sql<number>`count(*) filter (where ${quotes.receivedAt} >= ${today.toISOString()})::int`,
-      toInspect: sql<number>`count(*) filter (where ${quotes.status} in ('received', 'inspecting'))::int`,
-      awaitingCustomer: sql<number>`count(*) filter (where ${quotes.status} = 'revised')::int`,
+      acceptedToday: sql<number>`cast(sum(case when ${quotes.acceptedAt} >= cast(${mysqlDatetime(today)} as datetime(3)) then 1 else 0 end) as signed)`,
+      receivedToday: sql<number>`cast(sum(case when ${quotes.receivedAt} >= cast(${mysqlDatetime(today)} as datetime(3)) then 1 else 0 end) as signed)`,
+      toInspect: sql<number>`cast(sum(case when ${quotes.status} in ('received', 'inspecting') then 1 else 0 end) as signed)`,
+      awaitingCustomer: sql<number>`cast(sum(case when ${quotes.status} = 'revised' then 1 else 0 end) as signed)`,
     })
     .from(quotes);
 
   const [orderRow] = await db
     .select({
-      paidToday: sql<number>`count(*) filter (where ${orders.placedAt} >= ${today.toISOString()})::int`,
-      toFulfil: sql<number>`count(*) filter (where ${orders.status} in ('paid', 'processing'))::int`,
-      readyToCollect: sql<number>`count(*) filter (where ${orders.status} = 'ready_for_collection')::int`,
+      paidToday: sql<number>`cast(sum(case when ${orders.placedAt} >= cast(${mysqlDatetime(today)} as datetime(3)) then 1 else 0 end) as signed)`,
+      toFulfil: sql<number>`cast(sum(case when ${orders.status} in ('paid', 'processing') then 1 else 0 end) as signed)`,
+      readyToCollect: sql<number>`cast(sum(case when ${orders.status} = 'ready_for_collection' then 1 else 0 end) as signed)`,
     })
     .from(orders);
 
   const [payoutRow] = await db
     .select({
-      readyCount: sql<number>`count(*) filter (where ${payouts.status} = 'pending' and ${quotes.status} = 'approved')::int`,
-      readyPence: sql<number>`coalesce(sum(${payouts.amountPence}) filter (where ${payouts.status} = 'pending' and ${quotes.status} = 'approved'), 0)::int`,
-      paidTodayPence: sql<number>`coalesce(sum(${payouts.amountPence}) filter (where ${payouts.status} = 'paid' and ${payouts.paidAt} >= ${today.toISOString()}), 0)::int`,
+      readyCount: sql<number>`cast(sum(case when ${payouts.status} = 'pending' and ${quotes.status} = 'approved' then 1 else 0 end) as signed)`,
+      readyPence: sql<number>`cast(coalesce(sum(case when ${payouts.status} = 'pending' and ${quotes.status} = 'approved' then ${payouts.amountPence} end), 0) as signed)`,
+      paidTodayPence: sql<number>`cast(coalesce(sum(case when ${payouts.status} = 'paid' and ${payouts.paidAt} >= cast(${mysqlDatetime(today)} as datetime(3)) then ${payouts.amountPence} end), 0) as signed)`,
     })
     .from(payouts)
     .innerJoin(quotes, eq(payouts.quoteId, quotes.id));
@@ -72,9 +74,9 @@ export async function getDashboard(
     .select({
       storeName: stores.name,
       storeTown: stores.town,
-      listed: sql<number>`count(${products.id}) filter (where ${products.status} = 'listed')::int`,
-      valuePence: sql<number>`coalesce(sum(${products.pricePence}) filter (where ${products.status} = 'listed'), 0)::int`,
-      drafts: sql<number>`count(${products.id}) filter (where ${products.status} = 'draft')::int`,
+      listed: sql<number>`cast(sum(case when ${products.status} = 'listed' then 1 else 0 end) as signed)`,
+      valuePence: sql<number>`cast(coalesce(sum(case when ${products.status} = 'listed' then ${products.pricePence} end), 0) as signed)`,
+      drafts: sql<number>`cast(sum(case when ${products.status} = 'draft' then 1 else 0 end) as signed)`,
     })
     .from(stores)
     .leftJoin(products, eq(products.storeId, stores.id))

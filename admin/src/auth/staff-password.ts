@@ -121,18 +121,18 @@ export async function signInStaffWithPassword(
     return { ok: false, reason: "invalid" };
   }
 
-  const [session] = await db
-    .insert(staffSessions)
-    .values({
-      sessionToken: randomBytes(32).toString("hex"),
-      userId: staff.id,
-      expires: new Date(now.getTime() + STAFF_SESSION_MAX_AGE_SECONDS * 1000),
-      createdAt: now,
-      lastActiveAt: now,
-    })
-    .returning({ sessionToken: staffSessions.sessionToken, expires: staffSessions.expires });
+  const session = {
+    sessionToken: randomBytes(32).toString("hex"),
+    expires: new Date(now.getTime() + STAFF_SESSION_MAX_AGE_SECONDS * 1000),
+  };
+  await db.insert(staffSessions).values({
+    ...session,
+    userId: staff.id,
+    createdAt: now,
+    lastActiveAt: now,
+  });
   await logSignIn(db, { area: "staff", userId: staff.id, provider: "password", meta });
-  return { ok: true, session: session! };
+  return { ok: true, session };
 }
 
 /** Stores a new hash, ends the person's other sessions and audits the change. */
@@ -178,7 +178,7 @@ async function writeStaffPassword(
 
 export async function staffHasPassword(db: AppDb, staffId: string) {
   const [staff] = await db
-    .select({ hasPassword: sql<boolean>`${staffUsers.passwordHash} is not null` })
+    .select({ hasPassword: sql<boolean>`${staffUsers.passwordHash} is not null`.mapWith(Boolean) })
     .from(staffUsers)
     .where(eq(staffUsers.id, staffId));
   return staff?.hasPassword === true;

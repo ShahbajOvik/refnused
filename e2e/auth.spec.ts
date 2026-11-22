@@ -5,8 +5,8 @@ import { ADMIN_URL } from "../playwright.config";
 
 /*
  * Route protection without a database: these requests carry no session
- * cookie, so nothing reaches Postgres. Signed-in flows (2FA, idle timeout,
- * roles) are covered by the Vitest integration tests against PGlite.
+ * cookie, so nothing reaches the database. Signed-in flows (2FA, idle timeout,
+ * roles) are covered by the Vitest integration tests against MySQL.
  */
 
 test.describe("route protection", () => {

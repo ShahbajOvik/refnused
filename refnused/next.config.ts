@@ -1,7 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
-import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
+import { loadRootEnv } from "../database/src/config/root-env";
 import {
   baseSecurityHeaders,
   buildCsp,
@@ -10,7 +10,7 @@ import {
 
 // One .env.local at the repo root is shared by all apps (Next.js only
 // reads the app's own folder). Values already set (e.g. on Vercel) win.
-loadEnvConfig(`${process.cwd()}/..`, process.env.NODE_ENV !== "production");
+loadRootEnv(`${process.cwd()}/..`);
 
 const mediaBase = process.env.NEXT_PUBLIC_MEDIA_BASE_URL?.replace(/\/+$/, "");
 

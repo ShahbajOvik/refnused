@@ -51,7 +51,7 @@ Store data lives in the `stores` table (edited in the admin at `/admin/stores`);
 - **UI:** Tailwind CSS, shadcn/ui
 - **Animation:** Motion, GSAP ScrollTrigger
 - **3D:** React Three Fiber + drei
-- **Data:** PostgreSQL + Drizzle ORM
+- **Data:** MySQL 8.0.16+ (InnoDB, utf8mb4) + Drizzle ORM (`mysql2` driver)
 - **Auth:** Auth.js
 - **Payments:** Stripe
 - **Validation:** Zod
@@ -100,7 +100,12 @@ Store data lives in the `stores` table (edited in the admin at `/admin/stores`);
 ### Database
 
 - Schema lives in `database/src/db/schema/`. Change it, then run `npm run db:generate` (from the repo root) to create a migration in `database/drizzle/`. Never edit a migration that has been applied anywhere; add a new one.
-- Store money as integer pence (`*Pence` columns). Never use floats for money.
+- Store money as integer pence (`*Pence` columns). Never use floats for money. MySQL returns
+  `SUM`/`AVG` as decimal strings: `cast(... as signed)` them.
+- MySQL has no `RETURNING` or partial indexes: use `$returningId()`, `affectedRows()` and the
+  error helpers in `database/src/db/results.ts`, and functional unique indexes whose expression
+  is NULL when the rule doesn't apply. Use `concat()`, never `||`. Always generate migrations with
+  `npm run db:generate` (it repairs drizzle-kit's mixed column/expression indexes).
 - Import `db` from `@refnused/database/db` in server code only.
 - Bank details are encrypted at the application level (`database/src/lib/crypto/bank-details.ts`). Never log, return to the client, or write to `audit_log` decrypted values.
 - Write an `audit_log` entry for price changes, quote/inspection decisions, payouts, refunds and staff/role changes.

@@ -1,96 +1,12 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "mysql",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1794895502275,
-      "tag": "0000_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1794896369295,
-      "tag": "0001_auth",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1794896388090,
-      "tag": "0002_drop_staff_password_hash",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1794910896323,
-      "tag": "0003_sell_flow",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1794915940514,
-      "tag": "0004_shop",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1794921480728,
-      "tag": "0005_checkout",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1794922376778,
-      "tag": "0006_order_access_token",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1794930353514,
-      "tag": "0007_account",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1794974832923,
-      "tag": "0008_admin",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1794984015118,
-      "tag": "0009_store_pages",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1795015125195,
-      "tag": "0010_groovy_paladin",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1795027711318,
-      "tag": "0011_steady_jimmy_woo",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1795194571096,
-      "tag": "0012_push_notifications",
+      "version": "5",
+      "when": 1795342909540,
+      "tag": "0000_initial_mysql",
       "breakpoints": true
     }
   ]

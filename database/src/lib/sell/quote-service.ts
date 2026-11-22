@@ -1,9 +1,10 @@
-import { createHash, randomBytes, randomInt } from "node:crypto";
+import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { brands, deviceModels, modelVariants, payouts, quotes, stores } from "../../db/schema";
+import { isUniqueViolation } from "../../db/results";
 import type { AppDb } from "../../db/types";
 import { findOrCreateCustomer } from "../customers";
 import { recordAudit, type RequestMeta } from "../audit";
@@ -141,10 +142,10 @@ export async function createQuote(
     // Retry on the (unlikely) chance of a duplicate reference.
     for (let attempt = 0; attempt < 5; attempt++) {
       const reference = generateQuoteReference();
-      const [quote] = await tx
-        .insert(quotes)
-        .values({
-          reference,
+      const quote = { id: randomUUID(), reference };
+      try {
+        await tx.insert(quotes).values({
+          ...quote,
           customerId: customer!.id,
           variantId: input.variantId,
           quotedGrade: offer.grade,
@@ -170,10 +171,12 @@ export async function createQuote(
           trackingTokenHash: hashTrackingToken(trackingToken),
           ownershipDeclaredAt: now,
           activationLockOffDeclaredAt: now,
-        })
-        .onConflictDoNothing({ target: quotes.reference })
-        .returning({ id: quotes.id, reference: quotes.reference });
-      if (!quote) continue;
+        });
+      } catch (error) {
+        // MySQL rolls back only the failed statement; try another reference.
+        if (isUniqueViolation(error, "quotes_reference_unique")) continue;
+        throw error;
+      }
 
       await tx.insert(payouts).values({
         quoteId: quote.id,

@@ -114,7 +114,7 @@ export async function exportPayoutBatch(
         ),
       )
       .orderBy(payouts.createdAt)
-      .for("update", { of: payouts });
+      .for("update"); // MySQL: locks the joined rows too
     if (!rows.length) return null;
 
     const batchId = `PB-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${randomBytes(3).toString("hex").toUpperCase()}`;
@@ -183,7 +183,7 @@ export async function markPayoutsPaid(
       .from(payouts)
       .innerJoin(quotes, eq(payouts.quoteId, quotes.id))
       .where(inArray(payouts.id, input.payoutIds))
-      .for("update", { of: payouts });
+      .for("update"); // MySQL: locks the joined rows too
     const payable = rows.filter(
       (r) => (r.status === "pending" || r.status === "processing") && r.quoteStatus === "approved",
     );

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -28,7 +28,7 @@ import { imeiSchema } from "@refnused/database/lib/validation/uk";
  */
 
 /** "128GB, 16GB RAM, Black", in SQL. concat_ws skips the options an item lacks. */
-const variantOptionsSql = sql<string>`concat_ws(', ', ${modelVariants.storageGb} || 'GB', nullif(${modelVariants.configuration}, ''), ${modelVariants.colour})`;
+const variantOptionsSql = sql<string>`concat_ws(', ', concat(${modelVariants.storageGb}, 'GB'), nullif(${modelVariants.configuration}, ''), ${modelVariants.colour})`;
 
 const blankToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
 
@@ -99,7 +99,7 @@ export async function lookupImei(db: AppDb, imei: string): Promise<ImeiLookup> {
         reference: quotes.reference,
         status: quotes.status,
         variantId: quotes.variantId,
-        device: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${modelVariants.storageGb} || 'GB, ' || ${modelVariants.colour}`,
+        device: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name}, ', ', ${modelVariants.storageGb}, 'GB, ', ${modelVariants.colour})`,
         grade: sql<
           string | null
         >`(select ${inspections.actualGrade} from ${inspections} where ${inspections.quoteId} = ${quotes.id} order by ${inspections.inspectedAt} desc limit 1)`,
@@ -235,14 +235,15 @@ export async function createProductFromIntake(
     if (!store) throw new ActionError("Choose the store.");
 
     const status = input.publish ? "listed" : "draft";
+    const slug = productSlug({
+      modelSlug: variant.modelSlug,
+      storageGb: variant.storageGb,
+      colour: variant.colour,
+    });
     const [row] = await tx
       .insert(products)
       .values({
-        slug: productSlug({
-          modelSlug: variant.modelSlug,
-          storageGb: variant.storageGb,
-          colour: variant.colour,
-        }),
+        slug,
         variantId: input.variantId,
         ...identifier,
         grade: input.grade,
@@ -257,7 +258,7 @@ export async function createProductFromIntake(
         sourceQuoteId: input.sourceQuoteId ?? null,
         listedAt: input.publish ? now : null,
       })
-      .returning({ id: products.id, slug: products.slug });
+      .$returningId();
     await recordAudit(
       tx,
       {
@@ -281,7 +282,7 @@ export async function createProductFromIntake(
       },
       meta,
     );
-    return { id: row!.id, slug: row!.slug, brandSlug: variant.brandSlug, status };
+    return { id: row!.id, slug, brandSlug: variant.brandSlug, status };
   });
 }
 
@@ -315,16 +316,16 @@ export async function listProductsAdmin(
       id: products.id,
       slug: products.slug,
       brandSlug: brands.slug,
-      device: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${variantOptionsSql}`,
+      device: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name}, ', ', ${variantOptionsSql})`,
       identifier: sql<string>`coalesce(${products.imei}, ${products.serialNumber})`,
       grade: products.grade,
       batteryHealthPercent: products.batteryHealthPercent,
       pricePence: products.pricePence,
       status: products.status,
-      storeName: sql<string>`${stores.name} || ', ' || ${stores.town}`,
+      storeName: sql<string>`concat(${stores.name}, ', ', ${stores.town})`,
       certificateRequired: products.dataWipeRequired,
-      hasCertificate: sql<boolean>`${products.dataWipeCertificateKey} is not null`,
-      photos: sql<number>`jsonb_array_length(${products.photos})::int`,
+      hasCertificate: sql<boolean>`${products.dataWipeCertificateKey} is not null`.mapWith(Boolean),
+      photos: sql<number>`json_length(${products.photos})`,
       listedAt: products.listedAt,
     })
     .from(products)
@@ -341,8 +342,8 @@ export async function listProductsAdmin(
           ? or(
               eq(products.imei, q),
               eq(products.serialNumber, q.toUpperCase()),
-              ilike(products.slug, `%${q}%`),
-              ilike(deviceModels.name, `%${q}%`),
+              like(products.slug, `%${q}%`),
+              like(deviceModels.name, `%${q}%`),
             )
           : undefined,
       ),

@@ -40,20 +40,20 @@ The design system lives at http://localhost:3000/styleguide.
 
 ## Scripts
 
-| Command                          | What it does                                                    |
-| -------------------------------- | --------------------------------------------------------------- |
-| `npm run dev` / `dev:admin`      | Start the website / admin dev server                            |
-| `npm run build`                  | Build every app (the website also builds its service worker)    |
-| `npm run check`                  | Typecheck, lint, format check and unit tests, in every package  |
-| `npm run typecheck`              | `tsc` in every package                                          |
-| `npm run lint`                   | ESLint in every package                                         |
-| `npm run format`                 | Prettier (sorts Tailwind classes too)                           |
-| `npm test`                       | Vitest unit tests in every package                              |
-| `npm run test:e2e`               | Playwright: starts a real Postgres, builds and serves both apps |
-| `npm run budget -w refnused`     | Checks initial JS per page is under 200KB (run after a build)   |
-| `npm run push:keys`              | Generates a VAPID key pair for Web Push                         |
-| `npm run pwa:assets -w refnused` | Renders the PWA icons (add `-- --screenshots` for screenshots)  |
-| `npm run staff:create`           | Creates a staff account (admin)                                 |
+| Command                          | What it does                                                   |
+| -------------------------------- | -------------------------------------------------------------- |
+| `npm run dev` / `dev:admin`      | Start the website / admin dev server                           |
+| `npm run build`                  | Build every app (the website also builds its service worker)   |
+| `npm run check`                  | Typecheck, lint, format check and unit tests, in every package |
+| `npm run typecheck`              | `tsc` in every package                                         |
+| `npm run lint`                   | ESLint in every package                                        |
+| `npm run format`                 | Prettier (sorts Tailwind classes too)                          |
+| `npm test`                       | Vitest unit tests in every package                             |
+| `npm run test:e2e`               | Playwright: starts a real MySQL, builds and serves both apps   |
+| `npm run budget -w refnused`     | Checks initial JS per page is under 200KB (run after a build)  |
+| `npm run push:keys`              | Generates a VAPID key pair for Web Push                        |
+| `npm run pwa:assets -w refnused` | Renders the PWA icons (add `-- --screenshots` for screenshots) |
+| `npm run staff:create`           | Creates a staff account (admin)                                |
 
 First time running e2e tests: `npx playwright install chromium`.
 
@@ -72,29 +72,40 @@ Set the shared variables from `.env.example` in both, with the same `REVALIDATE_
 
 ## Database
 
-PostgreSQL with Drizzle ORM, in the `database/` package. Schema in
-[database/src/db/schema/](database/src/db/schema/), migrations in
+MySQL 8.0.16 or newer (InnoDB, utf8mb4) with Drizzle ORM and the `mysql2` driver, in the
+`database/` package. Schema in [database/src/db/schema/](database/src/db/schema/), migrations in
 [database/drizzle/](database/drizzle/).
 
-1. Get a Postgres database: [Postgres.app](https://postgresapp.com) or `brew install postgresql@17`
-   locally, or a free [Neon](https://neon.tech) database (pick the London region).
-2. Set `DATABASE_URL` in `.env.local`.
+1. Get a MySQL 8 database. Locally, the easiest is `npm run db:dev-server` (leave it running): the
+   official MySQL 8 binary, no install or Docker, data kept in `.mysql-dev/`, at
+   `mysql://root@127.0.0.1:3306/refurbednused`. Or `brew install mysql@8.4`, or your host's.
+   MariaDB is not supported (the schema uses MySQL 8 functional indexes and CHECK constraints).
+2. Set `DATABASE_URL` in `.env.local`, e.g. `mysql://user:password@localhost:3306/refurbednused`.
+   For a remote server, require TLS: append `?ssl={"rejectUnauthorized":true}`.
 3. Generate an encryption key with `npm run key:generate` and set `FIELD_ENCRYPTION_KEYS`.
 4. Run `npm run db:migrate`, then `npm run db:seed`.
 
-| Command               | What it does                                                |
-| --------------------- | ----------------------------------------------------------- |
-| `npm run db:generate` | Create a migration from schema changes                      |
-| `npm run db:migrate`  | Apply pending migrations                                    |
-| `npm run db:seed`     | Seed stores, 10 models, variants and sample trade-in prices |
-| `npm run db:studio`   | Browse data in Drizzle Studio                               |
-| `npm run db:check`    | Check migrations are consistent                             |
+| Command                     | What it does                                                |
+| --------------------------- | ----------------------------------------------------------- |
+| `npm run db:generate`       | Create a migration from schema changes                      |
+| `npm run db:migrate`        | Apply pending migrations                                    |
+| `npm run db:seed`           | Seed stores, 10 models, variants and sample trade-in prices |
+| `npm run db:seed -- --demo` | Also seed the demo customers and staff (never production)   |
+| `npm run db:studio`         | Browse data in Drizzle Studio                               |
+| `npm run db:check`          | Check migrations are consistent                             |
 
 The seed is safe to re-run. It never overwrites trade-in prices that already exist, and it
-refuses to run against production. Tests apply the migrations to an in-memory Postgres
-(PGlite), so `npm test` needs no database. The e2e tests start a real PostgreSQL
-(`npm run db:e2e-server`, via `embedded-postgres`: no Docker needed), migrate and seed it, and
-run both apps against it with the production driver.
+refuses to run against production. `npm test` needs no database: Vitest starts a real MySQL 8
+(`mysql-memory-server`, the official binaries, downloaded once and cached; no Docker) and gives
+each test file its own freshly migrated database. Set `TEST_MYSQL_VERSION` to test another
+version. The e2e tests do the same (`npm run db:e2e-server`), seed it, and run both apps against
+it with the production driver.
+
+MySQL notes for anyone changing queries: there is no `RETURNING` (use `$returningId()` or
+`affectedRows()` from `database/src/db/results.ts`), `||` means OR (use `concat()`), and
+"unique where …" rules are functional unique indexes on an expression that is NULL when the rule
+doesn't apply. `npm run db:generate` repairs drizzle-kit's output for indexes that mix columns
+and expressions.
 
 Bank details on payouts are encrypted with AES-256-GCM before they reach the database. Only the
 last 4 digits of the account number are stored in clear. To rotate keys, put a new key first in
@@ -110,16 +121,9 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
   `trade_in_prices`; questions, answers, grade caps and deductions in `quote_questions` and
   `quote_answer_options`. The engine is `database/src/lib/sell/pricing.ts`.
 - **Protection**: Zod validation (IMEI Luhn check, UK postcode, phone, sort code and account
-  number), Postgres-backed rate limits, Cloudflare Turnstile, and bank details encrypted at rest.
-- **Builds need a database**, because the sell pages are generated from it. Without Postgres you can
-  use the test snapshot:
-
-  ```bash
-  npm run db:test-snapshot
-  DATABASE_URL=pglite://$PWD/.test-db/snapshot.tar.gz npm run build
-  ```
-
-  `pglite://` is for tests and CI only (refused on Vercel production). E2E tests use it automatically.
+  number), database-backed rate limits, Cloudflare Turnstile, and bank details encrypted at rest.
+- **Builds need a database**, because the sell pages are generated from it: a migrated and seeded
+  MySQL at `DATABASE_URL` (CI uses a MySQL 8 service container).
 
 ## Shop
 
@@ -191,7 +195,7 @@ and privacy.
   trade-in records that must be kept for 6 years.
 - Checkout fills in a signed-in customer's details and default address.
 
-**Testing**: the test snapshot includes demo customers (`database/src/db/seed/demo.ts`). With
+**Testing**: `npm run db:seed -- --demo` and the e2e database add demo customers (`database/src/db/seed/demo.ts`). With
 `EMAIL_OUTBOX_DIR` set (never in production), emails such as sign-in links and codes are also
 written there as JSON; the e2e tests sign in by reading them.
 

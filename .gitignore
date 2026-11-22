@@ -47,8 +47,10 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 
-# PGlite test snapshot (npm run db:test-snapshot)
+# E2E database marker and email outbox (npm run db:e2e-server)
 /.test-db/
+# Local dev MySQL data (npm run db:dev-server)
+/.mysql-dev/
 /.media/
 
 # Service worker (built by npm run build:sw)

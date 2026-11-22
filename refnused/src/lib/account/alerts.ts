@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { brands, deviceModels, priceAlerts, stockAlerts } from "@refnused/database/db/schema";
+import { affectedRows } from "@refnused/database/db/results";
 import type { AppDb } from "@refnused/database/db/types";
 
 /*
@@ -46,7 +47,7 @@ export async function listPriceAlerts(db: AppDb, customerId: string): Promise<Pr
     .select({
       id: priceAlerts.id,
       type: priceAlerts.type,
-      model: sql<string>`${brands.name} || ' ' || ${deviceModels.name}`,
+      model: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name})`,
       modelSlug: deviceModels.slug,
       brandSlug: brands.slug,
       grade: priceAlerts.grade,
@@ -88,7 +89,7 @@ export async function createPriceAlert(
       grade: input.grade,
       targetPricePence: input.targetPounds * 100,
     })
-    .returning({ id: priceAlerts.id });
+    .$returningId();
   return { ok: true, id: row!.id };
 }
 
@@ -101,17 +102,15 @@ export async function setPriceAlertActive(
   const rows = await db
     .update(priceAlerts)
     .set({ isActive })
-    .where(and(eq(priceAlerts.id, id), eq(priceAlerts.customerId, customerId)))
-    .returning({ id: priceAlerts.id });
-  return rows.length > 0;
+    .where(and(eq(priceAlerts.id, id), eq(priceAlerts.customerId, customerId)));
+  return affectedRows(rows) > 0;
 }
 
 export async function deletePriceAlert(db: AppDb, customerId: string, id: string) {
   const rows = await db
     .delete(priceAlerts)
-    .where(and(eq(priceAlerts.id, id), eq(priceAlerts.customerId, customerId)))
-    .returning({ id: priceAlerts.id });
-  return rows.length > 0;
+    .where(and(eq(priceAlerts.id, id), eq(priceAlerts.customerId, customerId)));
+  return affectedRows(rows) > 0;
 }
 
 export type StockAlertView = {
@@ -126,7 +125,7 @@ export async function listStockAlerts(db: AppDb, email: string): Promise<StockAl
   return db
     .select({
       id: stockAlerts.id,
-      model: sql<string>`${brands.name} || ' ' || ${deviceModels.name}`,
+      model: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name})`,
       storageGb: stockAlerts.storageGb,
       createdAt: stockAlerts.createdAt,
     })
@@ -141,9 +140,8 @@ export async function stopStockAlert(db: AppDb, email: string, id: string) {
   const rows = await db
     .update(stockAlerts)
     .set({ isActive: false })
-    .where(and(eq(stockAlerts.id, id), eq(stockAlerts.email, email.toLowerCase())))
-    .returning({ id: stockAlerts.id });
-  return rows.length > 0;
+    .where(and(eq(stockAlerts.id, id), eq(stockAlerts.email, email.toLowerCase())));
+  return affectedRows(rows) > 0;
 }
 
 /** Phones customers can set alerts for. */

@@ -14,11 +14,13 @@ export default defineConfig({
     jsx: { runtime: "automatic" },
   },
   test: {
+    // One real MySQL server for the run (createTestDb() gives each file a database).
+    globalSetup: ["../database/src/test/global-setup.ts"],
     environment: "jsdom",
     setupFiles: ["./vitest.setup"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
-    // DB tests each start an in-memory Postgres and run every migration;
+    // DB tests each create a database on the test MySQL and run every migration;
     // in parallel on a busy machine that can take a while.
     hookTimeout: 180_000,
     coverage: {

@@ -55,7 +55,7 @@ describe("customer sign-in rules", () => {
     const [customer] = await db
       .insert(customers)
       .values({ email: uniqueEmail("c") })
-      .returning();
+      .$returningId();
     await logSignIn(db, { area: "customer", userId: customer!.id, provider: "passkey" });
     expect(await auditActions(customer!.id)).toContain("auth.sign_in");
   });

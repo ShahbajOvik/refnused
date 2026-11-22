@@ -11,8 +11,8 @@ import { publicEnv } from "./env";
  */
 const serverEnvSchema = z
   .object({
-    // pglite:// is for tests and CI builds only (see src/db/client.ts).
-    DATABASE_URL: z.url({ protocol: /^(postgres(ql)?|pglite)$/ }),
+    /** MySQL 8: mysql://user:password@host:3306/database (see src/db/client.ts). */
+    DATABASE_URL: z.url({ protocol: /^mysql$/ }),
     /** Connections per server instance (default 5 in production, 10 otherwise). */
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).optional(),
     AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),

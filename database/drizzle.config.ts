@@ -8,7 +8,7 @@ try {
 }
 
 export default defineConfig({
-  dialect: "postgresql",
+  dialect: "mysql",
   schema: "./src/db/schema",
   out: "./drizzle",
   casing: "snake_case",

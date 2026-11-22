@@ -16,6 +16,7 @@ import {
   stores,
   type PostalAddress,
 } from "../../db/schema";
+import { isUniqueViolation } from "../../db/results";
 import type { AppDb } from "../../db/types";
 import { DELIVERY_OPTIONS } from "../../config/shop";
 import { recordAudit, type RequestMeta } from "../audit";
@@ -387,19 +388,14 @@ export async function createOrderRequest(
   for (let attempt = 0; attempt < 5; attempt++) {
     const reference = requestReference(input.type);
     try {
-      const [created] = await db
-        .insert(orderRequests)
-        .values({
-          reference,
-          orderId: row.orderId,
-          orderItemId: input.orderItemId,
-          type: input.type,
-          reason: input.reason,
-          description: input.description,
-        })
-        .onConflictDoNothing({ target: orderRequests.reference })
-        .returning({ id: orderRequests.id });
-      if (!created) continue;
+      await db.insert(orderRequests).values({
+        reference,
+        orderId: row.orderId,
+        orderItemId: input.orderItemId,
+        type: input.type,
+        reason: input.reason,
+        description: input.description,
+      });
       await recordAudit(
         db,
         {
@@ -414,10 +410,12 @@ export async function createOrderRequest(
       );
       return { ok: true, reference, type: input.type, deadline: eligibility.deadline };
     } catch (error) {
+      // Reference already used: try another.
+      if (isUniqueViolation(error, "order_requests_reference_unique")) continue;
       // order_requests_open_unique: one open request of each type per item.
-      const code =
-        (error as { code?: string }).code ?? (error as { cause?: { code?: string } }).cause?.code;
-      if (code === "23505") return { ok: false, reason: "already_open" };
+      if (isUniqueViolation(error, "order_requests_open_unique")) {
+        return { ok: false, reason: "already_open" };
+      }
       throw error;
     }
   }

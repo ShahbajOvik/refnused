@@ -1,23 +1,45 @@
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
-import { PGlite } from "@electric-sql/pglite";
-import { drizzle } from "drizzle-orm/pglite";
-import { migrate } from "drizzle-orm/pglite/migrator";
+import { migrate } from "drizzle-orm/mysql2/migrator";
+import mysql from "mysql2/promise";
+import { inject } from "vitest";
 
-import * as schema from "../db/schema";
-import type { AppDb } from "../db/types";
+import { createDatabase } from "../db/client";
 import { createFieldCipher, parseKeyring } from "../lib/crypto/field-encryption";
 
-/** A fresh in-memory Postgres with all migrations applied. */
+/**
+ * A fresh, empty MySQL database with every migration applied, on the
+ * server started for this test run (src/test/global-setup.ts). Uses the
+ * production driver (mysql2). close() drops it.
+ */
 export async function createTestDb() {
-  const client = new PGlite();
-  const db = drizzle({ client, schema, casing: "snake_case" });
+  const base = inject("mysqlUrl");
+  const name = `t_${randomBytes(6).toString("hex")}`;
+  const admin = await mysql.createConnection(base);
+  await admin.query(`CREATE DATABASE \`${name}\``);
+  await admin.end();
+  const { db, close } = createDatabase(`${base}${name}`, { max: 5 });
   // Relative to this file, so tests in every app find the migrations.
   await migrate(db, { migrationsFolder: fileURLToPath(new URL("../../drizzle", import.meta.url)) });
-  return { db: db as unknown as AppDb, client, close: () => client.close() };
+  return {
+    db,
+    close: async () => {
+      await close();
+      const cleanup = await mysql.createConnection(base);
+      await cleanup.query(`DROP DATABASE IF EXISTS \`${name}\``);
+      await cleanup.end();
+    },
+  };
 }
 
 export function testCipher() {
   return createFieldCipher(parseKeyring(`k1:${randomBytes(32).toString("base64")}`));
+}
+
+// Set by src/test/global-setup.ts.
+declare module "vitest" {
+  export interface ProvidedContext {
+    mysqlUrl: string;
+  }
 }

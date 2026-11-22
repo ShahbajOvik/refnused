@@ -38,7 +38,7 @@ const PATTERNS = [
   [/\bwhsec_[A-Za-z0-9]{10,}/, "Stripe webhook secret"],
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, "private key"],
   [/\bAKIA[0-9A-Z]{16}\b/, "AWS access key"],
-  [/postgres(?:ql)?:\/\/[^:\s"'/]+:[^@\s"']+@/, "database URL with password"],
+  [/(?:postgres(?:ql)?|mysql):\/\/[^:\s"'/]+:[^@\s"']+@/, "database URL with password"],
   [/\bre_[A-Za-z0-9]{20,}/, "Resend API key"],
   [/\bsntrys_[A-Za-z0-9_]{20,}/, "Sentry auth token"],
 ];

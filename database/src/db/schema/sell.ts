@@ -2,16 +2,16 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  datetime,
   index,
-  integer,
-  pgTable,
+  int,
+  mysqlTable,
   text,
-  timestamp,
   unique,
-  uuid,
-} from "drizzle-orm/pg-core";
+  varchar,
+} from "drizzle-orm/mysql-core";
 
-import { timestamps, tradeInGrade } from "./_shared";
+import { id, timestamps, tradeInGrade, uuidRef } from "./_shared";
 
 /*
  * Trade-in pricing configuration. Everything the pricing engine
@@ -24,42 +24,42 @@ import { timestamps, tradeInGrade } from "./_shared";
  * `deductionPence`. Rounded down to whole pounds, never below zero.
  */
 
-export const quoteQuestions = pgTable(
+export const quoteQuestions = mysqlTable(
   "quote_questions",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: id(),
     /** Stable key stored in quote answers, e.g. "screen". */
-    key: text().notNull().unique("quote_questions_key_unique"),
+    key: varchar({ length: 64 }).notNull().unique("quote_questions_key_unique"),
     /** "device": asked with storage/colour. "condition": one wizard step each. */
-    section: text().notNull(),
+    section: varchar({ length: 16 }).notNull(),
     title: text().notNull(),
     help: text(),
-    sortOrder: integer().notNull().default(0),
+    sortOrder: int().notNull().default(0),
     isActive: boolean().notNull().default(true),
     ...timestamps,
   },
   (t) => [check("quote_questions_section_check", sql`${t.section} in ('device', 'condition')`)],
 );
 
-export const quoteAnswerOptions = pgTable(
+export const quoteAnswerOptions = mysqlTable(
   "quote_answer_options",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    questionId: uuid()
+    id: id(),
+    questionId: uuidRef()
       .notNull()
       .references(() => quoteQuestions.id, { onDelete: "cascade" }),
-    key: text().notNull(),
+    key: varchar({ length: 64 }).notNull(),
     label: text().notNull(),
     description: text(),
     /** Illustration shown with the option, e.g. "screen-cracked". */
-    illustration: text(),
-    sortOrder: integer().notNull().default(0),
+    illustration: varchar({ length: 100 }),
+    sortOrder: int().notNull().default(0),
     /** Worst grade this answer allows. Null: no effect on grade. */
     gradeCap: tradeInGrade(),
     /** Percentage of the base price to deduct, in basis points (1500 = 15%). */
-    deductionBasisPoints: integer().notNull().default(0),
+    deductionBasisPoints: int().notNull().default(0),
     /** Fixed amount to deduct. */
-    deductionPence: integer().notNull().default(0),
+    deductionPence: int().notNull().default(0),
     isActive: boolean().notNull().default(true),
     ...timestamps,
   },
@@ -74,9 +74,9 @@ export const quoteAnswerOptions = pgTable(
 );
 
 /** Fixed-window rate-limit counters (src/lib/security/rate-limit.ts). */
-export const rateLimits = pgTable("rate_limits", {
+export const rateLimits = mysqlTable("rate_limits", {
   /** e.g. "sell:quote:ip:<hash>". IPs are hashed, never stored raw. */
-  key: text().primaryKey(),
-  windowStart: timestamp({ withTimezone: true }).notNull(),
-  count: integer().notNull(),
+  key: varchar({ length: 191 }).primaryKey(),
+  windowStart: datetime({ mode: "date", fsp: 3 }).notNull(),
+  count: int().notNull(),
 });

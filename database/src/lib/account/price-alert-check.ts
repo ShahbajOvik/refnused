@@ -53,7 +53,7 @@ export async function findTriggeredPriceAlerts(
       variantId: priceAlerts.variantId,
       grade: priceAlerts.grade,
       targetPricePence: priceAlerts.targetPricePence,
-      model: sql<string>`${brands.name} || ' ' || ${deviceModels.name}`,
+      model: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name})`,
       modelSlug: deviceModels.slug,
       brandSlug: brands.slug,
     })

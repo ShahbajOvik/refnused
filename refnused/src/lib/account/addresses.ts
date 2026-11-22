@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { customerAddresses } from "@refnused/database/db/schema";
+import { affectedRows } from "@refnused/database/db/results";
 import type { AppDb } from "@refnused/database/db/types";
 import { ukPostcodeSchema } from "@refnused/database/lib/validation/uk";
 
@@ -65,19 +66,18 @@ export async function saveAddress(
     }
     const values = { ...input, isDefault: makeDefault };
     if (id) {
-      const [row] = await tx
+      const result = await tx
         .update(customerAddresses)
         .set(values)
-        .where(and(eq(customerAddresses.id, id), eq(customerAddresses.customerId, customerId)))
-        .returning({ id: customerAddresses.id });
-      return row
-        ? ({ ok: true, id: row.id } as const)
+        .where(and(eq(customerAddresses.id, id), eq(customerAddresses.customerId, customerId)));
+      return affectedRows(result)
+        ? ({ ok: true, id } as const)
         : ({ ok: false, reason: "not_found" } as const);
     }
     const [row] = await tx
       .insert(customerAddresses)
       .values({ ...values, customerId })
-      .returning({ id: customerAddresses.id });
+      .$returningId();
     return { ok: true, id: row!.id } as const;
   });
 }
@@ -85,10 +85,14 @@ export async function saveAddress(
 export async function deleteAddress(db: AppDb, customerId: string, id: string) {
   return db.transaction(async (transaction) => {
     const tx = transaction as unknown as AppDb;
+    const mine = and(eq(customerAddresses.id, id), eq(customerAddresses.customerId, customerId));
     const [removed] = await tx
-      .delete(customerAddresses)
-      .where(and(eq(customerAddresses.id, id), eq(customerAddresses.customerId, customerId)))
-      .returning({ isDefault: customerAddresses.isDefault });
+      .select({ isDefault: customerAddresses.isDefault })
+      .from(customerAddresses)
+      .where(mine)
+      .for("update");
+    if (!removed) return false;
+    await tx.delete(customerAddresses).where(mine);
     if (removed?.isDefault) {
       // Promote the oldest remaining address.
       const [next] = await tx

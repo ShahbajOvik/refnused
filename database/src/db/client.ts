@@ -1,7 +1,5 @@
-import { readFileSync } from "node:fs";
-
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 
 import * as schema from "./schema";
 import type { AppDb } from "./types";
@@ -9,64 +7,31 @@ import type { AppDb } from "./types";
 export type Database = AppDb;
 
 /**
- * Creates a Drizzle client. Used by the app (src/db/index.ts) and by
- * scripts (seed). Scripts must call `close()` when finished.
+ * Creates a Drizzle client for MySQL 8 (mysql2 connection pool). Used by
+ * the apps (src/db/index.ts), scripts (seed) and tests. Scripts must call
+ * `close()` when finished.
  *
- * DATABASE_URL may also be `pglite://<path to snapshot.tar.gz>` for tests
- * and CI builds: an in-process Postgres loaded from a seeded snapshot
- * (`npm run db:test-snapshot`). Never use that in production.
+ * DATABASE_URL: mysql://user:password@host:3306/database. For a managed
+ * database that needs TLS, add ?ssl={"rejectUnauthorized":true}.
+ *
+ * Every connection runs in UTC, so NOW() / CURRENT_TIMESTAMP match the
+ * DATETIME values Drizzle writes (always UTC).
  */
 export function createDatabase(
   url: string,
   options: { max?: number } = {},
 ): { db: AppDb; close: () => Promise<void> } {
-  if (url.startsWith("pglite://")) return createPgliteDatabase(url.slice("pglite://".length));
-
-  const client = postgres(url, {
-    max: options.max ?? 10,
-    // Required for transaction-mode poolers (Neon, Supabase, PgBouncer).
-    prepare: false,
+  const pool = mysql.createPool({
+    uri: url,
+    connectionLimit: options.max ?? 10,
+    timezone: "Z",
+    supportBigNumbers: true,
+    enableKeepAlive: true,
   });
-  const db = drizzle(client, { schema, casing: "snake_case" });
-  return { db: db as unknown as AppDb, close: () => client.end({ timeout: 5 }) };
-}
-
-type PgliteHandle = { db: AppDb; close: () => Promise<void> };
-
-/**
- * One in-memory database per snapshot for the whole process. Next.js
- * bundles route handlers and server actions separately, so each would
- * otherwise load its own copy and not see the other's writes.
- */
-const pgliteInstances = ((
-  globalThis as { __pgliteInstances?: Map<string, PgliteHandle> }
-).__pgliteInstances ??= new Map());
-
-function createPgliteDatabase(snapshotPath: string): PgliteHandle {
-  if (process.env.VERCEL_ENV === "production") {
-    throw new Error("pglite:// databases are for tests only");
-  }
-  const existing = pgliteInstances.get(snapshotPath);
-  if (existing) return existing;
-  // Loaded at runtime with a computed name so bundlers and file tracing
-  // never pull PGlite (a dev dependency) into production builds.
-  const load = process.getBuiltinModule("node:module").createRequire(`${process.cwd()}/`);
-  const { PGlite } = load(
-    ["@electric-sql", "pglite"].join("/"),
-  ) as typeof import("@electric-sql/pglite");
-  const { drizzle: drizzlePglite } = load(
-    ["drizzle-orm", "pglite"].join("/"),
-  ) as typeof import("drizzle-orm/pglite");
-
-  const client = new PGlite({ loadDataDir: new Blob([readFileSync(snapshotPath)]) });
-  const db = drizzlePglite({ client, schema, casing: "snake_case" });
-  const handle: PgliteHandle = {
-    db: db as unknown as AppDb,
-    close: async () => {
-      pgliteInstances.delete(snapshotPath);
-      await client.close();
-    },
-  };
-  pgliteInstances.set(snapshotPath, handle);
-  return handle;
+  // Set the session time zone on every new connection, before it's used.
+  pool.pool.on("connection", (connection) => {
+    connection.query("SET time_zone = '+00:00'");
+  });
+  const db = drizzle({ client: pool, schema, mode: "default", casing: "snake_case" });
+  return { db: db as unknown as AppDb, close: () => pool.end() };
 }

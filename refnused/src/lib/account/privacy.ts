@@ -134,7 +134,7 @@ export async function exportCustomerData(db: AppDb, customerId: string) {
       .where(eq(customerAddresses.customerId, customerId)),
     db
       .select({
-        sortCode: sql<string>`'••-••-' || ${customerPayoutAccounts.sortCodeLast2}`,
+        sortCode: sql<string>`concat('••-••-', ${customerPayoutAccounts.sortCodeLast2})`,
         accountNumberEnding: customerPayoutAccounts.accountNumberLast4,
         verifiedAt: customerPayoutAccounts.verifiedAt,
       })
@@ -144,7 +144,7 @@ export async function exportCustomerData(db: AppDb, customerId: string) {
       .select({
         id: quotes.id,
         reference: quotes.reference,
-        device: sql<string>`${brands.name} || ' ' || ${deviceModels.name} || ', ' || ${modelVariants.storageGb} || 'GB, ' || ${modelVariants.colour}`,
+        device: sql<string>`concat(${brands.name}, ' ', ${deviceModels.name}, ', ', ${modelVariants.storageGb}, 'GB, ', ${modelVariants.colour})`,
         status: quotes.status,
         quotedGrade: quotes.quotedGrade,
         answers: quotes.answers,
@@ -500,7 +500,7 @@ export async function deleteCustomerAccount(
         contactPhone: null,
         accessTokenHash: null,
         accessTokenEncrypted: null,
-        shippingAddress: sql`case when ${orders.shippingAddress} is null then null else jsonb_build_object('name', 'Deleted', 'line1', 'Deleted', 'town', 'Deleted', 'postcode', 'Deleted', 'country', 'GB') end`,
+        shippingAddress: sql`case when ${orders.shippingAddress} is null then null else json_object('name', 'Deleted', 'line1', 'Deleted', 'town', 'Deleted', 'postcode', 'Deleted', 'country', 'GB') end`,
       })
       .where(eq(orders.customerId, id));
     await tx

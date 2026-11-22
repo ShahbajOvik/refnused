@@ -1,27 +1,27 @@
-import { bigint, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, index, json, mysqlTable, text, varchar } from "drizzle-orm/mysql-core";
 
-import { actorType } from "./_shared";
+import { actorType, NOW, ts, uuidRef } from "./_shared";
 
 /**
  * Append-only record of who changed what. Write an entry for price changes,
  * quote/inspection decisions, payouts, refunds and staff/role changes.
  * Never store secrets or decrypted bank details in `changes`.
  */
-export const auditLog = pgTable(
+export const auditLog = mysqlTable(
   "audit_log",
   {
-    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    id: bigint({ mode: "number", unsigned: true }).primaryKey().autoincrement(),
     actorType: actorType().notNull(),
     /** staff_users.id or customers.id. Not a foreign key so entries outlive accounts. */
-    actorId: uuid(),
+    actorId: uuidRef(),
     /** Dotted verb, e.g. "trade_in_price.update", "payout.mark_paid". */
-    action: text().notNull(),
-    entityType: text().notNull(),
-    entityId: text().notNull(),
-    changes: jsonb().$type<{ before?: unknown; after?: unknown }>(),
-    ipAddress: text(),
+    action: varchar({ length: 100 }).notNull(),
+    entityType: varchar({ length: 64 }).notNull(),
+    entityId: varchar({ length: 191 }).notNull(),
+    changes: json().$type<{ before?: unknown; after?: unknown }>(),
+    ipAddress: varchar({ length: 64 }),
     userAgent: text(),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    createdAt: ts().notNull().default(NOW),
   },
   (t) => [
     index("audit_log_entity_idx").on(t.entityType, t.entityId),
