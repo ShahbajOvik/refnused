@@ -20,7 +20,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "node --env-file-if-exists=../.env.local --conditions=react-server --import tsx scripts/db-seed.mts",
+    "db:seed": "node --conditions=react-server --import tsx --import @refnused/database/config/load-env scripts/db-seed.mts",
     "key:generate": "node -e \"console.log('k1:' + require('node:crypto').randomBytes(32).toString('base64'))\"",
     "secret:generate": "node -e \"console.log(require('node:crypto').randomBytes(32).toString('base64url'))\"",
     "push:keys": "node -e \"const k=require('web-push').generateVAPIDKeys();console.log('NEXT_PUBLIC_VAPID_PUBLIC_KEY='+k.publicKey+'\\nVAPID_PRIVATE_KEY='+k.privateKey)\"",

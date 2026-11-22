@@ -12,8 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "security:secrets": "node ../refnused/scripts/check-client-secrets.mjs",
-    "staff:create": "node --env-file-if-exists=../.env.local --import tsx scripts/staff-create.mts",
-    "staff:set-password": "node --env-file-if-exists=../.env.local --import tsx scripts/staff-set-password.mts"
+    "staff:create": "node --import tsx --import @refnused/database/config/load-env scripts/staff-create.mts",
+    "staff:set-password": "node --import tsx --import @refnused/database/config/load-env scripts/staff-set-password.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

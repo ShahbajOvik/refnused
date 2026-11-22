@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && npm run build:sw",
-    "build:sw": "node --env-file-if-exists=../.env.local --import tsx scripts/build-sw.mts",
+    "build:sw": "node --import tsx --import @refnused/database/config/load-env scripts/build-sw.mts",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p src/sw",
