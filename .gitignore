@@ -50,3 +50,6 @@ next-env.d.ts
 # PGlite test snapshot (npm run db:test-snapshot)
 /.test-db/
 /.media/
+
+# Service worker (built by npm run build:sw)
+/public/sw.js

@@ -1,9 +1,18 @@
 import { authorizeStaff } from "@/auth/access";
 import { getStaffSession } from "@/auth/guards";
 import type { Permission } from "@/auth/roles";
+import { publicEnv } from "@/lib/env";
 import { mediaUrl } from "@/lib/media";
+import { isSameOriginRequest } from "@/lib/security/same-origin";
 import { getStorage } from "@/lib/storage";
-import { preparePdf, preparePhoto, randomKeyPart, UploadError } from "@/lib/storage/uploads";
+import {
+  MAX_UPLOAD_BYTES,
+  preparePdf,
+  preparePhoto,
+  randomKeyPart,
+  UploadError,
+} from "@/lib/storage/uploads";
+import { z } from "zod";
 
 const KINDS = {
   "product-photo": { permission: "products.manage", bucket: "media", prefix: "products" },
@@ -19,14 +28,28 @@ const KINDS = {
  * Admin uploads. Same checks as admin actions: full staff session (both
  * factors, not idle) and the permission for that kind of file.
  */
+const uploadSchema = z.object({
+  kind: z.enum(Object.keys(KINDS) as [keyof typeof KINDS, ...(keyof typeof KINDS)[]]),
+  file: z.instanceof(File),
+});
+
 export async function POST(request: Request) {
+  // CSRF: only our own admin pages may upload (the cookie is SameSite=Lax too).
+  if (!isSameOriginRequest(request, publicEnv.NEXT_PUBLIC_SITE_URL)) {
+    return Response.json({ error: "Not allowed" }, { status: 403 });
+  }
+  // Refuse oversized bodies before reading them (multipart overhead allowed for).
+  const length = Number(request.headers.get("content-length") ?? 0);
+  if (length > MAX_UPLOAD_BYTES + 64 * 1024) {
+    return Response.json({ error: "Files must be 10MB or smaller." }, { status: 413 });
+  }
   const form = await request.formData().catch(() => null);
-  const kind = form?.get("kind");
-  const file = form?.get("file");
-  if (typeof kind !== "string" || !(kind in KINDS) || !(file instanceof File)) {
+  const parsed = uploadSchema.safeParse({ kind: form?.get("kind"), file: form?.get("file") });
+  if (!parsed.success) {
     return Response.json({ error: "Choose a file to upload." }, { status: 400 });
   }
-  const config = KINDS[kind as keyof typeof KINDS];
+  const { kind, file } = parsed.data;
+  const config = KINDS[kind];
   const { status, record } = await getStaffSession();
   const auth = authorizeStaff(status, record, config.permission);
   if (!auth.ok) return Response.json({ error: auth.error }, { status: 403 });

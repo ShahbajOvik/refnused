@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect as baseExpect, test, type Page } from "@playwright/test";
+import { expect as baseExpect, test, type Cookie, type Page } from "@playwright/test";
 
 /*
  * /account with the demo customers from src/db/seed/demo.ts (test snapshot
@@ -44,7 +44,30 @@ async function latestEmail(to: string, since: number, match: RegExp): Promise<Em
   return found!;
 }
 
+/*
+ * Sign-in links are limited to 5 an hour per address (magic-link-guard.ts),
+ * so each demo customer signs in by email once per run and later tests
+ * reuse the session cookie. If that session has ended (signed out, account
+ * deleted), sign in again.
+ */
+const sessions = new Map<string, Cookie[]>();
+
 async function signIn(page: Page, email: string) {
+  const saved = sessions.get(email);
+  if (saved) {
+    await page.context().addCookies(saved);
+    await page.goto("/account");
+    if (new URL(page.url()).pathname === "/account") return;
+    sessions.delete(email);
+  }
+  await signInByEmail(page, email);
+  sessions.set(
+    email,
+    (await page.context().cookies()).filter((c) => /ru\.session/.test(c.name)),
+  );
+}
+
+async function signInByEmail(page: Page, email: string) {
   const since = Date.now() - 1000;
   await page.goto("/sign-in?callbackUrl=%2Faccount");
   await page.getByLabel("Email address").fill(email);

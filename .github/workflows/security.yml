@@ -1,0 +1,47 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Mondays 07:00 UTC: catch new advisories for unchanged code.
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Fails on high or critical advisories in runtime dependencies.
+      - run: npm run audit
+      # Dev tooling: reported, not blocking (see SECURITY.md for known ones).
+      - run: npm audit --audit-level=high || true
+
+  client-secrets:
+    name: No secrets in client bundles
+    runs-on: ubuntu-latest
+    env:
+      # Placeholder values: the build needs them; none are real.
+      DATABASE_URL: pglite://memory
+      AUTH_SECRET: ci-placeholder-ci-placeholder-ci-placeholder
+      FIELD_ENCRYPTION_KEYS: k1:Y2ktcGxhY2Vob2xkZXItY2ktcGxhY2Vob2xkZXItY2k=
+      NEXT_PUBLIC_SITE_URL: https://ci.example.invalid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run security:secrets

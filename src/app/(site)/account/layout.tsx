@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
+
 import { Announcer } from "@/components/account/announcer";
 import { NavLink } from "@/components/layout/nav-link";
+import { renderPerRequest } from "@/lib/security/per-request";
 
 const ACCOUNT_NAV = [
   { href: "/account", label: "Overview", exact: true },
@@ -11,8 +14,15 @@ const ACCOUNT_NAV = [
   { href: "/account/privacy", label: "Privacy and data" },
 ];
 
+/** Never indexed. Pages set their own titles; this keeps new pages private by default. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
+
+/** Rendered per request for its nonce CSP (src/lib/security/per-request.ts). */
+export const instant = false;
+
 /** Account pages share a side menu. Each page checks the session itself. */
-export default function AccountLayout({ children }: LayoutProps<"/account">) {
+export default async function AccountLayout({ children }: LayoutProps<"/account">) {
+  await renderPerRequest();
   return (
     <div className="page-container grid gap-8 py-8 lg:grid-cols-[14rem_1fr]">
       <nav aria-label="Account" className="lg:pt-24">

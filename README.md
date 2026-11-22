@@ -17,17 +17,19 @@ Open http://localhost:3000. The design system lives at http://localhost:3000/sty
 
 ## Scripts
 
-| Command             | What it does                                                  |
-| ------------------- | ------------------------------------------------------------- |
-| `npm run dev`       | Start the dev server                                          |
-| `npm run build`     | Production build                                              |
-| `npm run check`     | Typecheck, lint, format check and unit tests                  |
-| `npm run typecheck` | Generate route types and run `tsc`                            |
-| `npm run lint`      | ESLint                                                        |
-| `npm run format`    | Prettier (sorts Tailwind classes too)                         |
-| `npm test`          | Vitest unit tests                                             |
-| `npm run test:e2e`  | Playwright tests (builds and serves the app first)            |
-| `npm run budget`    | Checks initial JS per page is under 200KB (run after a build) |
+| Command              | What it does                                                   |
+| -------------------- | -------------------------------------------------------------- |
+| `npm run dev`        | Start the dev server                                           |
+| `npm run build`      | Production build, then the service worker (`build:sw`)         |
+| `npm run check`      | Typecheck, lint, format check and unit tests                   |
+| `npm run typecheck`  | Generate route types and run `tsc`                             |
+| `npm run lint`       | ESLint                                                         |
+| `npm run format`     | Prettier (sorts Tailwind classes too)                          |
+| `npm test`           | Vitest unit tests                                              |
+| `npm run test:e2e`   | Playwright tests (builds and serves the app first)             |
+| `npm run budget`     | Checks initial JS per page is under 200KB (run after a build)  |
+| `npm run push:keys`  | Generates a VAPID key pair for Web Push                        |
+| `npm run pwa:assets` | Renders the PWA icons (add `-- --screenshots` for screenshots) |
 
 First time running e2e tests: `npx playwright install chromium`.
 
@@ -98,7 +100,7 @@ email and SMS confirmation, and a private tracking page at `/sell/track/[token]`
 
 ## Shop
 
-`/shop` and `/shop/[brand]` list refurbished units; each unit has its own page at
+`/shop`, `/shop/[brand]` and `/shop/category/[category]` list refurbished units; each unit has its own page at
 `/shop/[brand]/[slug]`, and `/compare?items=a,b,c` compares up to three.
 
 - **Filters live in the URL** (`?brand=apple,samsung&grade=A&storage=128&min=200&max=500&battery=90&store=…&sort=price-asc&page=2`),
@@ -189,8 +191,97 @@ written there as JSON; the e2e tests sign in by reading them.
 
 The seed only fills empty values: coordinates (postcode centres from postcodes.io: move them to the
 shop front in admin) and Metro text. Opening hours and parking are left for staff to enter, and a
-store without hours shows "Call the store for opening hours". `/sitemap.xml` and `/robots.txt` list
-the public pages.
+store without hours shows "Call the store for opening hours". The stores sitemap
+(`/sitemaps/stores/sitemap.xml`) lists every store page.
+
+## SEO
+
+- **Metadata.** Every public page builds its metadata with `pageMetadata()` (`src/lib/metadata.ts`)
+  or a page-type template in `src/lib/metadata-templates.ts` (home, sell brand/model, product,
+  stores, guides). That gives each page a canonical URL, `en-GB` and `x-default` hreflang pointing
+  at itself, Open Graph and Twitter tags. Filtered listings pass `noindex: true` (noindex, follow).
+- **Private pages** (account, basket, checkout, orders, trade-in tracking, sign-in, admin, API) set
+  `robots: noindex` and also get `X-Robots-Tag: noindex, nofollow` from `next.config.ts`. robots.txt
+  only blocks `/admin` and `/api/`: blocking the others would hide the noindex from crawlers.
+- **Open Graph images** are drawn with `next/og` from one layout (`src/lib/og/card.tsx`): a
+  site-wide one (`src/app/opengraph-image.tsx`, used by pages without their own) and one per sell
+  model, product, store and guide (`opengraph-image.tsx` next to each page, with live prices).
+  Photos go through sharp first because `next/og` can't read WebP; only our media bucket and
+  Sanity's CDN are fetched.
+- **Sitemaps.** `/sitemap.xml` is a sitemap index of `/sitemaps/{pages,models,products,stores,guides}/sitemap.xml`
+  (`src/app/sitemaps/*`). Model `lastmod` is the latest trade-in price change; products include
+  their photos.
+- **JSON-LD.** Builders live in `src/lib/seo.ts`: Organization + WebSite (home), ElectronicsStore
+  (stores), Product/Offer (products), FAQPage (home and sell model pages), Article (guides) and
+  BreadcrumbList (the `Breadcrumbs` component, on every page). FAQ JSON-LD is always built from the
+  same items as the visible `FaqList`.
+- **Internal links.** `ModelLinks` (`src/components/seo/model-links.tsx`) links a model's sell page,
+  shop listing and guides to each other, only where the target has something on it (we buy it, or
+  units are in stock). It's on sell model pages, product pages and guides.
+
+## PWA and push notifications
+
+Uses [Serwist](https://serwist.pages.dev). `@serwist/next` and `@serwist/turbopack` don't fit this
+app (Turbopack + `cacheComponents`), so the worker is built after `next build` by
+`scripts/build-sw.mts` (esbuild + `@serwist/build`) into `public/sw.js`, which is not committed.
+
+- **Manifest** (`src/app/manifest.ts`): icons, maskable icons, screenshots and shortcuts (Sell,
+  Shop, Stores, Account). Images live in `public/icons` and `public/screenshots`. Re-render them
+  with `npm run pwa:assets`. For screenshots, serve a production build on port 3100 and add
+  `-- --screenshots`.
+- **Service worker** (`src/sw/sw.ts`, type-checked with `src/sw/tsconfig.json`): it precaches the
+  app shell, meaning `/offline` plus the CSS, fonts and scripts its HTML loads, and the icons.
+  Runtime rules are in `src/lib/pwa/cache-rules.ts` (unit-tested):
+  - Stale-while-revalidate: product and model pages, and images.
+  - Network-only: basket, checkout, account, orders, tracking, sign-in, admin and `/api`.
+    Non-GET requests (Server Actions, mutating API calls) are never handled by the worker.
+  - Network-first: other public pages.
+  - A page that is offline and not cached gets `/offline`, which shows store details.
+- **Updates**: new workers wait. `PwaRegister` (root layout) shows a "new version" toast, and
+  Refresh activates the new worker.
+- **Install banner** (`InstallBanner`): shown on the tracking page after a quote and on the order
+  page once paid. It uses the browser's install prompt where there is one, and step-by-step
+  instructions on iPhone and iPad. Dismissing it hides it for 30 days.
+- **Web Push** (`src/lib/push/`): customers turn it on per quote, order or for their price alerts
+  (`PushOptIn`). Permission is only requested when they press the button. Subscriptions are in
+  `push_subscriptions` / `push_topics`, and only known browser push services are accepted.
+  Quote and order links are secret, so the path a notification opens is stored encrypted.
+  Pushes are sent alongside emails from admin quote/inspection/payout actions, order
+  fulfilment and request decisions, and the Stripe webhook (order paid). Price alerts are
+  checked when units are listed or repriced and when trade-in prices change
+  (`src/lib/account/price-alert-check.ts`, at most once a week per alert). Without VAPID keys,
+  the buttons are hidden and pushes are printed to the console. Generate keys with
+  `npm run push:keys`.
+- Push data is included in the account data export and deleted with the account.
+
+## Guides and Sanity
+
+`/guides` mixes built-in guides with articles from Sanity (`src/lib/guides/`):
+
+| Template      | URL                                    | Content                                                              |
+| ------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| `model-value` | `/guides/how-much-is-my-<model>-worth` | One per model we buy. Live prices from `trade_in_prices`.            |
+| `wipe`        | `/guides/how-to-wipe-a-phone`          | Steps in `src/content/guides.ts`.                                    |
+| `grading`     | `/guides/phone-grading-explained`      | Grades from `src/lib/grades.ts`, battery bands from `batteryRating`. |
+| `article`     | `/guides/<slug>`                       | Written in Sanity.                                                   |
+
+A Sanity document with template `model-value` (and a model slug), `wipe` or `grading` adds an
+author, dates and body copy to that built-in guide; the URL and live content stay. Price guides
+show the most we pay (base prices): they're a guide, not an offer, and link to the sell flow.
+
+Setup:
+
+1. Create a Sanity project and add the schema in `sanity/schemaTypes` to its Studio (plain objects,
+   so this repo doesn't need the `sanity` package). Set `SANITY_PROJECT_ID` and `SANITY_DATASET`
+   (and `SANITY_API_READ_TOKEN` for a private dataset).
+2. Add a GROQ-powered webhook in Sanity: URL `<site>/api/revalidate/sanity`, POST, on create,
+   update and delete, filter `_type in ["guide", "author"]`, projection `{_type, "slug": slug.current}`,
+   with a secret. Put the same secret in `SANITY_REVALIDATE_SECRET`. The route checks the
+   signature (and rejects anything older than five minutes) and revalidates the `guides` tag.
+
+Without Sanity (development, tests) the built-in guides still work. If Sanity is unreachable the
+pages fall back to built-in content instead of erroring. Every response is validated with Zod, and
+Portable Text links are limited to relative, http(s), mailto and tel URLs.
 
 ## Admin
 
@@ -203,7 +294,8 @@ sections it can use (`src/auth/roles.ts`), and every page and action checks perm
 | Dashboard          | Today's trade-ins, orders and payouts, stock by store, revenue after refunds (owners and managers only). |
 | Trade-ins          | Queue by stage; mark received; inspection form (actual grade, photos, CheckMEND result, revised offer).  |
 | Payouts            | Approved payouts; export a bank CSV (the only place bank details are decrypted); mark paid or failed.    |
-| Device intake      | Enter or scan an IMEI, grade, battery health, photos, data-wipe certificate, price, store; publish.      |
+| Catalogue          | Categories, brands, models and their options (owners and managers). Nothing is deleted, only hidden.     |
+| Device intake      | Add one unit: IMEI, serial number or stock code by category, grade, photos, price, store; publish.       |
 | Products           | Edit price, status and store of any unit.                                                                |
 | Orders             | Dispatch with tracking, ready for collection, delivered/collected, full or part refunds.                 |
 | Returns & warranty | Approve, reject and complete requests; completing a return marks the unit as returned.                   |
@@ -212,6 +304,11 @@ sections it can use (`src/auth/roles.ts`), and every page and action checks perm
 | Stores             | Address, phone and opening hours (shown on the site and in JSON-LD).                                     |
 | Content            | Links to Sanity Studio (set `SANITY_STUDIO_URL`).                                                        |
 | Staff, Audit log   | Staff users and roles (owners); every change above is in `audit_log`.                                    |
+
+**Categories**: each category sets how units are identified (IMEI, serial number or a generated stock
+code) and whether they have storage, a battery and a data-wipe certificate. Those rules are checked on
+the server at intake and lock once a category has stock. Trade-ins are for IMEI categories only, and a
+new phone appears on the sell pages once its trade-in prices are set.
 
 **Files**: photos and certificates go to Cloudflare R2 (`R2_*` variables): photos to the public
 media bucket, re-encoded to WebP with location data removed; certificates to the private bucket,

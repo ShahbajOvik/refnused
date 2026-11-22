@@ -1,0 +1,44 @@
+# Dependency updates. Security fixes come as soon as they're published;
+# version updates are grouped weekly so they're easy to review.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    # Only versions published at least 14 days ago (time for bad releases to be caught).
+    cooldown:
+      default-days: 14
+    groups:
+      # Framework packages that must move together.
+      next:
+        patterns:
+          [
+            "next",
+            "eslint-config-next",
+            "@next/*",
+            "react",
+            "react-dom",
+            "@types/react",
+            "@types/react-dom",
+          ]
+      auth:
+        patterns: ["next-auth", "@auth/*", "@simplewebauthn/*"]
+      sentry:
+        patterns: ["@sentry/*"]
+      serwist:
+        patterns: ["serwist", "@serwist/*"]
+      dev-tooling:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+    labels: ["dependencies"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: ["dependencies"]

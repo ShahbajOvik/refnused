@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { SkipLink } from "@/components/layout/skip-link";
+import { PwaRegister } from "@/components/pwa/pwa-register";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
 import { LazyToaster } from "@/components/ui/lazy-toaster";
 import { siteConfig } from "@/config/site";
 import { publicEnv } from "@/lib/env";
@@ -31,6 +33,8 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
+  // Installed on iPhone/iPad: full-screen, with our name under the icon.
+  appleWebApp: { capable: true, title: siteConfig.name, statusBarStyle: "default" },
   openGraph: {
     type: "website",
     siteName: siteConfig.name,
@@ -53,6 +57,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
+      <head>
+        {/* Allowed by hash on sensitive routes (THEME_SCRIPT_HASH). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-dvh flex-col">
         <noscript>
           {/* Scroll-reveal animations start hidden; show everything without JS. */}
@@ -62,6 +70,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SkipLink />
           {children}
           <LazyToaster position="bottom-center" />
+          <PwaRegister />
         </ThemeProvider>
       </body>
     </html>

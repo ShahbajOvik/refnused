@@ -22,6 +22,16 @@ const publicEnvSchema = z.object({
     .url({ protocol: /^https?$/ })
     .transform((url) => url.replace(/\/+$/, ""))
     .optional(),
+  /**
+   * VAPID public key for Web Push (base64url P-256 point, 87 characters).
+   * Unset: the "get updates" buttons are hidden. Pair: VAPID_PRIVATE_KEY.
+   */
+  /** Sentry DSN (not a secret). Unset: no error reporting. */
+  NEXT_PUBLIC_SENTRY_DSN: z.url({ protocol: /^https$/ }).optional(),
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{86,88}$/, "Use the public key from npm run push:keys")
+    .optional(),
 });
 
 export const publicEnv = publicEnvSchema.parse({
@@ -29,4 +39,6 @@ export const publicEnv = publicEnvSchema.parse({
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined,
   NEXT_PUBLIC_MEDIA_BASE_URL: process.env.NEXT_PUBLIC_MEDIA_BASE_URL || undefined,
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || undefined,
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || undefined,
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
 });

@@ -64,7 +64,12 @@ async function StaffSignIn({ searchParams }: Pick<PageProps<"/admin/sign-in">, "
         turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
       />
       <Divider label="or use a sign-in link" />
-      <EmailSignInForm action={signInStaffWithEmail} callbackUrl={callbackUrl} />
+      <EmailSignInForm
+        action={signInStaffWithEmail}
+        callbackUrl={callbackUrl}
+        turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        turnstileAction="staff_sign_in"
+      />
       {isGoogleSignInEnabled ? (
         <>
           <Divider />

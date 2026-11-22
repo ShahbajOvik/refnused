@@ -17,6 +17,7 @@ import { db } from "@/db";
 import { serverEnv } from "@/lib/env.server";
 import { getRequestMeta } from "@/lib/request-meta";
 import { BOT_CHECK_FAILED, passesBotCheck, TOO_MANY_REQUESTS } from "@/lib/security/guards";
+import { magicLinkGuard } from "@/lib/security/magic-link-guard";
 
 const emailSchema = z.object({
   email: z.email().transform((v) => v.trim().toLowerCase()),
@@ -87,6 +88,8 @@ export async function signInStaffWithEmail(
     callbackUrl: formData.get("callbackUrl") ?? undefined,
   });
   if (!parsed.success) return { error: "Enter a valid work email address." };
+  const blocked = await magicLinkGuard("staff", parsed.data.email, formData);
+  if (blocked) return { error: blocked };
 
   await staffSignIn("resend", {
     email: parsed.data.email,

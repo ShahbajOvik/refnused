@@ -78,6 +78,20 @@
       "when": 1795015125195,
       "tag": "0010_groovy_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795027711318,
+      "tag": "0011_steady_jimmy_woo",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795194571096,
+      "tag": "0012_push_notifications",
+      "breakpoints": true
     }
   ]
 }

@@ -6,9 +6,17 @@ import { deleteStaffSession, loadStaffSession, recordStaffActivity } from "@/aut
 import { evaluateStaffSession, shouldRecordActivity } from "@/auth/staff-session";
 import { db } from "@/db";
 import { recordAudit } from "@/lib/audit";
+import { publicEnv } from "@/lib/env";
+import { buildCsp, createNonce } from "@/lib/security/csp";
 
 /**
- * Next.js proxy (formerly "middleware"). Runs before /account and /admin.
+ * Next.js proxy (formerly "middleware"). Runs before the sensitive routes
+ * (src/lib/security/csp.ts SENSITIVE_PREFIXES).
+ *
+ * - All of them: a fresh nonce and the strict Content Security Policy. Next.js
+ *   reads the nonce from the request's CSP header and puts it on its
+ *   scripts; these routes render per request so that works.
+ * - Secret-link pages (orders, trade-in tracking): Referrer-Policy no-referrer.
  *
  * - /account: needs a customer session cookie (the page validates it).
  * - /admin: loads the staff session and applies the same rules as
@@ -22,12 +30,34 @@ import { recordAudit } from "@/lib/audit";
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  const nonce = createNonce();
+  const csp = buildCsp({
+    nonce,
+    isDev: process.env.NODE_ENV === "development",
+    siteUrl: publicEnv.NEXT_PUBLIC_SITE_URL,
+    mediaBaseUrl: publicEnv.NEXT_PUBLIC_MEDIA_BASE_URL,
+    sentryDsn: publicEnv.NEXT_PUBLIC_SENTRY_DSN,
+  });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+  const next = () => NextResponse.next({ request: { headers: requestHeaders } });
+  const secure = (response: NextResponse) => {
+    response.headers.set("Content-Security-Policy", csp);
+    if (pathname.startsWith("/orders/") || pathname.startsWith("/sell/track/")) {
+      response.headers.set("Referrer-Policy", "no-referrer");
+    }
+    return response;
+  };
+
   if (pathname === "/account" || pathname.startsWith("/account/")) {
-    if (request.cookies.has(CUSTOMER_SESSION_COOKIE)) return NextResponse.next();
+    if (request.cookies.has(CUSTOMER_SESSION_COOKIE)) return secure(next());
     const url = new URL("/sign-in", request.url);
     url.searchParams.set("callbackUrl", pathname + search);
-    return NextResponse.redirect(url);
+    return secure(NextResponse.redirect(url));
   }
+
+  if (pathname !== "/admin" && !pathname.startsWith("/admin/")) return secure(next());
 
   // /admin
   const token = request.cookies.get(STAFF_SESSION_COOKIE)?.value;
@@ -55,11 +85,11 @@ export async function proxy(request: NextRequest) {
       }
       response.cookies.delete(STAFF_SESSION_COOKIE);
     }
-    return response;
+    return secure(response);
   }
 
   if (decision.type === "forbidden") {
-    return NextResponse.redirect(new URL("/admin?denied=1", request.url));
+    return secure(NextResponse.redirect(new URL("/admin?denied=1", request.url)));
   }
 
   // Count real navigation and actions as activity, but not link prefetches.
@@ -70,12 +100,24 @@ export async function proxy(request: NextRequest) {
     await recordStaffActivity(db, token, now);
   }
 
-  const response = NextResponse.next();
+  const response = next();
   // Admin pages are personal: never cache them anywhere.
   response.headers.set("Cache-Control", "private, no-store");
-  return response;
+  return secure(response);
 }
 
+// Keep in sync with SENSITIVE_PREFIXES (src/lib/security/csp.test.tsx checks).
 export const config = {
-  matcher: ["/account", "/account/:path*", "/admin", "/admin/:path*"],
+  matcher: [
+    "/account",
+    "/account/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/basket",
+    "/checkout",
+    "/orders/:path*",
+    "/sell/track/:path*",
+    "/sign-in",
+    "/sign-in/:path*",
+  ],
 };

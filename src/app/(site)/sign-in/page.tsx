@@ -8,6 +8,7 @@ import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
 import { GoogleIcon } from "@/components/auth/google-icon";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import { publicEnv } from "@/lib/env";
 import { isGoogleSignInEnabled } from "@/lib/env.server";
 
 import { signInWithEmail, signInWithGoogle } from "./actions";
@@ -58,7 +59,12 @@ async function SignInContent({ searchParams }: Pick<PageProps<"/sign-in">, "sear
       description="Track your trade-ins and orders. New here? We’ll create your account when you sign in."
     >
       {error ? <FormMessage>{error}</FormMessage> : null}
-      <EmailSignInForm action={signInWithEmail} callbackUrl={callbackUrl} />
+      <EmailSignInForm
+        action={signInWithEmail}
+        callbackUrl={callbackUrl}
+        turnstileSiteKey={publicEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        turnstileAction="customer_sign_in"
+      />
       <Divider />
       {isGoogleSignInEnabled ? (
         <form action={signInWithGoogle}>

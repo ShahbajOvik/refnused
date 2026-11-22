@@ -352,12 +352,15 @@ export async function stopStockAlertAction(formData: FormData): Promise<AccountA
 export async function updateMarketingAction(formData: FormData): Promise<AccountActionResult> {
   const g = await guard("marketing");
   if (!g.ok) return g.result;
-  await setMarketingPreferences(
-    db,
-    g.customer.id,
-    { email: formData.get("email") === "on", sms: formData.get("sms") === "on" },
-    { meta: await getRequestMeta() },
-  );
+  const checkbox = z
+    .literal("on")
+    .nullable()
+    .catch(null)
+    .transform((v) => v === "on");
+  const prefs = z
+    .object({ email: checkbox, sms: checkbox })
+    .parse({ email: formData.get("email"), sms: formData.get("sms") });
+  await setMarketingPreferences(db, g.customer.id, prefs, { meta: await getRequestMeta() });
   refresh();
   return { ok: true, message: "Preferences saved." };
 }
