@@ -61,7 +61,7 @@
     "@gltf-transform/core": "^4.5.1",
     "@playwright/test": "^1.65.1",
     "@serwist/build": "^9.5.15",
-    "@simplewebauthn/types": "^9.0.1",
+    "@simplewebauthn/types": "^12.0.0",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
