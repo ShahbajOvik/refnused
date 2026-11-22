@@ -76,7 +76,9 @@ MySQL 8.0.16 or newer (InnoDB, utf8mb4) with Drizzle ORM and the `mysql2` driver
 `database/` package. Schema in [database/src/db/schema/](database/src/db/schema/), migrations in
 [database/drizzle/](database/drizzle/).
 
-1. Get a MySQL 8 database: `brew install mysql@8.4` locally, or the one your host provides.
+1. Get a MySQL 8 database. Locally, the easiest is `npm run db:dev-server` (leave it running): the
+   official MySQL 8 binary, no install or Docker, data kept in `.mysql-dev/`, at
+   `mysql://root@127.0.0.1:3306/refurbednused`. Or `brew install mysql@8.4`, or your host's.
    MariaDB is not supported (the schema uses MySQL 8 functional indexes and CHECK constraints).
 2. Set `DATABASE_URL` in `.env.local`, e.g. `mysql://user:password@localhost:3306/refurbednused`.
    For a remote server, require TLS: append `?ssl={"rejectUnauthorized":true}`.
