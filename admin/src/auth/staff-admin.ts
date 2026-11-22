@@ -131,3 +131,12 @@ export async function changeStaffRole(
     input.meta,
   );
 }
+
+/** The staff id for an email (case-insensitive), or null. */
+export async function findStaffIdByEmail(db: AppDb, email: string) {
+  const [staff] = await db
+    .select({ id: staffUsers.id })
+    .from(staffUsers)
+    .where(eq(staffUsers.email, email.trim().toLowerCase()));
+  return staff?.id ?? null;
+}

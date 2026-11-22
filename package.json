@@ -32,7 +32,8 @@
     "staff:set-password": "npm run staff:set-password -w admin --",
     "db:e2e-server": "npm run db:e2e-server -w @refnused/database",
     "db:dev-server": "npm run db:dev-server -w @refnused/database",
-    "db:seed:owner": "npm run db:seed:owner -w admin"
+    "db:seed:owner": "npm run db:seed:owner -w admin",
+    "staff:list": "npm run staff:list -w admin"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

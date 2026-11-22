@@ -14,7 +14,8 @@
     "security:secrets": "node ../refnused/scripts/check-client-secrets.mjs",
     "staff:create": "node --import tsx --import @refnused/database/config/load-env scripts/staff-create.mts",
     "staff:set-password": "node --import tsx --import @refnused/database/config/load-env scripts/staff-set-password.mts",
-    "db:seed:owner": "node --import tsx --import @refnused/database/config/load-env scripts/seed-owner.mts"
+    "db:seed:owner": "node --import tsx --import @refnused/database/config/load-env scripts/seed-owner.mts",
+    "staff:list": "node --import tsx --import @refnused/database/config/load-env scripts/staff-list.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

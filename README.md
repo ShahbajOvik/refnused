@@ -55,6 +55,7 @@ The design system lives at http://localhost:3000/styleguide.
 | `npm run pwa:assets -w refnused` | Renders the PWA icons (add `-- --screenshots` for screenshots) |
 | `npm run db:seed:owner`          | Seeds the first owner from OWNER_EMAIL/NAME/PASSWORD (admin)   |
 | `npm run staff:create`           | Creates a staff account (admin)                                |
+| `npm run staff:list`             | Lists staff accounts (email, role, active, password set)       |
 
 First time running e2e tests: `npx playwright install chromium`.
 
