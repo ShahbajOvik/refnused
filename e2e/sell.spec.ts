@@ -1,51 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import { answerToOffer, uniqueEmail, uniqueImei } from "./support/sell";
 
 // Each test acts as a different visitor, so per-IP rate limits don't collide.
 test.beforeEach(async ({ page }) => {
   const octet = () => Math.floor(Math.random() * 254) + 1;
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${octet()}, 10.0.0.${octet()}` });
 });
-
-/** A random IMEI with a valid Luhn check digit (each quote needs its own). */
-function uniqueImei() {
-  const body = "35" + String(Math.floor(Math.random() * 1e12)).padStart(12, "0");
-  for (let check = 0; check <= 9; check++) {
-    const digits = body + check;
-    let sum = 0;
-    for (let i = 0; i < 15; i++) {
-      let d = Number(digits[14 - i]);
-      if (i % 2 === 1) d = d * 2 > 9 ? d * 2 - 9 : d * 2;
-      sum += d;
-    }
-    if (sum % 10 === 0) return digits;
-  }
-  throw new Error("unreachable");
-}
-
-const uniqueEmail = () =>
-  `e2e.${Date.now()}.${Math.random().toString(36).slice(2, 7)}@example.co.uk`;
-
-/** Sample prices from the seed: iPhone 15 128GB is £260 at grade A, £220 at grade B. */
-async function answerToOffer(page: Page) {
-  await page.goto("/sell/apple/iphone-15");
-  await page.getByRole("radio", { name: "128GB" }).check();
-  await page.getByRole("radio", { name: "Black" }).check();
-  await page.getByRole("radio", { name: "Unlocked" }).check();
-  await page.getByRole("button", { name: "Continue" }).click();
-
-  for (const answer of [
-    /^Yes, everything works/,
-    /^Light scratches/,
-    /^Like new/,
-    /^85% or more/,
-  ]) {
-    await page.getByRole("radio", { name: answer }).check();
-    await page.getByRole("button", { name: "Continue" }).click();
-  }
-  await page.getByRole("radio", { name: /^Yes, it works/ }).check();
-  await page.getByRole("button", { name: "See my offer" }).click();
-}
 
 test.describe("sell catalogue", () => {
   test("/sell lists brands and links to models", async ({ page }) => {

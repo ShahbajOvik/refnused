@@ -20,12 +20,15 @@ import {
   payouts,
   priceAlerts,
   products,
+  pushSubscriptions,
+  pushTopics,
   quotes,
   reviews,
   stockAlerts,
 } from "@/db/schema";
 import type { AppDb } from "@/db/types";
 import { recordAudit, type RequestMeta } from "@/lib/audit";
+import { deleteIdlePushSubscriptions } from "@/lib/push/service";
 
 import { verifyCode, type CodeCheck } from "./verification";
 
@@ -321,6 +324,20 @@ export async function exportCustomerData(db: AppDb, customerId: string) {
       : [],
   ]);
 
+  // Browsers getting push updates about the account, its quotes or orders.
+  // Only the push service's host is shown: the endpoint and keys are secrets.
+  const pushRows = await db
+    .select({
+      kind: pushTopics.kind,
+      endpoint: pushSubscriptions.endpoint,
+      createdAt: pushTopics.createdAt,
+      lastSentAt: pushSubscriptions.lastSentAt,
+    })
+    .from(pushTopics)
+    .innerJoin(pushSubscriptions, eq(pushTopics.subscriptionId, pushSubscriptions.id))
+    .where(pushTopicsForCustomer(customerId))
+    .orderBy(asc(pushTopics.createdAt));
+
   return {
     exportedAt: new Date().toISOString(),
     controller: "RefurbednUsed",
@@ -347,9 +364,28 @@ export async function exportCustomerData(db: AppDb, customerId: string) {
     })),
     priceAlerts: priceAlertRows,
     stockAlerts: stockAlertRows,
+    pushNotifications: pushRows.map(({ endpoint, ...row }) => ({
+      ...row,
+      pushService: new URL(endpoint).hostname,
+    })),
     reviews: reviewRows,
     activity,
   };
+}
+
+/** Push topics about the customer: their price alerts, quotes and orders. */
+function pushTopicsForCustomer(customerId: string) {
+  return or(
+    eq(pushTopics.customerId, customerId),
+    inArray(
+      pushTopics.quoteId,
+      sql`(select ${quotes.id} from ${quotes} where ${quotes.customerId} = ${customerId})`,
+    ),
+    inArray(
+      pushTopics.orderId,
+      sql`(select ${orders.id} from ${orders} where ${orders.customerId} = ${customerId})`,
+    ),
+  );
 }
 
 // Erasure -----------------------------------------------------------------------
@@ -445,6 +481,8 @@ export async function deleteCustomerAccount(
     await tx.delete(customerPayoutAccounts).where(eq(customerPayoutAccounts.customerId, id));
     await tx.delete(customerVerificationCodes).where(eq(customerVerificationCodes.customerId, id));
     await tx.delete(priceAlerts).where(eq(priceAlerts.customerId, id));
+    await tx.delete(pushTopics).where(pushTopicsForCustomer(id));
+    await deleteIdlePushSubscriptions(tx);
     await tx
       .delete(stockAlerts)
       .where(or(eq(stockAlerts.customerId, id), eq(stockAlerts.email, oldEmail)));

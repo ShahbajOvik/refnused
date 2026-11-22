@@ -4,9 +4,11 @@ import { requireCustomer } from "@/auth/guards";
 import { ActionForm, SubmitButton } from "@/components/account/action-form";
 import { AccountPage } from "@/components/account/account-page";
 import { PriceAlertForm } from "@/components/account/forms";
+import { PushOptIn } from "@/components/pwa/push-opt-in";
 import { Badge } from "@/components/ui/badge";
 import { db } from "@/db";
 import { listAlertModels, listPriceAlerts, listStockAlerts } from "@/lib/account/alerts";
+import { publicEnv } from "@/lib/env";
 import { formatDate, formatPrice } from "@/lib/format";
 
 import { stopStockAlertAction, updatePriceAlertAction } from "../actions";
@@ -58,7 +60,7 @@ async function Alerts() {
                       ) : (
                         <Badge variant="outline">Paused</Badge>
                       )}
-                      {a.lastNotifiedAt ? ` Last emailed ${formatDate(a.lastNotifiedAt)}` : ""}
+                      {a.lastNotifiedAt ? ` Last sent ${formatDate(a.lastNotifiedAt)}` : ""}
                     </p>
                   </div>
                   <ActionForm action={updatePriceAlertAction} label={`Manage alert: ${what}`}>
@@ -90,6 +92,15 @@ async function Alerts() {
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">No price alerts yet.</p>
         )}
+        {priceAlerts.some((a) => a.isActive) ? (
+          <PushOptIn
+            topic={{ kind: "price_alerts" }}
+            vapidPublicKey={publicEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+            heading="Price alerts on this device"
+            headingLevel={3}
+            description="Get a notification on this phone or computer as soon as one of your price alerts is met."
+          />
+        ) : null}
         <div className="mt-6 border-t pt-6">
           <h3 className="mb-4 font-semibold">New price alert</h3>
           <PriceAlertForm models={models} />

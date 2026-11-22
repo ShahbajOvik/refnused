@@ -11,6 +11,7 @@ import {
   orders,
   payouts,
   priceAlerts,
+  pushSubscriptions,
   quotes,
 } from "@/db/schema";
 import { seed } from "@/db/seed";
@@ -22,6 +23,7 @@ import {
   listCustomerOrders,
   orderRequestSchema,
 } from "@/lib/orders/order-service";
+import { savePushTopic } from "@/lib/push/service";
 import { createTestDb, testCipher } from "@/test/db";
 
 import {
@@ -410,8 +412,29 @@ describe("privacy", () => {
     expect(await deleteCustomerAccount(db, { customerId: dee, code: "000000" })).toMatchObject({
       ok: false,
     });
+    // Push notifications about the account and its order.
+    const [deeOrder] = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.customerId, dee));
+    const endpoint = "https://fcm.googleapis.com/fcm/send/dee-phone";
+    const subscription = { endpoint, keys: { p256dh: "B".repeat(87), auth: "a".repeat(22) } };
+    await savePushTopic(db, {
+      subscription,
+      target: { kind: "price_alerts", customerId: dee },
+      pathEncrypted: null,
+    });
+    await savePushTopic(db, {
+      subscription,
+      target: { kind: "order", orderId: deeOrder!.id },
+      pathEncrypted: cipher.encrypt("/orders/token", "push_topic.path"),
+    });
+
     const { code } = await issueVerificationCode(db, dee, "delete_account");
     expect(await deleteCustomerAccount(db, { customerId: dee, code })).toEqual({ ok: true });
+    expect(
+      await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint)),
+    ).toEqual([]);
 
     const [row] = await db.select().from(customers).where(eq(customers.id, dee));
     expect(row).toMatchObject({ email: redactedEmail(dee), name: null, phone: null });

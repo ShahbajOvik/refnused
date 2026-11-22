@@ -1,16 +1,20 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 
 import { staffAction } from "@/auth/guards";
 import { db } from "@/db";
 import { ActionError } from "@/lib/action-error";
 import { previewPriceImport, priceChangeSchema, updatePrices } from "@/lib/admin/prices";
+import { pushPriceAlerts } from "@/lib/push/price-alerts";
 
-function refresh() {
+function refresh(variantIds: string[]) {
   revalidateTag("trade-in-prices", "max");
   revalidatePath("/admin/prices");
+  // Offers may now meet customers' trade-in price alerts.
+  after(() => pushPriceAlerts({ variantIds }));
 }
 
 export const savePricesAction = staffAction(
@@ -23,7 +27,7 @@ export const savePricesAction = staffAction(
       { staffId: staff.id, source: "table" },
       meta,
     );
-    refresh();
+    if (changed) refresh(input.changes.map((c) => c.variantId));
     return changed;
   },
 );
@@ -50,7 +54,7 @@ export const applyImportAction = staffAction(
       { staffId: staff.id, source: "csv" },
       meta,
     );
-    refresh();
+    if (changed) refresh(preview.changes.map((c) => c.variantId));
     return changed;
   },
 );

@@ -5,9 +5,12 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import { InstallBanner } from "@/components/pwa/install-banner";
+import { PushOptIn } from "@/components/pwa/push-opt-in";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
+import { publicEnv } from "@/lib/env";
 import { formatDate, formatPrice, telHref } from "@/lib/format";
 import { getQuoteByTrackingToken, type TrackedQuote } from "@/lib/sell/quote-service";
 import { cn } from "@/lib/utils";
@@ -52,6 +55,7 @@ async function Tracking({ params }: Pick<PageProps<"/sell/track/[token]">, "para
   const quote = await getQuoteByTrackingToken(db, token);
   if (!quote) notFound();
   const current = STAGE_INDEX[quote.status] ?? -1;
+  const inProgress = quote.status in STAGE_INDEX && quote.status !== "paid";
 
   return (
     <>
@@ -124,6 +128,16 @@ async function Tracking({ params }: Pick<PageProps<"/sell/track/[token]">, "para
           })}
         </ol>
       </section>
+
+      {inProgress ? (
+        <PushOptIn
+          topic={{ kind: "quote", token }}
+          vapidPublicKey={publicEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+          heading="Get updates on this device"
+          description="We’ll let you know when your phone arrives, when we’ve checked it and when you’ve been paid. We’ll still email you."
+        />
+      ) : null}
+      {quote.status === "accepted" ? <InstallBanner context="quote" /> : null}
     </>
   );
 }

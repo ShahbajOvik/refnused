@@ -7,6 +7,8 @@ import { Suspense } from "react";
 
 import { ClearBasket, OrderStatusRefresher } from "@/components/checkout/order-status-refresher";
 import { OrderRequestForm } from "@/components/checkout/order-request-form";
+import { InstallBanner } from "@/components/pwa/install-banner";
+import { PushOptIn } from "@/components/pwa/push-opt-in";
 
 import { createOrderRequestAction } from "../actions";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
@@ -159,7 +161,20 @@ async function Order({ params, searchParams }: PageProps<"/orders/[token]">) {
         </aside>
       </div>
 
+      {paid && order.status !== "completed" ? (
+        <PushOptIn
+          topic={{ kind: "order", token }}
+          vapidPublicKey={publicEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+          heading="Get order updates on this device"
+          description={
+            order.fulfilmentMethod === "delivery"
+              ? "We’ll let you know when your order is dispatched. We’ll still email you."
+              : "We’ll let you know when your order is ready to collect. We’ll still email and text you."
+          }
+        />
+      ) : null}
       {paid ? <AfterSales order={order} token={token} /> : null}
+      {paid ? <InstallBanner context="order" /> : null}
     </>
   );
 }

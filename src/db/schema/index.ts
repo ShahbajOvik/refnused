@@ -5,6 +5,7 @@ export * from "./auth";
 export * from "./catalogue";
 export * from "./checkout";
 export * from "./people";
+export * from "./push";
 export * from "./relations";
 export * from "./sell";
 export * from "./shop";

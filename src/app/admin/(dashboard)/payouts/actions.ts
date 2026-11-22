@@ -11,6 +11,7 @@ import { exportPayoutBatch, markPayoutFailed, markPayoutsPaid } from "@/lib/admi
 import { quoteContact } from "@/lib/admin/quotes";
 import { getFieldCipher } from "@/lib/crypto/field-encryption";
 import { sendEmail } from "@/lib/notify/email";
+import { pushQuoteUpdate } from "@/lib/push/notify";
 
 /** Creates the bank payment file. The CSV goes straight to the browser as a download. */
 export const exportPayoutsAction = staffAction(
@@ -34,6 +35,7 @@ export const markPaidAction = staffAction(
     const paid = await markPayoutsPaid(db, { staffId: staff.id, payoutIds: input.payoutIds }, meta);
     after(async () => {
       for (const p of paid) {
+        await pushQuoteUpdate(p.quoteId, "paid");
         const contact = await quoteContact(db, p.quoteId);
         if (!contact?.email) continue;
         await sendEmail({

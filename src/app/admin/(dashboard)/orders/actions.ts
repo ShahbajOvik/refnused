@@ -18,6 +18,7 @@ import { sendEmail } from "@/lib/notify/email";
 import { sendSms } from "@/lib/notify/sms";
 import { getOrderById, trackingUrl } from "@/lib/orders/order-service";
 import { getPaymentGateway } from "@/lib/payments";
+import { pushOrderUpdate } from "@/lib/push/notify";
 import { isUkMobile } from "@/lib/validation/uk";
 
 export const advanceFulfilmentAction = staffAction(
@@ -26,6 +27,7 @@ export const advanceFulfilmentAction = staffAction(
   async ({ staff, input, meta }) => {
     const { notify } = await advanceFulfilment(db, { ...input, staffId: staff.id }, meta);
     if (notify) {
+      after(() => pushOrderUpdate(input.orderId, notify === "dispatched" ? "dispatched" : "ready"));
       after(async () => {
         const order = await getOrderById(db, input.orderId);
         if (!order) return;
@@ -81,6 +83,7 @@ export const decideRequestAction = staffAction(
   requestDecisionSchema,
   async ({ staff, input, meta }) => {
     const result = await decideRequest(db, { ...input, staffId: staff.id }, meta);
+    after(() => pushOrderUpdate(result.orderId, "request_decided"));
     after(async () => {
       const order = await getOrderById(db, result.orderId);
       if (!order) return;

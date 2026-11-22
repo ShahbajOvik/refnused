@@ -70,6 +70,11 @@ export default defineConfig({
       STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
       // Emails (sign-in links, codes) are written here for the tests to read.
       EMAIL_OUTBOX_DIR: E2E_OUTBOX_DIR,
+      // Web Push test keys (public test values, never used anywhere else).
+      // No real subscription is made in tests, so nothing is sent.
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY:
+        "BIOrOi2v71DHw8zEMy7g6LD3fHO6rBuhqrEeEMwZDnFgCiXN86ihUnvyHI5463fL3v2EniicaONrZZs-2w_mlnc",
+      VAPID_PRIVATE_KEY: "i88ChqDV4d8vBihv_pkhl_YrXghhWbBBPURmNS7Ft2I",
     },
   },
 });

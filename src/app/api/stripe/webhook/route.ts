@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { recordAudit } from "@/lib/audit";
 import { serverEnv } from "@/lib/env.server";
 import { sendOrderConfirmation } from "@/lib/orders/notify";
+import { pushOrderUpdate } from "@/lib/push/notify";
 import { handleStripeEvent, refundUnfulfillable } from "@/lib/orders/webhook-service";
 import { getPaymentGateway } from "@/lib/payments";
 import { verifyStripeWebhook } from "@/lib/payments/gateway";
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     // The units are sold: refresh shop pages.
     revalidateTag("products", "max");
     after(() => sendOrderConfirmation(outcome.orderId));
+    after(() => pushOrderUpdate(outcome.orderId, "paid"));
   }
   if (outcome.kind === "refund_needed") {
     after(async () => {

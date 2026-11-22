@@ -15,6 +15,7 @@ import {
   recordInspection,
 } from "@/lib/admin/quotes";
 import { sendEmail } from "@/lib/notify/email";
+import { pushQuoteUpdate } from "@/lib/push/notify";
 import { absoluteUrl } from "@/lib/seo";
 
 const quoteId = z.object({ quoteId: z.uuid() });
@@ -24,6 +25,7 @@ export const markReceivedAction = staffAction(
   quoteId,
   async ({ staff, input, meta }) => {
     await markQuoteReceived(db, { quoteId: input.quoteId, staffId: staff.id }, meta);
+    after(() => pushQuoteUpdate(input.quoteId, "received"));
     revalidatePath("/admin/quotes");
   },
 );
@@ -33,6 +35,7 @@ export const markReturnedAction = staffAction(
   quoteId,
   async ({ staff, input, meta }) => {
     await markQuoteReturned(db, { quoteId: input.quoteId, staffId: staff.id }, meta);
+    after(() => pushQuoteUpdate(input.quoteId, "returned"));
     revalidatePath("/admin/quotes");
   },
 );
@@ -43,6 +46,10 @@ export const recordInspectionAction = staffAction(
   inspectionSchema,
   async ({ staff, input, meta }) => {
     const result = await recordInspection(db, { ...input, staffId: staff.id }, meta);
+    if (result.outcome !== "pending_check") {
+      const outcome = result.outcome;
+      after(() => pushQuoteUpdate(input.quoteId, outcome));
+    }
     const contact = await quoteContact(db, input.quoteId);
     if (contact?.email && result.outcome !== "pending_check") {
       const to = contact.email;
