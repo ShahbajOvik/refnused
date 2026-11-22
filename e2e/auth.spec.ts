@@ -28,13 +28,6 @@ test.describe("route protection", () => {
     await expect(page).toHaveURL(/\/admin\/sign-in/);
   });
 
-  test("2FA pages need a first-factor session", async ({ page }) => {
-    await page.goto(`${ADMIN_URL}/admin/verify`);
-    await expect(page).toHaveURL(/\/admin\/sign-in/);
-    await page.goto(`${ADMIN_URL}/admin/setup-2fa`);
-    await expect(page).toHaveURL(/\/admin\/sign-in/);
-  });
-
   test("admin pages are not indexed or cached", async ({ page }) => {
     const response = await page.goto(`${ADMIN_URL}/admin/sign-in`);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);

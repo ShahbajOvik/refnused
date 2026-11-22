@@ -1,7 +1,7 @@
 import { LogoMark } from "@/components/layout/logo";
 import { siteConfig } from "@refnused/database/config/site";
 
-/** Minimal page frame for staff sign-in and 2FA pages. */
+/** Minimal page frame for the staff sign-in pages. */
 export function AdminAuthShell({ children }: { children: React.ReactNode }) {
   return (
     <>

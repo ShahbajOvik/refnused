@@ -107,7 +107,7 @@ The staff admin (`admin/`) is a separate Next.js app and deployment from the pub
 - None of the admin's code, routes or staff auth ships with the public site, and the website's
   code can't reach staff sessions or admin actions.
 - Staff cookies live on the admin's own host, so a bug on the public site can't read or ride
-  them. Staff passkeys are bound to the admin's hostname.
+  them.
 - Every admin page renders per request with the strict nonce CSP, `X-Robots-Tag: noindex` and
   `Cache-Control: private, no-store`; anything outside `/admin` redirects there.
 - The admin refreshes the website's cache through `/api/revalidate/tags`, which only accepts
@@ -152,7 +152,7 @@ in them, and those can't carry a nonce. So:
 
 ⚠️ **Accepted risk:** on public pages, an injected inline script wouldn't be
 blocked by the CSP. Mitigations: React escapes all output; the only raw
-HTML is JSON-LD (with `<` escaped) and the server-made TOTP QR code;
+HTML is JSON-LD (with `<` escaped);
 editor links are protocol-checked (`safeHref`). These pages hold no personal
 or payment data, and cookies are `httpOnly`.
 
@@ -240,9 +240,12 @@ less dangerous than injecting scripts.
 **A07 Identification and authentication failures**
 
 - ✅ Separate Auth.js instances, tables and cookies for customers and staff.
-- ✅ Staff: second factor (passkey or TOTP) is required, with failed attempts
-  limited and the session destroyed after too many. 30-minute idle sign-out.
-  Password sign-in is rate limited per IP and account, with Turnstile.
+- ⚠️ Staff: **no second factor** (two-step verification was removed at the
+  owner's request on 22/11/2026). A stolen or guessed staff password, or
+  access to a staff inbox (magic links), is enough to sign in, including
+  as an owner. Use long unique passwords. 30-minute idle sign-out and a
+  12-hour session limit. Password sign-in is rate limited per IP and
+  account, with Turnstile.
 - 🔧 Magic-link sign-in (customers and staff) had **no rate limit or bot
   check**, so it could be used to flood someone's inbox. It now has
   Turnstile, plus limits of 10 an hour per IP and 5 an hour per address

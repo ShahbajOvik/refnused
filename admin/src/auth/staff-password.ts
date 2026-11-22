@@ -18,9 +18,9 @@ import { recordAudit, type RequestMeta } from "@refnused/database/lib/audit";
 import { consumeRateLimit, rateLimitKey } from "@refnused/database/lib/security/rate-limit";
 
 /*
- * Password sign-in for staff. A password is a first factor only: the session
- * created here has no mfaVerifiedAt, so the proxy and requireStaff() still
- * send the person to /admin/verify (or /admin/setup-2fa) before /admin.
+ * Password sign-in for staff. The session created here is fully signed in
+ * (there is no second step); the proxy and requireStaff() still check the
+ * idle timeout, the account and the role on every request.
  *
  * Auth.js can't issue database sessions from its Credentials provider, so
  * this creates the same staff_sessions row its other providers create.

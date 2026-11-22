@@ -4,7 +4,6 @@ import { authorizeStaff, decideAdminAccess } from "@/auth/access";
 import {
   evaluateStaffSession,
   STAFF_IDLE_TIMEOUT_MS,
-  STAFF_MFA_MAX_ATTEMPTS,
   type StaffSessionRecord,
 } from "@/auth/staff-session";
 
@@ -20,9 +19,6 @@ function session(
     expires: new Date(NOW.getTime() + 3_600_000),
     createdAt: minutesAgo(10),
     lastActiveAt: minutesAgo(1),
-    mfaVerifiedAt: minutesAgo(9),
-    mfaMethod: "passkey",
-    mfaFailedAttempts: 0,
     ...overrides,
     staff: {
       id: "s1",
@@ -30,15 +26,13 @@ function session(
       name: "Jo",
       role: "staff",
       isActive: true,
-      hasTotp: true,
-      passkeyCount: 1,
       ...staff,
     },
   };
 }
 
 describe("evaluateStaffSession", () => {
-  it("is active with both factors", () => {
+  it("is active once signed in (no second step)", () => {
     expect(evaluateStaffSession(session(), NOW)).toBe("active");
   });
 
@@ -58,28 +52,6 @@ describe("evaluateStaffSession", () => {
 
   it("blocks deactivated staff even with a valid session", () => {
     expect(evaluateStaffSession(session({}, { isActive: false }), NOW)).toBe("inactive");
-  });
-
-  it("requires 2FA after the first factor", () => {
-    expect(evaluateStaffSession(session({ mfaVerifiedAt: null }), NOW)).toBe("mfa_required");
-  });
-
-  it("requires 2FA setup when no factor is enrolled", () => {
-    expect(
-      evaluateStaffSession(
-        session({ mfaVerifiedAt: null }, { hasTotp: false, passkeyCount: 0 }),
-        NOW,
-      ),
-    ).toBe("mfa_setup_required");
-  });
-
-  it("locks after too many wrong codes", () => {
-    expect(
-      evaluateStaffSession(
-        session({ mfaVerifiedAt: null, mfaFailedAttempts: STAFF_MFA_MAX_ATTEMPTS }),
-        NOW,
-      ),
-    ).toBe("locked");
   });
 });
 
@@ -101,7 +73,7 @@ describe("decideAdminAccess", () => {
     });
   });
 
-  it.each(["idle", "expired", "inactive", "locked"] as const)("ends %s sessions", (status) => {
+  it.each(["idle", "expired", "inactive"] as const)("ends %s sessions", (status) => {
     const decision = decideAdminAccess({ pathname: "/admin", status });
     expect(decision).toEqual({
       type: "redirect",
@@ -110,30 +82,8 @@ describe("decideAdminAccess", () => {
     });
   });
 
-  it("sends first-factor-only sessions to 2FA and nowhere else", () => {
-    expect(
-      decideAdminAccess({ pathname: "/admin/staff", status: "mfa_required", role: "owner" }),
-    ).toEqual({
-      type: "redirect",
-      to: "/admin/verify?callbackUrl=%2Fadmin%2Fstaff",
-    });
-    expect(decideAdminAccess({ pathname: "/admin/verify", status: "mfa_required" })).toEqual({
-      type: "allow",
-    });
-    // Can't jump to setup to enrol a new factor without verifying an existing one.
-    expect(decideAdminAccess({ pathname: "/admin/setup-2fa", status: "mfa_required" }).type).toBe(
-      "redirect",
-    );
-  });
-
-  it("sends staff without a second factor to setup", () => {
-    expect(decideAdminAccess({ pathname: "/admin", status: "mfa_setup_required" })).toEqual({
-      type: "redirect",
-      to: "/admin/setup-2fa",
-    });
-    expect(
-      decideAdminAccess({ pathname: "/admin/setup-2fa", status: "mfa_setup_required" }),
-    ).toEqual({
+  it("lets a signed-in session straight in, with no 2FA pages", () => {
+    expect(decideAdminAccess({ pathname: "/admin", status: "active", role: "staff" })).toEqual({
       type: "allow",
     });
   });
@@ -165,13 +115,7 @@ describe("decideAdminAccess", () => {
 
 describe("authorizeStaff (every admin action)", () => {
   it("rejects sessions that aren't fully signed in", () => {
-    for (const status of [
-      "missing",
-      "mfa_required",
-      "mfa_setup_required",
-      "idle",
-      "locked",
-    ] as const) {
+    for (const status of ["missing", "idle", "expired", "inactive"] as const) {
       expect(authorizeStaff(status, session(), "admin.access")).toMatchObject({
         ok: false,
         denied: false,

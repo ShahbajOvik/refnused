@@ -23,12 +23,11 @@ export const DEMO = {
   admin: "demo.sam@example.co.uk",
 } as const;
 
-/** Demo staff for admin tests. TOTP secret is a public test value: test data only. */
+/** Demo staff for admin tests: test data only. */
 export const DEMO_STAFF = {
   owner: { email: "demo.owner@example.co.uk", name: "Olivia Owner", role: "owner" },
   staff: { email: "demo.staff@example.co.uk", name: "Sid Staff", role: "staff" },
 } as const;
-export const DEMO_TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
 /** Demo staff who signs in with a password. Public test value: test data only. */
 export const DEMO_PASSWORD_STAFF = {
   email: "demo.password@example.co.uk",
@@ -287,7 +286,7 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
     targetPricePence: 30000,
   });
 
-  // Demo staff with two-step verification already set up.
+  // Demo staff (sign in with a magic link from the test outbox).
   for (const member of Object.values(DEMO_STAFF)) {
     await db
       .insert(schema.staffUsers)
@@ -295,8 +294,6 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
         email: member.email,
         name: member.name,
         role: member.role,
-        totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
-        totpEnabledAt: now,
       })
       .onDuplicateKeyUpdate({ set: { email: sql`${schema.staffUsers.email}` } });
   }
@@ -308,8 +305,6 @@ export async function seedDemoAccounts(db: AppDb, cipher: FieldCipher, now = new
       role: "owner",
       passwordHash: await hashPassword(DEMO_PASSWORD_STAFF.password),
       passwordChangedAt: now,
-      totpSecretEncrypted: cipher.encrypt(DEMO_TOTP_SECRET, "staff_users.totp_secret"),
-      totpEnabledAt: now,
     })
     .onDuplicateKeyUpdate({ set: { email: sql`${schema.staffUsers.email}` } });
 

@@ -6,8 +6,6 @@ import {
 } from "@/auth/staff-session";
 
 export const ADMIN_SIGN_IN_PATH = "/admin/sign-in";
-export const ADMIN_VERIFY_PATH = "/admin/verify";
-export const ADMIN_SETUP_2FA_PATH = "/admin/setup-2fa";
 
 export type AccessDecision =
   | { type: "allow" }
@@ -48,23 +46,6 @@ export function decideAdminAccess(input: {
       ),
       endSession: status !== "missing",
     };
-  }
-
-  if (status === "mfa_required") {
-    return isUnder(pathname, ADMIN_VERIFY_PATH)
-      ? { type: "allow" }
-      : { type: "redirect", to: withCallback(ADMIN_VERIFY_PATH, pathname) };
-  }
-
-  if (status === "mfa_setup_required") {
-    return isUnder(pathname, ADMIN_SETUP_2FA_PATH)
-      ? { type: "allow" }
-      : { type: "redirect", to: withCallback(ADMIN_SETUP_2FA_PATH, pathname) };
-  }
-
-  // Fully signed in: the 2FA pages are done with.
-  if (isUnder(pathname, ADMIN_VERIFY_PATH) || isUnder(pathname, ADMIN_SETUP_2FA_PATH)) {
-    return { type: "redirect", to: "/admin" };
   }
 
   if (!role || !can(role, permissionForAdminPath(pathname))) return { type: "forbidden" };

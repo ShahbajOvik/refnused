@@ -25,7 +25,8 @@ async function staff(email: string) {
   return row!;
 }
 
-describe("seedOwner", () => {
+// Password hashing is deliberately slow; allow for a busy machine.
+describe("seedOwner", { timeout: 30_000 }, () => {
   it("creates an active owner with a password, audited", async () => {
     const result = await seedOwner(db, {
       email: " Owner@Example.co.uk ",

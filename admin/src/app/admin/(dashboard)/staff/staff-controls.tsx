@@ -16,12 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  changeStaffRoleAction,
-  createStaffAction,
-  resetStaffTwoFactorAction,
-  setStaffActiveAction,
-} from "./actions";
+import { changeStaffRoleAction, createStaffAction, setStaffActiveAction } from "./actions";
 
 function useAction() {
   const [pending, startTransition] = useTransition();
@@ -53,7 +48,7 @@ export function CreateStaffForm() {
           });
           if (result.ok) formRef.current?.reset();
           return result;
-        }, "Staff member added. They can now sign in and set up two-step verification.");
+        }, "Staff member added. They can now sign in.");
       }}
     >
       <div className="grid gap-2">
@@ -125,19 +120,6 @@ export function StaffRowControls({
           ))}
         </SelectContent>
       </Select>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={pending}
-        onClick={() =>
-          run(
-            () => resetStaffTwoFactorAction({ staffId }),
-            `Two-step verification reset for ${name}.`,
-          )
-        }
-      >
-        Reset 2FA
-      </Button>
       <Button
         variant={isActive ? "destructive" : "secondary"}
         size="sm"

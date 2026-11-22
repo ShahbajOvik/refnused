@@ -13,11 +13,9 @@ import {
   type StaffSessionRecord,
   type StaffSessionStatus,
 } from "@/auth/staff-session";
-import { siteConfig } from "@refnused/database/config/site";
 import { db } from "@refnused/database/db";
 import { ActionError } from "@refnused/database/lib/action-error";
 import { recordAudit } from "@refnused/database/lib/audit";
-import { publicEnv } from "@refnused/database/lib/env";
 import { getRequestMeta } from "@refnused/database/lib/request-meta";
 
 // Staff -----------------------------------------------------------------------
@@ -33,7 +31,7 @@ export async function getStaffSession(): Promise<{
 
 /**
  * Use at the top of every /admin page. Redirects unless the staff member
- * is fully signed in (both factors, not idle) and has `permission`.
+ * is signed in (not idle, active account) and has `permission`.
  * The proxy checks too, but this is the check that counts.
  */
 export async function requireStaff(permission: Permission, pathname = "/admin") {
@@ -47,18 +45,7 @@ export async function requireStaff(permission: Permission, pathname = "/admin") 
   return record;
 }
 
-/** For the 2FA pages: a session that has done the first factor only. */
-export async function requireStaffAwaitingMfa(expected: "mfa_required" | "mfa_setup_required") {
-  const { status, record } = await getStaffSession();
-  if (status === "active") redirect("/admin");
-  if (status !== expected || !record) {
-    const decision = decideAdminAccess({ pathname: "/admin", status });
-    redirect(decision.type === "redirect" ? decision.to : "/admin/sign-in");
-  }
-  return record;
-}
-
-/** Replaces the staff cookie after the session token is rotated (post-2FA). */
+/** Sets the staff session cookie after password sign-in. */
 export async function setStaffSessionCookie(session: { sessionToken: string; expires: Date }) {
   (await cookies()).set(
     STAFF_SESSION_COOKIE,
@@ -73,7 +60,7 @@ export type ActionResult<T = void> =
   { ok: true; data: T } | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 /**
- * Wraps every admin server action: checks the session (both factors, not
+ * Wraps every admin server action: checks the session (signed in, not
  * idle, active account) and the permission on every call, then validates
  * input with Zod. Denied attempts are written to audit_log.
  *
@@ -124,10 +111,4 @@ export function staffAction<Schema extends z.ZodType, Result>(
       throw error;
     }
   };
-}
-
-/** WebAuthn relying party for staff passkeys. */
-export function staffRelyingParty() {
-  const url = new URL(publicEnv.NEXT_PUBLIC_ADMIN_URL);
-  return { name: `${siteConfig.name} admin`, id: url.hostname, origin: url.origin };
 }

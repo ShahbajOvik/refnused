@@ -71,7 +71,7 @@ const { db, close } = createDatabase(process.env.DATABASE_URL, { max: 1 });
 try {
   await setStaffPasswordByEmail(db, { email: values.email, password });
   console.log(`Password set for ${values.email}. Any existing sessions were signed out.`);
-  console.log("They can sign in at /admin/sign-in, then complete two-step verification.");
+  console.log("They can sign in at /admin/sign-in.");
 } catch (error) {
   if (error instanceof StaffPasswordError) console.error(error.message);
   else if (error instanceof Error && error.name === "ZodError")

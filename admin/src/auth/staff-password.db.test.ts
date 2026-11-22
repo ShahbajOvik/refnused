@@ -110,15 +110,14 @@ describe("input validation", () => {
 });
 
 describe("password sign-in", () => {
-  it("creates a session that still has to pass two-step verification", async () => {
+  it("creates a fully signed-in session (no second step)", async () => {
     const { id, email } = await newStaff();
     const result = await attempt(email.toUpperCase(), PASSWORD);
     if (!result.ok) throw new Error("expected sign-in to succeed");
 
     const record = await loadStaffSession(db, result.session.sessionToken);
     expect(record?.staff.id).toBe(id);
-    expect(record?.mfaVerifiedAt).toBeNull();
-    expect(evaluateStaffSession(record)).toBe("mfa_setup_required");
+    expect(evaluateStaffSession(record)).toBe("active");
   });
 
   it("audits the sign-in without storing the password", async () => {

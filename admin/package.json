@@ -21,8 +21,6 @@
     "@next/env": "16.4.6",
     "@refnused/database": "*",
     "@sentry/nextjs": "11.10.0",
-    "@simplewebauthn/browser": "^9.0.1",
-    "@simplewebauthn/server": "^9.0.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "drizzle-orm": "^0.45.4",
@@ -42,7 +40,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@simplewebauthn/types": "^9.0.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

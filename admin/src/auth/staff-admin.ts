@@ -2,7 +2,7 @@ import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { STAFF_ROLES, type StaffRole } from "@/auth/roles";
-import { deleteAllStaffSessions, resetStaffMfa } from "@/auth/staff-service";
+import { deleteAllStaffSessions } from "@/auth/staff-service";
 import { staffUsers } from "@refnused/database/db/schema";
 import type { AppDb } from "@refnused/database/db/types";
 import { ActionError } from "@refnused/database/lib/action-error";
@@ -28,8 +28,6 @@ export async function listStaff(db: AppDb) {
       email: staffUsers.email,
       role: staffUsers.role,
       isActive: staffUsers.isActive,
-      hasTotp: sql<boolean>`${staffUsers.totpEnabledAt} is not null`.mapWith(Boolean),
-      passkeys: sql<number>`(select count(*) from staff_passkeys where staff_passkeys.staff_id = ${staffUsers.id})`,
       lastLoginAt: staffUsers.lastLoginAt,
     })
     .from(staffUsers)
@@ -129,26 +127,6 @@ export async function changeStaffRole(
       entityType: "staff_user",
       entityId: staff.id,
       changes: { before: { role: staff.role }, after: { role: input.role } },
-    },
-    input.meta,
-  );
-}
-
-/** For lost devices: removes TOTP and passkeys; they enrol again at next sign-in. */
-export async function resetStaffTwoFactor(
-  db: AppDb,
-  input: { actorId: string; staffId: string; meta?: RequestMeta },
-) {
-  const staff = await getStaff(db, input.staffId);
-  await resetStaffMfa(db, staff.id);
-  await recordAudit(
-    db,
-    {
-      actorType: "staff",
-      actorId: input.actorId,
-      action: "staff.mfa_reset",
-      entityType: "staff_user",
-      entityId: staff.id,
     },
     input.meta,
   );

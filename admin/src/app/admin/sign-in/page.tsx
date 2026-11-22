@@ -23,7 +23,6 @@ const REASONS: Record<string, string> = {
   idle: "You were signed out after 30 minutes without activity.",
   expired: "Your session has ended. Please sign in again.",
   inactive: "This staff account has been deactivated.",
-  locked: "Too many incorrect codes. For your security, please sign in again.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -52,10 +51,7 @@ async function StaffSignIn({ searchParams }: Pick<PageProps<"/admin/sign-in">, "
       : undefined;
 
   return (
-    <AuthCard
-      title="Staff sign in"
-      description="After this step you’ll confirm it’s you with a passkey or your authenticator app."
-    >
+    <AuthCard title="Staff sign in">
       {reason ? <FormMessage tone="info">{reason}</FormMessage> : null}
       {error ? <FormMessage>{error}</FormMessage> : null}
       <StaffPasswordSignInForm

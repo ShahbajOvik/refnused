@@ -38,14 +38,11 @@ const adapter: Adapter = {
 };
 
 /**
- * Staff authentication, first factor only: magic link or Google.
- * Served from /api/staff-auth with its own cookies and session table.
- * Password sign-in is the third first factor, in src/auth/staff-password.ts.
- *
- * After this, the session must complete a second factor (passkey or TOTP)
- * at /admin/verify before it can reach /admin. That, the 30-minute idle
- * timeout and role checks are enforced by src/proxy.ts and
- * src/auth/guards.ts, using src/auth/staff-session.ts.
+ * Staff authentication: magic link or Google. Served from /api/staff-auth
+ * with its own cookies and session table. Password sign-in is in
+ * src/auth/staff-password.ts. There is no second step: the 30-minute idle
+ * timeout, the 12-hour session limit and role checks are enforced by
+ * src/proxy.ts and src/auth/guards.ts, using src/auth/staff-session.ts.
  */
 export const {
   handlers: staffHandlers,
@@ -57,8 +54,7 @@ export const {
   trustHost: true,
   useSecureCookies,
   /*
-   * Staff have no Auth.js passkey provider (staff passkeys are our own second
-   * step). This flag is still needed: @auth/core's config check keeps
+   * Staff have no Auth.js passkey provider. This flag is still needed: @auth/core's config check keeps
    * "has a WebAuthn provider" in module state shared by every instance, so
    * once the customer instance (which has passkeys) has run, staff requests
    * would fail with ExperimentalFeatureNotEnabled.
@@ -107,7 +103,7 @@ export const {
         meta: await getRequestMeta(),
       });
     },
-    // After the first factor, always go to 2FA; the proxy sends the user on.
+    // Stay on this site; the proxy checks the session and role.
     redirect({ url, baseUrl }) {
       const target = new URL(url, baseUrl);
       if (target.origin !== baseUrl) return `${baseUrl}/admin`;

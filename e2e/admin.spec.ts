@@ -12,20 +12,16 @@ import {
 
 import { SITE_URL } from "../playwright.config";
 
-import { generateTotp } from "../admin/src/auth/totp";
-
 /*
  * Admin, with the demo staff and customer "Sam" from src/db/seed/demo.ts
- * (test snapshot only). Staff sign in for real: magic link from the test
- * outbox, then a TOTP code. Each role signs in once (codes can't be reused
- * within 30 seconds) and the session is shared by the tests.
+ * (e2e database only). Staff sign in for real with a magic link from the
+ * test outbox. Each role signs in once and the session is shared by the tests.
  */
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 
 const OUTBOX = join(process.cwd(), ".test-db", "outbox");
-const TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
 const OWNER = "demo.owner@example.co.uk";
 const STAFF = "demo.staff@example.co.uk";
 const SAM = "demo.sam@example.co.uk";
@@ -69,9 +65,6 @@ async function staffSession(browser: Browser, email: string): Promise<BrowserCon
   const message = await latestEmail(email, since, /^Sign in to .* admin$/);
   const link = message.text.match(/https?:\/\/\S+\/api\/staff-auth\/callback\/resend\?\S+/)![0];
   await page.goto(link);
-  await expect(page).toHaveURL(/\/admin\/verify/);
-  await page.getByLabel("6-digit code").fill(generateTotp(TOTP_SECRET));
-  await page.getByRole("button", { name: "Verify code" }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await page.close();
   return context;
@@ -103,11 +96,8 @@ let staff: BrowserContext;
 let page: Page;
 
 test.beforeAll(async ({ browser }) => {
-  // Two sign-ins plus up to 30 s waiting for a fresh TOTP step.
   test.setTimeout(120_000);
   owner = await staffSession(browser, OWNER);
-  // Wait for the next TOTP step so the second sign-in isn't seen as a replay.
-  await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 500));
   staff = await staffSession(browser, STAFF);
   page = await owner.newPage();
   page.on("dialog", (dialog) => void dialog.accept());
@@ -118,9 +108,7 @@ test.afterAll(async () => {
   await staff?.close();
 });
 
-test("staff sign in with an ID and password, and still need two-step verification", async ({
-  browser,
-}) => {
+test("staff sign in with an ID and password, straight into the admin", async ({ browser }) => {
   const context = await browser.newContext({ locale: "en-GB", timezoneId: "Europe/London" });
   const signIn = await context.newPage();
   await signIn.setExtraHTTPHeaders({ "x-forwarded-for": "198.18.3.10" });
@@ -137,14 +125,8 @@ test("staff sign in with an ID and password, and still need two-step verificatio
   await signIn.getByLabel("Staff ID (work email)").fill("demo.password@example.co.uk");
   await signIn.getByLabel("Password", { exact: true }).fill("demo password for tests");
   await signIn.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(signIn).toHaveURL(/\/admin\/verify/);
-
-  // The password alone doesn't open the admin.
+  await expect(signIn).toHaveURL(/\/admin$/);
   await signIn.goto("/admin/orders");
-  await expect(signIn).toHaveURL(/\/admin\/verify/);
-
-  await signIn.getByLabel("6-digit code").fill(generateTotp(TOTP_SECRET));
-  await signIn.getByRole("button", { name: "Verify code" }).click();
   await expect(signIn).toHaveURL(/\/admin\/orders$/);
   await context.close();
 });

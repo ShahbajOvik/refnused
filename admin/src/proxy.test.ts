@@ -33,9 +33,6 @@ function record(
     expires: new Date(Date.now() + 3_600_000),
     createdAt: minutesAgo(20),
     lastActiveAt: minutesAgo(5),
-    mfaVerifiedAt: minutesAgo(19),
-    mfaMethod: "totp",
-    mfaFailedAttempts: 0,
     ...overrides,
     staff: {
       id: "s1",
@@ -43,8 +40,6 @@ function record(
       name: "S",
       role,
       isActive: true,
-      hasTotp: true,
-      passkeyCount: 0,
     },
   };
 }
@@ -94,10 +89,10 @@ describe("proxy: /admin", () => {
     );
   });
 
-  it("sends first-factor-only sessions to 2FA", async () => {
-    loadStaffSession.mockResolvedValue(record({ mfaVerifiedAt: null }));
+  it("lets a signed-in session straight in (no second step)", async () => {
+    loadStaffSession.mockResolvedValue(record());
     const res = await proxy(request("/admin", { [STAFF_SESSION_COOKIE]: "tok" }));
-    expect(res.headers.get("location")).toBe("http://localhost:3000/admin/verify");
+    expect(res.headers.get("location")).toBeNull();
   });
 
   it("blocks roles from sections they can't use", async () => {

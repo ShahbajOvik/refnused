@@ -313,7 +313,7 @@ Portable Text links are limited to relative, http(s), mailto and tel URLs.
 
 ## Admin
 
-`/admin` is for staff (separate sign-in plus passkey or TOTP). It works on phones and tablets: a
+`/admin` is for staff (separate sign-in). It works on phones and tablets: a
 sidebar on large screens, a sideways-scrolling section bar on smaller ones. Each role sees only the
 sections it can use (`admin/src/auth/roles.ts`), and every page and action checks permission on the server.
 
@@ -347,20 +347,20 @@ CSV; check the layout your bank expects. Margin calculator VAT and card fee valu
 IMEI scanning uses the browser's BarcodeDetector (Chrome on Android); elsewhere type the IMEI.
 Refunds are requested from Stripe and the order updates when the webhook confirms them.
 
-**Testing**: the test snapshot has demo staff (`demo.owner@` and `demo.staff@example.co.uk`, TOTP
-secret in `database/src/db/seed/demo.ts`, test data only).
+**Testing**: the e2e database and `npm run db:seed -- --demo` have demo staff (`demo.owner@` and
+`demo.staff@example.co.uk`, in `database/src/db/seed/demo.ts`, test data only).
 
 ## Authentication
 
 Auth.js v5, with two separate instances so customer and staff sessions can never be confused.
 
-|               | Customers                               | Staff                                                      |
-| ------------- | --------------------------------------- | ---------------------------------------------------------- |
-| Sign in       | `/sign-in`: magic link, Google, passkey | `/admin/sign-in`: password, magic link or Google, then 2FA |
-| Second factor | Not required                            | Passkey or authenticator app (TOTP), every sign-in         |
-| Session       | 30 days, rolling                        | 30 minutes idle, 12 hours maximum                          |
-| Accounts      | Created on first sign-in                | Created by an owner only                                   |
-| Protected     | `/account`                              | `/admin`, by role (see `admin/src/auth/roles.ts`)          |
+|               | Customers                               | Staff                                             |
+| ------------- | --------------------------------------- | ------------------------------------------------- |
+| Sign in       | `/sign-in`: magic link, Google, passkey | `/admin/sign-in`: password, magic link or Google  |
+| Second factor | Not required                            | None                                              |
+| Session       | 30 days, rolling                        | 30 minutes idle, 12 hours maximum                 |
+| Accounts      | Created on first sign-in                | Created by an owner only                          |
+| Protected     | `/account`                              | `/admin`, by role (see `admin/src/auth/roles.ts`) |
 
 **First owner.** After migrating, seed the first owner from `.env.local`:
 
@@ -377,8 +377,8 @@ npm run staff:create -- --email you@example.co.uk --name "Your Name" --role owne
 npm run staff:set-password -- --email you@example.co.uk
 ```
 
-Then sign in at `/admin/sign-in` with that email and password. You'll be asked to set up a passkey
-or authenticator app. Owners add other staff, change roles, reset lost 2FA and deactivate accounts
+Then sign in at `/admin/sign-in` with that email and password. Owners add other staff, change
+roles and deactivate accounts
 at `/admin/staff`. Staff set or change their own password at `/admin/security`; anyone who forgets
 theirs can sign in with an emailed link and set a new one there.
 
@@ -387,9 +387,9 @@ refunds, content, audit log), `staff` (trade-ins, inspections, stock, orders) an
 `content_editor` (content and reviews).
 
 **Local development.** Without `AUTH_RESEND_KEY`, magic links are printed in the terminal running
-`npm run dev`. Passkeys work on `http://localhost`.
+`npm run dev`.
 
-**Audit log.** Sign-ins, sign-outs, denied sign-ins, 2FA success/failure/lockout, idle timeouts,
+**Audit log.** Sign-ins, sign-outs, denied sign-ins, idle timeouts,
 permission denials and staff changes are written to `audit_log`.
 
 ## Design system

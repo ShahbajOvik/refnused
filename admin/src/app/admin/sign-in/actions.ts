@@ -29,8 +29,8 @@ const emailSchema = z.object({
 });
 
 /**
- * First factor only: the new session still has to pass 2FA, which the proxy
- * and requireStaff() enforce on every /admin request.
+ * Signs in with email and password. The proxy and requireStaff() still
+ * check the session and role on every /admin request.
  */
 export async function signInStaffWithPasswordAction(
   state: PasswordFormState,
@@ -72,7 +72,7 @@ export async function signInStaffWithPasswordAction(
   if (previous) await deleteStaffSession(db, previous);
   await setStaffSessionCookie(result.session);
 
-  // Go straight to the 2FA step, so the address bar matches the page shown.
+  // Go to where they were heading, if their role allows it.
   const target = safeCallbackUrl(formData.get("callbackUrl"), "/admin");
   const record = await loadStaffSession(db, result.session.sessionToken);
   const decision = decideAdminAccess({

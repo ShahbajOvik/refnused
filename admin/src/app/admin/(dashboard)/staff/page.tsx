@@ -51,9 +51,6 @@ async function StaffList() {
                 Role
               </th>
               <th scope="col" className="p-3 font-medium">
-                Two-step
-              </th>
-              <th scope="col" className="p-3 font-medium">
                 Last sign-in
               </th>
               <th scope="col" className="p-3 font-medium">
@@ -74,20 +71,6 @@ async function StaffList() {
                   ) : null}
                 </td>
                 <td className="p-3">{ROLE_LABELS[s.role]}</td>
-                <td className="p-3">
-                  {s.passkeys > 0 || s.hasTotp ? (
-                    <span>
-                      {[
-                        s.passkeys > 0 ? `${s.passkeys} passkey${s.passkeys > 1 ? "s" : ""}` : null,
-                        s.hasTotp ? "App" : null,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
-                  ) : (
-                    <Badge variant="warning">Not set up</Badge>
-                  )}
-                </td>
                 <td className="p-3 whitespace-nowrap">
                   {s.lastLoginAt ? formatDate(s.lastLoginAt, "short") : "Never"}
                 </td>

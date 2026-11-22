@@ -49,7 +49,7 @@ try {
   } else if (!result.hasPassword) {
     console.log(`No password given: run npm run staff:set-password -- --email ${email}`);
   }
-  console.log("Sign in at /admin/sign-in, then set up two-step verification.");
+  console.log("Sign in at /admin/sign-in.");
 } catch (error) {
   if (error instanceof Error && error.name === "ZodError") {
     console.error(

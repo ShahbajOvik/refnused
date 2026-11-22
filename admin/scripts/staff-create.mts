@@ -37,9 +37,7 @@ try {
     { type: "system" },
   );
   console.log(`Created ${values.role} ${values.email} (${created.id}).`);
-  console.log(
-    "They can now sign in at /admin/sign-in and will be asked to set up two-step verification.",
-  );
+  console.log("They can now sign in at /admin/sign-in.");
 } catch (error) {
   if (error instanceof StaffAdminError) console.error(error.message);
   else if (error instanceof Error && error.name === "ZodError")
