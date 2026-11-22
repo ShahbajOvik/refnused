@@ -4,7 +4,7 @@
  *
  *   OWNER_EMAIL=you@yourdomain.co.uk
  *   OWNER_NAME="Your Name"
- *   OWNER_PASSWORD=…        (optional, at least 12 characters)
+ *   OWNER_PASSWORD='…'      (optional, at least 12 characters; quote it if it has # in it)
  *
  *   npm run db:seed:owner
  *
@@ -42,7 +42,10 @@ try {
     console.warn("Note: that account isn't an active owner. Change it in /admin/staff.");
   }
   if (result.passwordSet) {
-    console.log("Password set. Remove OWNER_PASSWORD from your env file now.");
+    console.log(
+      `Password set (${password!.length} characters). If that's fewer than you typed, the value was cut at a # or quote: wrap it in single quotes, e.g. OWNER_PASSWORD='abc#123', and use npm run staff:set-password.`,
+    );
+    console.log("Remove OWNER_PASSWORD from your env file now.");
   } else if (!result.hasPassword) {
     console.log(`No password given: run npm run staff:set-password -- --email ${email}`);
   }
