@@ -67,7 +67,8 @@ check them again whenever the infrastructure changes.
    on automated backups with binary-log point-in-time recovery if offered.
 8. **Accounts:** turn on two-factor authentication for everyone with access
    to GitHub, Vercel, Cloudflare, Stripe, Resend, Twilio, Sanity, Sentry and
-   the database provider. Create the first owner with `npm run staff:create`
+   the database provider. Create the first owner with `npm run db:seed:owner` (then delete
+   `OWNER_PASSWORD` from the env file) or `npm run staff:create`
    and make them set up a passkey.
 9. **GitHub:** turn on Dependabot alerts and security updates, secret
    scanning and push protection (Settings → Code security). Protect `main`:

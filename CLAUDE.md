@@ -146,7 +146,7 @@ Store data lives in the `stores` table (edited in the admin at `/admin/stores`);
 - Every `/admin` page calls `requireStaff(permission)`, and every admin server action is wrapped in `staffAction(permission, zodSchema, handler)`. The admin proxy (`admin/src/proxy.ts`) is a first check only, never the only one.
 - Permissions per role live in `admin/src/auth/roles.ts`. Add each new admin section to `ADMIN_ROUTE_PERMISSIONS` and give its actions the matching permission.
 - Staff must pass a passkey or TOTP step after the first sign-in factor, and are signed out after 30 minutes idle. Never add a path around this.
-- Staff accounts are created only by an owner (`/admin/staff`) or `npm run staff:create`, never by signing in.
+- Staff accounts are created only by an owner (`/admin/staff`) or `npm run staff:create` / `npm run db:seed:owner` (first owner), never by signing in.
 - Customer passkeys can only be added while signed in. Never allow creating an account from a passkey alone.
 - Don't set `AUTH_URL`; it would override both instances' base paths.
 

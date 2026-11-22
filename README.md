@@ -53,6 +53,7 @@ The design system lives at http://localhost:3000/styleguide.
 | `npm run budget -w refnused`     | Checks initial JS per page is under 200KB (run after a build)  |
 | `npm run push:keys`              | Generates a VAPID key pair for Web Push                        |
 | `npm run pwa:assets -w refnused` | Renders the PWA icons (add `-- --screenshots` for screenshots) |
+| `npm run db:seed:owner`          | Seeds the first owner from OWNER_EMAIL/NAME/PASSWORD (admin)   |
 | `npm run staff:create`           | Creates a staff account (admin)                                |
 
 First time running e2e tests: `npx playwright install chromium`.
@@ -361,7 +362,15 @@ Auth.js v5, with two separate instances so customer and staff sessions can never
 | Accounts      | Created on first sign-in                | Created by an owner only                                   |
 | Protected     | `/account`                              | `/admin`, by role (see `admin/src/auth/roles.ts`)          |
 
-**First owner.** After migrating, create the first owner:
+**First owner.** After migrating, seed the first owner from `.env.local`:
+
+```bash
+# .env.local: OWNER_EMAIL=you@example.co.uk  OWNER_NAME="Your Name"  OWNER_PASSWORD=…
+npm run db:seed:owner
+```
+
+It's safe to re-run (an existing account and password are never changed). Remove
+`OWNER_PASSWORD` from the file once you've signed in. Or do it by hand:
 
 ```bash
 npm run staff:create -- --email you@example.co.uk --name "Your Name" --role owner
