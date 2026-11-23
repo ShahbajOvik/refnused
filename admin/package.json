@@ -21,7 +21,7 @@
     "@auth/drizzle-adapter": "^1.11.3",
     "@next/env": "16.4.6",
     "@refnused/database": "*",
-    "@sentry/nextjs": "11.10.0",
+    "@sentry/nextjs": "11.11.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "drizzle-orm": "^0.45.4",

@@ -27,7 +27,7 @@
     "@react-three/fiber": "^9.8.2",
     "@refnused/database": "*",
     "@sanity/client": "^8.16.0",
-    "@sentry/nextjs": "11.10.0",
+    "@sentry/nextjs": "11.11.0",
     "@serwist/window": "^9.5.15",
     "@simplewebauthn/browser": "^9.0.1",
     "@simplewebauthn/server": "^9.0.3",
